@@ -1,24 +1,55 @@
 {
-  "alive": 0,
-  "collected": 0,
-  "countries": {},
-  "failure_reasons": {},
-  "main": 0,
-  "median_latency_ms": null,
-  "parsed": 0,
+  "alive": 324,
+  "collected": 3361,
+  "countries": {
+    "??": 324
+  },
+  "failure_reasons": {
+    "CONNECT_TIMEOUT": 35,
+    "CORE_START_FAILED": 2,
+    "DNS_FAILED": 3,
+    "DUPLICATE": 6,
+    "HTTP_FAILED": 11,
+    "PARSE_ERROR": 8,
+    "PRIVATE_ENDPOINT": 4,
+    "PROXY_FAILED": 643,
+    "SOURCE_EMPTY": 1,
+    "TOO_SLOW": 10,
+    "UNSTABLE": 49,
+    "UNSUPPORTED": 165
+  },
+  "main": 200,
+  "median_latency_ms": 558.58,
+  "parsed": 3184,
   "production": {
-    "all": 0,
-    "main": 0,
-    "white": 0
+    "all": 324,
+    "main": 200,
+    "white": 5
   },
   "project": "Swift",
-  "protocols": {},
-  "published": false,
-  "source_status": {},
-  "sources": {},
+  "protocols": {
+    "hysteria2": 11,
+    "ss": 48,
+    "vless": 251,
+    "vmess": 14
+  },
+  "published": true,
+  "source_status": {
+    "igareck-main-mixed": "OK",
+    "igareck-main-vless": "OK",
+    "igareck-white-cidr": "OK",
+    "igareck-white-sni": "OK",
+    "mifa-world": "OK",
+    "morpheus-best": "OK",
+    "radikal-verified": "OK"
+  },
+  "sources": {
+    "0xRadikal": 306,
+    "igareck": 19
+  },
   "tagline": "Filter the garbage. Keep what works.",
-  "tested": 0,
-  "unique": 0,
-  "updated_at": null,
-  "white": 0
+  "tested": 1064,
+  "unique": 3178,
+  "updated_at": "2026-08-27T19:36:21Z",
+  "white": 5
 }
