@@ -1,0 +1,3 @@
+#profile-title: Swift White
+#profile-update-interval: 1
+#profile-web-page-url: https://github.com/femboypig/swift
