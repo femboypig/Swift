@@ -16,21 +16,22 @@ main = 200
 white = 200
 
 [selection]
-main_candidates = 1000
-white_candidates = 400
+main_candidates = 400
+white_candidates = 250
 
 [testing]
 concurrency = 20
 probes = 5
+rounds = 2
 connect_timeout = 5
 request_timeout = 10
 download_bytes = 262144
 download_timeout = 15
 download_url = "https://speed.cloudflare.com/__down?bytes={bytes}"
-geo_url = "https://speed.cloudflare.com/meta"
+geo_url = "https://www.cloudflare.com/cdn-cgi/trace"
 throughput_probe_ratio = 0.8
-min_throughput_bps = 65536
-per_config_timeout = 85
+min_throughput_bps = 131072
+per_config_timeout = 160
 global_timeout = 3000
 probe_urls = [
   "https://www.gstatic.com/generate_204",
@@ -48,9 +49,9 @@ white_probe_urls = [
 window = 16
 
 [quality]
-main_min_score = 68
-white_min_score = 68
-all_min_throughput_bps = 16384
+main_min_score = 70
+white_min_score = 70
+all_min_throughput_bps = 131072
 
 [diversity]
 endpoint = 3
@@ -58,27 +59,21 @@ subnet = 10
 asn = 30
 
 [[sources]]
-id = "igareck-main-vless"
+id = "igareck-main-mobile"
 name = "igareck"
-url = "https://raw.githubusercontent.com/igareck/vpn-configs-for-russia/main/BLACK_VLESS_RUS.txt"
+url = "https://raw.githubusercontent.com/igareck/vpn-configs-for-russia/main/BLACK_VLESS_RUS_mobile.txt"
 lanes = ["main"]
 
 [[sources]]
-id = "igareck-main-mixed"
+id = "igareck-white-mobile"
 name = "igareck"
-url = "https://raw.githubusercontent.com/igareck/vpn-configs-for-russia/main/BLACK_SS%2BAll_RUS.txt"
-lanes = ["main"]
-
-[[sources]]
-id = "igareck-white-cidr"
-name = "igareck"
-url = "https://raw.githubusercontent.com/igareck/vpn-configs-for-russia/main/WHITE-CIDR-RU-all.txt"
+url = "https://raw.githubusercontent.com/igareck/vpn-configs-for-russia/main/Vless-Reality-White-Lists-Rus-Mobile.txt"
 lanes = ["white"]
 
 [[sources]]
-id = "igareck-white-sni"
+id = "igareck-white-checked"
 name = "igareck"
-url = "https://raw.githubusercontent.com/igareck/vpn-configs-for-russia/main/WHITE-SNI-RU-all.txt"
+url = "https://raw.githubusercontent.com/igareck/vpn-configs-for-russia/main/WHITE-CIDR-RU-checked.txt"
 lanes = ["white"]
 
 [[sources]]
@@ -89,13 +84,13 @@ lanes = ["main"]
 content_type = "html"
 
 [[sources]]
-id = "radikal-verified"
-name = "0xRadikal"
-url = "https://raw.githubusercontent.com/0xRadikal/Free-v2ray-Configs/main/verified/configs.txt"
+id = "wlunlocker-main"
+name = "wlunlocker"
+url = "https://raw.githubusercontent.com/wlunlocker/vpn-configs/main/blacklist_vpn2.txt"
 lanes = ["main"]
 
 [[sources]]
-id = "morpheus-best"
-name = "morpheusadam"
-url = "https://raw.githubusercontent.com/morpheusadam/v2ray-config/main/subs/bundles/best.txt"
-lanes = ["main"]
+id = "wlunlocker-white"
+name = "wlunlocker"
+url = "https://raw.githubusercontent.com/wlunlocker/vpn-configs/main/whitelist_cidr3_eu.txt"
+lanes = ["white"]
