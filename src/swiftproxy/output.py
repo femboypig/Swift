@@ -12,41 +12,23 @@ from .parsing import serialize_uri
 
 
 HAPP_PROTOCOLS = {"vless", "vmess", "trojan", "ss", "hysteria2"}
+PIPELINE_VERSION = 2
 
 
 def display_name(
     config: ProxyConfig,
     result: TestResult,
-    availability: float,
-    observations: list[dict[str, Any]] | None = None,
 ) -> str:
-    latency = result.median_latency_ms
-    if latency is None and observations:
-        previous = next(
-            (item.get("median_latency") for item in reversed(observations) if item.get("success")),
-            None,
-        )
-        latency = float(previous) if previous is not None else None
-    country = result.country or "??"
-    latency_text = f"{round(latency)}ms" if latency is not None else "?ms"
-    return f"{country} | {latency_text} | {round(availability * 100)}% | {config.label}"
+    parts = [config.label, config.fingerprint[:6].upper()]
+    if result.country:
+        parts.insert(0, result.country)
+    return " | ".join(parts)
 
 
-def subscription_lines(items: Iterable[RankedConfig], history: dict[str, Any]) -> list[str]:
+def subscription_lines(items: Iterable[RankedConfig]) -> list[str]:
     lines = []
     for item in items:
-        lane = (
-            history.get("configs", {})
-            .get(item.config.fingerprint, {})
-            .get("lanes", {})
-            .get(item.lane, {})
-        )
-        name = display_name(
-            item.config,
-            item.result,
-            item.availability,
-            lane.get("observations", []),
-        )
+        name = display_name(item.config, item.result)
         lines.append(serialize_uri(item.config, name))
     return lines
 
@@ -76,7 +58,7 @@ def alive_for_all(
             result
             for lane in ("main", "white")
             if (result := results.get((config.fingerprint, lane))) is not None
-            and result.success_count > 0
+            and result.confirmed
             and (result.throughput_bps or 0) >= min_throughput
         ]
         if not available:
@@ -162,6 +144,7 @@ def build_stats(
     value: dict[str, Any] = {
         "project": "Swift",
         "tagline": "Filter the garbage. Keep what works.",
+        "pipeline_version": PIPELINE_VERSION,
         "updated_at": updated_at,
         "published": published,
         "collected": collected,
@@ -196,7 +179,7 @@ def suspicious_run(
         return "ALL_SOURCES_FAILED"
     if tested >= 20 and failures["CORE_START_FAILED"] / tested >= 0.6:
         return "CORE_FAILURE_RATE"
-    if not previous:
+    if not previous or previous.get("pipeline_version") != PIPELINE_VERSION:
         return None
     production = previous.get("production", {})
     previous_main = int(production.get("main", previous.get("main", 0)))
@@ -239,12 +222,11 @@ def write_subscriptions(
     main: list[RankedConfig],
     white: list[RankedConfig],
     alive: list[RankedConfig],
-    history: dict[str, Any],
     repository: str,
 ) -> None:
-    main_lines = subscription_lines(main, history)
-    white_lines = subscription_lines(white, history)
-    all_lines = subscription_lines(alive, history)
+    main_lines = subscription_lines(main)
+    white_lines = subscription_lines(white)
+    all_lines = subscription_lines(alive)
     atomic_write(root / "sub/main.txt", plain_subscription(main_lines))
     atomic_write(root / "sub/white.txt", plain_subscription(white_lines))
     atomic_write(root / "sub/all.txt", plain_subscription(all_lines))
