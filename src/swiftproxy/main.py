@@ -147,6 +147,15 @@ async def run(root: Path, config_path: Path, core_override: str | None = None) -
     history = load_json(history_path, empty_history())
     order = load_json(order_path, {"main": [], "white": []})
     previous_stats = load_json(stats_path, None)
+    history_version = empty_history()["version"]
+    if history.get("version") != history_version:
+        LOGGER.warning(
+            "HISTORY_RESET old_version=%s new_version=%s",
+            history.get("version"),
+            history_version,
+        )
+        history = empty_history()
+        order = {"main": [], "white": []}
 
     source_results = await fetch_sources(
         source_specs(settings), float(settings["collection"]["fetch_timeout"])
@@ -297,7 +306,6 @@ async def run(root: Path, config_path: Path, core_override: str | None = None) -
         main,
         white,
         alive,
-        temp_history,
         settings["project"]["repository"],
     )
     prune_history(temp_history)
