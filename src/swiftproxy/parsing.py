@@ -122,6 +122,11 @@ def _transport_options(query: dict[str, list[str]], transport: str) -> dict[str,
         options["grpc_mode"] = mode
     if header_type and header_type != "none":
         options["header_type"] = header_type
+    packet_encoding = _one(query, "packetEncoding", "packet_encoding").lower()
+    if packet_encoding:
+        if packet_encoding not in {"packetaddr", "xudp"}:
+            raise ValueError("unsupported packet encoding")
+        options["packet_encoding"] = packet_encoding
     return options
 
 
@@ -152,6 +157,9 @@ def _tls_options(query: dict[str, list[str]], security: str) -> dict[str, Any]:
             if not re.fullmatch(r"[0-9a-fA-F]{1,16}", short_id):
                 raise ValueError("invalid Reality short ID")
             options["short_id"] = short_id.lower()
+        spider_x = _one(query, "spx", "spiderX", "spider_x")
+        if spider_x:
+            options["spider_x"] = spider_x
     return options
 
 
@@ -196,7 +204,15 @@ def parse_vmess(uri: str) -> ProxyConfig:
         "sni": [str(raw.get("sni", ""))],
         "alpn": [str(raw.get("alpn", ""))],
         "fp": [str(raw.get("fp", ""))],
-        "allowInsecure": [str(raw.get("allowInsecure", ""))],
+        "allowInsecure": [
+            str(
+                raw.get(
+                    "allowInsecure",
+                    raw.get("insecure", raw.get("skip-cert-verify", "")),
+                )
+            )
+        ],
+        "packetEncoding": [str(raw.get("packetEncoding", raw.get("packet_encoding", "")))],
     }
     security = str(raw.get("tls", "none")).lower() or "none"
     options = _transport_options(query, transport) | _tls_options(query, security)
@@ -442,6 +458,8 @@ def _common_query(config: ProxyConfig) -> list[tuple[str, str]]:
         ("fingerprint", "fp"),
         ("public_key", "pbk"),
         ("short_id", "sid"),
+        ("spider_x", "spx"),
+        ("packet_encoding", "packetEncoding"),
         ("path", "path"),
         ("host_header", "host"),
         ("service_name", "serviceName"),
