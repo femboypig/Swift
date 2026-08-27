@@ -30,7 +30,8 @@ download_timeout = 15
 download_url = "https://speed.cloudflare.com/__down?bytes={bytes}"
 geo_url = "https://www.cloudflare.com/cdn-cgi/trace"
 throughput_probe_ratio = 0.8
-min_throughput_bps = 131072
+main_min_throughput_bps = 131072
+white_min_throughput_bps = 49152
 per_config_timeout = 160
 global_timeout = 3000
 probe_urls = [
@@ -50,8 +51,8 @@ window = 16
 
 [quality]
 main_min_score = 70
-white_min_score = 70
-all_min_throughput_bps = 131072
+white_min_score = 60
+all_min_throughput_bps = 49152
 
 [diversity]
 endpoint = 3
