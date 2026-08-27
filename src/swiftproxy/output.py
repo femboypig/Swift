@@ -12,23 +12,25 @@ from .parsing import serialize_uri
 
 
 HAPP_PROTOCOLS = {"vless", "vmess", "trojan", "ss", "hysteria2"}
-PIPELINE_VERSION = 2
+PIPELINE_VERSION = 3
 
 
 def display_name(
-    config: ProxyConfig,
     result: TestResult,
+    index: int,
+    prefix: str,
 ) -> str:
-    parts = [config.label, config.fingerprint[:6].upper()]
-    if result.country:
-        parts.insert(0, result.country)
-    return " | ".join(parts)
+    country = (result.country or "??").upper()
+    flag = "🏳️"
+    if len(country) == 2 and country.isalpha():
+        flag = "".join(chr(ord(character) + 127397) for character in country)
+    return f"{flag} {country} · {prefix}{index:03d}"
 
 
-def subscription_lines(items: Iterable[RankedConfig]) -> list[str]:
+def subscription_lines(items: Iterable[RankedConfig], prefix: str) -> list[str]:
     lines = []
-    for item in items:
-        name = display_name(item.config, item.result)
+    for index, item in enumerate(items, 1):
+        name = display_name(item.result, index, prefix)
         lines.append(serialize_uri(item.config, name))
     return lines
 
@@ -224,9 +226,9 @@ def write_subscriptions(
     alive: list[RankedConfig],
     repository: str,
 ) -> None:
-    main_lines = subscription_lines(main)
-    white_lines = subscription_lines(white)
-    all_lines = subscription_lines(alive)
+    main_lines = subscription_lines(main, "")
+    white_lines = subscription_lines(white, "W")
+    all_lines = subscription_lines(alive, "A")
     atomic_write(root / "sub/main.txt", plain_subscription(main_lines))
     atomic_write(root / "sub/white.txt", plain_subscription(white_lines))
     atomic_write(root / "sub/all.txt", plain_subscription(all_lines))
