@@ -1,0 +1,109 @@
+name: Swift update
+
+on:
+  schedule:
+    - cron: "17,47 * * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: swift-subscription-update
+  cancel-in-progress: false
+
+env:
+  PYTHONPATH: src
+  SING_BOX_VERSION: "1.13.19"
+  SWIFT_SING_BOX: .cache/sing-box/sing-box
+
+jobs:
+  update:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 58
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          fetch-depth: 1
+
+      - name: Set up Python
+        uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5.6.0
+        with:
+          python-version: "3.12"
+
+      - name: Restore sing-box cache
+        id: core-cache
+        uses: actions/cache@5a3ec84eff668545956fd18022155c47e93e2684 # v4.2.3
+        with:
+          path: .cache/sing-box
+          key: sing-box-${{ runner.os }}-${{ runner.arch }}-${{ env.SING_BOX_VERSION }}
+
+      - name: Install sing-box
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ -x "$SWIFT_SING_BOX" ]] && "$SWIFT_SING_BOX" version | grep -q "sing-box version $SING_BOX_VERSION"; then
+            exit 0
+          fi
+
+          mkdir -p .cache/sing-box "$RUNNER_TEMP/swift-core"
+          swift_archive="sing-box-${SING_BOX_VERSION}-linux-amd64.tar.gz"
+          swift_release="https://github.com/SagerNet/sing-box/releases/download/v${SING_BOX_VERSION}"
+          curl --fail --location --retry 3 --silent --show-error \
+            --output "$RUNNER_TEMP/swift-core/$swift_archive" \
+            "$swift_release/$swift_archive"
+          curl --fail --location --retry 3 --silent --show-error \
+            --output "$RUNNER_TEMP/swift-core/checksums.txt" \
+            "$swift_release/sing-box-${SING_BOX_VERSION}-checksums.txt"
+
+          swift_checksum=$(awk -v name="$swift_archive" '$2 == name { print $1 }' "$RUNNER_TEMP/swift-core/checksums.txt")
+          [[ "$swift_checksum" =~ ^[0-9a-f]{64}$ ]]
+          echo "$swift_checksum  $RUNNER_TEMP/swift-core/$swift_archive" | sha256sum --check --status
+          tar -xzf "$RUNNER_TEMP/swift-core/$swift_archive" \
+            -C "$RUNNER_TEMP/swift-core" \
+            "sing-box-${SING_BOX_VERSION}-linux-amd64/sing-box"
+          install -m 0755 \
+            "$RUNNER_TEMP/swift-core/sing-box-${SING_BOX_VERSION}-linux-amd64/sing-box" \
+            "$SWIFT_SING_BOX"
+          "$SWIFT_SING_BOX" version
+
+      - name: Run unit tests
+        run: python -m unittest discover -s tests -v
+
+      - name: Collect and test configs
+        id: pipeline
+        shell: bash
+        run: |
+          set +e
+          python -m swiftproxy.main
+          swift_exit=$?
+          set -e
+          echo "exit_code=$swift_exit" >> "$GITHUB_OUTPUT"
+          if [[ "$swift_exit" -ne 0 && "$swift_exit" -ne 2 ]]; then
+            exit "$swift_exit"
+          fi
+
+      - name: Check generated subscriptions
+        if: steps.pipeline.outputs.exit_code == '0'
+        run: python -m swiftproxy.main --check-output
+
+      - name: Commit changed data
+        shell: bash
+        run: |
+          set -euo pipefail
+          git add sub data stats.json
+          if git diff --cached --quiet; then
+            exit 0
+          fi
+          git config user.name "swift-bot"
+          git config user.email "swift-bot@users.noreply.github.com"
+          git commit -m "Update Swift subscriptions"
+          git push
+
+      - name: Report held publish
+        if: steps.pipeline.outputs.exit_code == '2'
+        run: |
+          echo "Swift kept the previous subscriptions because this run looked unhealthy." >&2
+          exit 1
