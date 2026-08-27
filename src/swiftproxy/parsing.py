@@ -504,6 +504,8 @@ def serialize_uri(config: ProxyConfig, name: str | None = None) -> str:
             "sni": options.get("sni", ""),
             "alpn": ",".join(options.get("alpn", [])),
             "fp": options.get("fingerprint", ""),
+            "allowInsecure": bool(options.get("insecure", False)),
+            "packetEncoding": options.get("packet_encoding", ""),
         }
         raw = json.dumps(data, ensure_ascii=False, separators=(",", ":")).encode()
         return "vmess://" + base64.b64encode(raw).decode()
