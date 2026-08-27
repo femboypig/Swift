@@ -236,7 +236,7 @@ async def run(root: Path, config_path: Path, core_override: str | None = None) -
         "main",
         order.get("main", []),
         float(quality["main_min_score"]),
-        float(settings["testing"]["min_throughput_bps"]),
+        float(settings["testing"]["main_min_throughput_bps"]),
     )
     ranked_white = rank_configs(
         unique,
@@ -245,7 +245,7 @@ async def run(root: Path, config_path: Path, core_override: str | None = None) -
         "white",
         order.get("white", []),
         float(quality["white_min_score"]),
-        float(settings["testing"]["min_throughput_bps"]),
+        float(settings["testing"]["white_min_throughput_bps"]),
     )
     diversity = settings["diversity"]
     main = diverse_selection(
