@@ -14,6 +14,7 @@ from swiftproxy.output import (
     HAPP_PROTOCOLS,
     PIPELINE_VERSION,
     alive_for_all,
+    display_name,
     happ_subscription,
     plain_subscription,
     suspicious_run,
@@ -251,6 +252,26 @@ class ScoringAndHistoryTests(unittest.TestCase):
         now = datetime(2026, 8, 27, 12, 10, tzinfo=UTC)
         self.assertGreater(score_lane(stable, now)[0], score_lane(unstable, now)[0])
 
+    def test_white_score_does_not_depend_on_actions_latency(self) -> None:
+        record = {
+            "observations": [
+                {
+                    "timestamp": "2026-08-27T12:00:00Z",
+                    "success": True,
+                    "success_ratio": 0.8,
+                    "rounds": 2,
+                    "confirmed_rounds": 2,
+                    "median_latency": 4000,
+                    "p95_latency": 9000,
+                    "jitter": 2500,
+                    "throughput": 65536,
+                }
+            ]
+        }
+        now = datetime(2026, 8, 27, 12, 10, tzinfo=UTC)
+        self.assertGreater(score_lane(record, now, lane="white")[0], 60)
+        self.assertLess(score_lane(record, now, lane="main")[0], 70)
+
     def test_hysteresis_promotes_strong_new_and_graces_one_failure(self) -> None:
         config = parse_uri(vless_uri())
         history = empty_history()
@@ -320,6 +341,14 @@ class ScoringAndHistoryTests(unittest.TestCase):
 
 
 class OutputTests(unittest.TestCase):
+    def test_numbered_country_names(self) -> None:
+        config = parse_uri(vless_uri())
+        result = successful_result(config)
+        self.assertEqual(display_name(result, 1, ""), "🇩🇪 DE · 001")
+        self.assertEqual(display_name(result, 7, "W"), "🇩🇪 DE · W007")
+        result.country = None
+        self.assertEqual(display_name(result, 2, ""), "🏳️ ?? · 002")
+
     def test_plain_and_happ_subscriptions(self) -> None:
         lines = [vless_uri()]
         self.assertTrue(plain_subscription(lines).startswith("vless://"))
