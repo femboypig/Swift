@@ -1,47 +1,46 @@
 {
-  "alive": 42,
+  "alive": 41,
   "collected": 357,
   "countries": {
     "DE": 8,
     "FI": 2,
     "FR": 1,
     "GB": 1,
-    "HK": 1,
-    "LV": 2,
-    "NL": 3,
+    "KR": 1,
+    "LV": 1,
+    "NL": 4,
     "RO": 4,
-    "SG": 12,
+    "RU": 1,
+    "SG": 11,
     "TR": 1,
-    "TW": 1,
     "US": 6
   },
   "failure_reasons": {
-    "CONNECT_TIMEOUT": 126,
+    "CONNECT_TIMEOUT": 127,
     "DNS_FAILED": 4,
     "DUPLICATE": 15,
-    "HTTP_FAILED": 5,
+    "HTTP_FAILED": 6,
     "PARSE_ERROR": 2,
-    "PROXY_FAILED": 66,
+    "PROXY_FAILED": 62,
     "SOURCE_EMPTY": 2,
-    "TOO_SLOW": 8,
-    "UNSTABLE": 50,
+    "TOO_SLOW": 7,
+    "UNSTABLE": 54,
     "UNSUPPORTED": 39
   },
-  "main": 36,
-  "median_latency_ms": 409.84,
+  "main": 37,
+  "median_latency_ms": 460.82,
   "parsed": 316,
   "pipeline_version": 2,
   "production": {
-    "all": 42,
-    "main": 36,
-    "white": 1
+    "all": 41,
+    "main": 37,
+    "white": 0
   },
   "project": "Swift",
   "protocols": {
-    "hysteria2": 35,
-    "ss": 3,
-    "vless": 3,
-    "vmess": 1
+    "hysteria2": 36,
+    "ss": 2,
+    "vless": 3
   },
   "published": true,
   "source_status": {
@@ -53,12 +52,12 @@
     "wlunlocker-white": "OK"
   },
   "sources": {
-    "igareck": 10,
+    "igareck": 9,
     "wlunlocker": 32
   },
   "tagline": "Filter the garbage. Keep what works.",
   "tested": 297,
   "unique": 301,
-  "updated_at": "2026-08-27T21:24:59Z",
-  "white": 1
+  "updated_at": "2026-08-27T21:32:34Z",
+  "white": 0
 }
