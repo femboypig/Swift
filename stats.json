@@ -1,0 +1,24 @@
+{
+  "alive": 0,
+  "collected": 0,
+  "countries": {},
+  "failure_reasons": {},
+  "main": 0,
+  "median_latency_ms": null,
+  "parsed": 0,
+  "production": {
+    "all": 0,
+    "main": 0,
+    "white": 0
+  },
+  "project": "Swift",
+  "protocols": {},
+  "published": false,
+  "source_status": {},
+  "sources": {},
+  "tagline": "Filter the garbage. Keep what works.",
+  "tested": 0,
+  "unique": 0,
+  "updated_at": null,
+  "white": 0
+}
