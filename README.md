@@ -29,7 +29,7 @@ This is also capped at 200. A config passing the normal test does not make it el
 
 ### All
 
-Every unique candidate from the current run that passed real proxy requests and the small
+Every unique candidate from the current run that passed both proxy test rounds and the small
 download floor. This can be larger than the recommended lists.
 
 `https://raw.githubusercontent.com/femboypig/swift/main/sub/all.txt`
@@ -79,18 +79,23 @@ The Actions job runs this pipeline every 30 minutes:
    configs get a rotating discovery sample.
 5. Resolve endpoints and reject local, private, link-local, reserved, and metadata addresses.
 6. Use a cheap TCP connection only as a prefilter for TCP protocols. UDP protocols skip it.
-7. Start one isolated sing-box process with a local SOCKS inbound.
-8. Make five HTTPS requests through that SOCKS proxy, rotating across several targets.
-9. Download 256 KiB through survivors and record the actual transfer rate.
-10. Update history, score, select, and publish.
+7. Serialize the config exactly as it will be published and parse it again.
+8. Start an isolated sing-box process with a local SOCKS inbound.
+9. Make five HTTPS requests through that SOCKS proxy, rotating across several targets, then
+   download 256 KiB.
+10. Stop the core and repeat the proxy test with a fresh process and local port.
+11. Update history, score, select, and publish only configs that passed both rounds.
 
 Twenty configs are tested concurrently. Each process has its own temporary JSON file and local
 port. Commands use argument arrays, not a shell, and process groups are terminated in `finally`
 blocks. Upstream remarks and credentials are never written to logs.
 
-The optional country/ASN data comes from Cloudflare's small speed-test metadata response through
-the proxy. If that request fails, the config can still pass. Geo enrichment is not a hard
-dependency.
+The optional country data comes from Cloudflare's small trace response through the proxy. If that
+request fails, the config can still pass. Geo enrichment is not a hard dependency.
+
+Names are intentionally plain: `DE | Reality | A1B2C3`, or `Reality | A1B2C3` when location is
+unknown. The short suffix is a stable config ID. Swift doesn't put Actions latency in the name;
+that number says little about latency from another ISP.
 
 ## Scoring and history
 
@@ -111,10 +116,10 @@ The most recent history has more weight. Latency has a broad curve rather than a
 smallest number. A steady 65 ms config should beat one that sometimes answers in 25 ms but times
 out or stalls regularly.
 
-A new config can become active in one run by passing at least four of five proxy requests and the
-download floor. An active config gets one failed-run grace period if its history is strong. Two
-consecutive failed observations make it dead. This is deliberately small and boring; the states
-are just values in JSON.
+A new config can become active in one run only after two independent core sessions. Each session
+must pass at least four of five requests and the download floor. An active config gets one
+failed-run grace period if its history is strong. Two consecutive failed observations make it
+dead. This is deliberately small and boring; the states are just values in JSON.
 
 Selection first applies soft caps per exact endpoint, /24 IPv4 or /48 IPv6 subnet, and ASN. If
 those caps would leave space unused, the best deferred configs fill it. Scores are sorted in
@@ -139,15 +144,14 @@ without replacing a useful list with an empty one.
 
 The default config uses:
 
-- [igareck/vpn-configs-for-russia](https://github.com/igareck/vpn-configs-for-russia), with its
-  normal and whitelist files kept in separate lanes;
+- [igareck/vpn-configs-for-russia](https://github.com/igareck/vpn-configs-for-russia), using its
+  bounded mobile list for Main and its mobile/checked CIDR lists for White. The two lanes stay
+  separate;
 - [mifa.world](https://mifa.world/), fetched independently as requested. Its anonymous homepage
   currently exposes no config URIs, so Swift reports it as empty instead of scraping an
   undocumented authenticated endpoint;
-- [0xRadikal/Free-v2ray-Configs](https://github.com/0xRadikal/Free-v2ray-Configs), using the
-  measured `verified` tier;
-- [morpheusadam/v2ray-config](https://github.com/morpheusadam/v2ray-config), using the bounded
-  `best` bundle.
+- [wlunlocker/vpn-configs](https://github.com/wlunlocker/vpn-configs), using its bounded Main and
+  CIDR feeds. That project checks its generated lists from a separate host.
 
 Adding a plain/Base64 URI source is one `[[sources]]` entry in `config.toml`. A failed upstream
 does not stop the other sources.
@@ -180,10 +184,10 @@ Latency is measured from a GitHub-hosted runner. It is not the latency from your
 Russian mobile network. A server measured at 55 ms in Actions can be slow or unreachable for you.
 Swift ranks what the runner can measure; it does not promise the globally fastest servers.
 
-The White job is independent, but a GitHub runner cannot reproduce a carrier's restricted or
-whitelist mode. Upstream whitelist classification is preserved and then checked for actual proxy
-traffic. Final reachability from the affected network still has to be confirmed by users on that
-network.
+The White job is independent, but a GitHub runner cannot reproduce a Russian carrier's restricted
+or whitelist mode. The label means that a source built the config for that case and Swift then
+confirmed ordinary proxy traffic through it twice. It does not mean Swift proved that the config
+works during a shutdown. That last part requires a test from the affected carrier and region.
 
 ## License
 
