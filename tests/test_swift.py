@@ -12,6 +12,7 @@ from urllib.parse import quote
 from swiftproxy.models import ProxyConfig, RankedConfig, SourceResult, SourceSpec, TestResult
 from swiftproxy.output import (
     HAPP_PROTOCOLS,
+    PIPELINE_VERSION,
     alive_for_all,
     happ_subscription,
     plain_subscription,
@@ -56,6 +57,8 @@ def successful_result(config: ProxyConfig, lane: str = "main", latency: float = 
         config.fingerprint,
         lane,
         "2026-08-27T12:00:00Z",
+        rounds_attempted=2,
+        rounds_succeeded=2,
         success_count=5,
         failure_count=0,
         latencies_ms=[latency - 2, latency, latency + 1, latency + 2, latency + 3],
@@ -76,10 +79,17 @@ class ParsingTests(unittest.TestCase):
         config = parse_uri(vless_uri())
         self.assertEqual(config.protocol, "vless")
         self.assertEqual(config.options["security"], "reality")
-        serialized = serialize_uri(config, "DE | 70ms | 100% | Reality")
+        serialized = serialize_uri(config, "DE | Reality | A1B2C3")
         reparsed = parse_uri(serialized)
         self.assertEqual(config.fingerprint, reparsed.fingerprint)
-        self.assertIn("#DE%20%7C%2070ms%20%7C%20100%25%20%7C%20Reality", serialized)
+        self.assertIn("#DE%20%7C%20Reality%20%7C%20A1B2C3", serialized)
+
+    def test_vless_packet_encoding_and_spider_x_round_trip(self) -> None:
+        uri = vless_uri().replace("#", "&packetEncoding=xudp&spx=%2F#")
+        config = parse_uri(uri)
+        self.assertEqual(config.options["packet_encoding"], "xudp")
+        self.assertEqual(config.options["spider_x"], "/")
+        self.assertEqual(config.fingerprint, parse_uri(serialize_uri(config)).fingerprint)
 
     def test_parameter_order_and_remark_do_not_change_fingerprint(self) -> None:
         first = parse_uri(vless_uri(remark="one"))
@@ -105,10 +115,14 @@ class ParsingTests(unittest.TestCase):
             "tls": "tls",
             "sni": "cdn.example.com",
             "fp": "chrome",
+            "skip-cert-verify": True,
+            "packetEncoding": "xudp",
         }
         encoded = base64.b64encode(json.dumps(payload).encode()).decode()
         config = parse_uri(f"vmess://{encoded}")
         self.assertEqual(config.options["transport"], "ws")
+        self.assertTrue(config.options["insecure"])
+        self.assertEqual(config.options["packet_encoding"], "xudp")
         self.assertEqual(config.fingerprint, parse_uri(serialize_uri(config)).fingerprint)
 
     def test_other_protocol_round_trips(self) -> None:
@@ -189,6 +203,9 @@ class TestingConfigTests(unittest.TestCase):
         self.assertEqual(generated["route"]["final"], "proxy")
         self.assertEqual(generated["inbounds"][0]["listen"], "127.0.0.1")
 
+        packet_config = parse_uri(vless_uri().replace("#", "&packetEncoding=xudp#"))
+        self.assertEqual(sing_box_outbound(packet_config)["packet_encoding"], "xudp")
+
     def test_sing_box_protocol_mappings(self) -> None:
         method = base64.urlsafe_b64encode(b"aes-128-gcm:test-password").decode().rstrip("=")
         configs = [
@@ -245,6 +262,13 @@ class ScoringAndHistoryTests(unittest.TestCase):
         self.assertEqual(lane["state"], "degraded")
         lane = add_observation(history, config, failure, 16)
         self.assertEqual(lane["state"], "dead")
+
+    def test_one_successful_round_does_not_promote_a_new_config(self) -> None:
+        config = parse_uri(vless_uri())
+        result = successful_result(config)
+        result.rounds_succeeded = 1
+        lane = add_observation(empty_history(), config, result, 16)
+        self.assertEqual(lane["state"], "new")
 
     def test_history_window_is_bounded(self) -> None:
         config = parse_uri(vless_uri())
@@ -320,7 +344,6 @@ class OutputTests(unittest.TestCase):
                 ranked,
                 [],
                 ranked,
-                history,
                 "https://github.com/femboypig/swift",
             )
             universal = (root / "sub/main.txt").read_text()
@@ -337,11 +360,17 @@ class OutputTests(unittest.TestCase):
         add_observation(history, config, good, 16)
         results = {(config.fingerprint, "main"): good}
         self.assertEqual(len(alive_for_all([config], results, history, 16384)), 1)
+        good.rounds_succeeded = 1
+        self.assertEqual(len(alive_for_all([config], results, history, 16384)), 0)
+        good.rounds_succeeded = 2
         good.throughput_bps = 100
         self.assertEqual(len(alive_for_all([config], results, history, 16384)), 0)
 
     def test_mass_failure_holds_previous_subscriptions(self) -> None:
-        previous = {"production": {"main": 164, "white": 121, "all": 300}}
+        previous = {
+            "pipeline_version": PIPELINE_VERSION,
+            "production": {"main": 164, "white": 121, "all": 300},
+        }
         reason = suspicious_run(previous, 7, 100, 500, Counter(), 4)
         self.assertEqual(reason, "MAIN_MASS_FAILURE")
         self.assertEqual(
