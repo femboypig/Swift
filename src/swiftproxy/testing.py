@@ -405,6 +405,10 @@ def _finish_latency_metrics(result: TestResult) -> None:
     result.median_response_ms = statistics.median(result.response_times_ms)
 
 
+def _minimum_throughput(lane: str, settings: dict[str, Any]) -> float:
+    return float(settings[f"{lane}_min_throughput_bps"])
+
+
 async def _test_round(
     config: ProxyConfig,
     lane: str,
@@ -449,7 +453,7 @@ async def _test_round(
         if round_successes / probes < float(settings["throughput_probe_ratio"]):
             return None, None
         throughput = await _throughput(socks_port, settings)
-        if throughput is not None and throughput >= float(settings["min_throughput_bps"]):
+        if throughput is not None and throughput >= _minimum_throughput(lane, settings):
             result.rounds_succeeded += 1
         if result.country is None:
             geo = await _geo(socks_port, settings, directory)
@@ -507,7 +511,7 @@ async def test_config(
         result.reason = "UNSTABLE"
     elif len(throughputs) < result.rounds_attempted:
         result.reason = "HTTP_FAILED"
-    elif result.throughput_bps < float(settings["min_throughput_bps"]):
+    elif result.throughput_bps < _minimum_throughput(lane, settings):
         result.reason = "TOO_SLOW"
     elif not result.confirmed:
         result.reason = "UNSTABLE"
