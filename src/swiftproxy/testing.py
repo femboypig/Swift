@@ -16,6 +16,7 @@ from pathlib import Path
 from typing import Any
 
 from .models import ProxyConfig, TestResult
+from .parsing import parse_uri, serialize_uri
 
 
 LOGGER = logging.getLogger(__name__)
@@ -150,6 +151,8 @@ def sing_box_outbound(config: ProxyConfig) -> dict[str, Any]:
         "server_port": config.port,
     }
     options = config.options
+    if config.protocol in {"vless", "vmess"} and options.get("packet_encoding"):
+        base["packet_encoding"] = options["packet_encoding"]
     if config.protocol == "vless":
         base["uuid"] = config.auth["uuid"]
         if options.get("flow"):
@@ -363,13 +366,22 @@ async def _geo(socks_port: int, settings: dict[str, Any], directory: Path) -> di
     if not metrics:
         return {}
     try:
-        value = json.loads(path.read_text())
-    except (OSError, json.JSONDecodeError):
+        content = path.read_text()
+    except OSError:
         return {}
-    country = value.get("country")
+    try:
+        value = json.loads(content)
+    except json.JSONDecodeError:
+        value = {}
+        for line in content.splitlines():
+            key, separator, item = line.partition("=")
+            if separator:
+                value[key] = item
+    country = value.get("country") or value.get("loc")
     provider = value.get("asOrganization") or value.get("colo")
     try:
-        asn = int(value["asn"]) if value.get("asn") is not None else None
+        raw_asn = str(value.get("asn", "")).removeprefix("AS")
+        asn = int(raw_asn) if raw_asn else None
     except (TypeError, ValueError):
         asn = None
     return {
@@ -377,6 +389,76 @@ async def _geo(socks_port: int, settings: dict[str, Any], directory: Path) -> di
         "asn": asn,
         "provider": str(provider)[:80] if provider else None,
     }
+
+
+def _finish_latency_metrics(result: TestResult) -> None:
+    if not result.latencies_ms:
+        return
+    result.median_latency_ms = statistics.median(result.latencies_ms)
+    result.p95_latency_ms = _percentile(result.latencies_ms, 0.95)
+    result.min_latency_ms = min(result.latencies_ms)
+    result.max_latency_ms = max(result.latencies_ms)
+    result.jitter_ms = (
+        statistics.pstdev(result.latencies_ms) if len(result.latencies_ms) > 1 else 0.0
+    )
+    result.median_connect_ms = statistics.median(result.connect_times_ms)
+    result.median_response_ms = statistics.median(result.response_times_ms)
+
+
+async def _test_round(
+    config: ProxyConfig,
+    lane: str,
+    core_path: str,
+    settings: dict[str, Any],
+    result: TestResult,
+    directory: Path,
+    round_index: int,
+) -> tuple[str | None, float | None]:
+    result.rounds_attempted += 1
+    socks_port = _free_port()
+    config_path = directory / f"config-{round_index}.json"
+    config_path.write_text(json.dumps(sing_box_config(config, socks_port), separators=(",", ":")))
+    process = await asyncio.create_subprocess_exec(
+        core_path,
+        "run",
+        "-c",
+        str(config_path),
+        stdout=asyncio.subprocess.DEVNULL,
+        stderr=asyncio.subprocess.DEVNULL,
+        start_new_session=True,
+    )
+    try:
+        if not await _wait_for_core(process, socks_port):
+            return "CORE_START_FAILED", None
+        targets = settings["white_probe_urls"] if lane == "white" else settings["probe_urls"]
+        probes = int(settings["probes"])
+        offset = (int(config.fingerprint[:8], 16) + round_index * probes) % len(targets)
+        round_successes = 0
+        for index in range(probes):
+            target = targets[(offset + index) % len(targets)]
+            measurement = await _probe(socks_port, target, settings)
+            if measurement is None:
+                result.failure_count += 1
+                continue
+            latency, connect, response = measurement
+            round_successes += 1
+            result.success_count += 1
+            result.latencies_ms.append(latency)
+            result.connect_times_ms.append(connect)
+            result.response_times_ms.append(response)
+        if round_successes / probes < float(settings["throughput_probe_ratio"]):
+            return None, None
+        throughput = await _throughput(socks_port, settings)
+        if throughput is not None and throughput >= float(settings["min_throughput_bps"]):
+            result.rounds_succeeded += 1
+        if result.country is None:
+            geo = await _geo(socks_port, settings, directory)
+            result.country = geo.get("country")
+            result.asn = geo.get("asn")
+            result.provider = geo.get("provider")
+        return None, throughput
+    finally:
+        await _stop_process(process)
 
 
 async def test_config(
@@ -390,64 +472,45 @@ async def test_config(
         result.reason = "CONNECT_TIMEOUT"
         return result
 
+    published = parse_uri(serialize_uri(config))
+    if published.fingerprint != config.fingerprint:
+        raise RuntimeError("serialized config changed its fingerprint")
+    published.resolved_ip = config.resolved_ip
+
+    core_failures = 0
+    throughputs: list[float] = []
     with tempfile.TemporaryDirectory(prefix="swift-test-") as raw_directory:
         directory = Path(raw_directory)
-        socks_port = _free_port()
-        config_path = directory / "config.json"
-        config_path.write_text(json.dumps(sing_box_config(config, socks_port), separators=(",", ":")))
-        process = await asyncio.create_subprocess_exec(
-            core_path,
-            "run",
-            "-c",
-            str(config_path),
-            stdout=asyncio.subprocess.DEVNULL,
-            stderr=asyncio.subprocess.DEVNULL,
-            start_new_session=True,
-        )
-        try:
-            if not await _wait_for_core(process, socks_port):
-                result.reason = "CORE_START_FAILED"
-                return result
-            targets = settings["white_probe_urls"] if lane == "white" else settings["probe_urls"]
-            offset = int(config.fingerprint[:8], 16) % len(targets)
-            for index in range(int(settings["probes"])):
-                target = targets[(offset + index) % len(targets)]
-                measurement = await _probe(socks_port, target, settings)
-                if measurement is None:
-                    result.failure_count += 1
-                    continue
-                latency, connect, response = measurement
-                result.success_count += 1
-                result.latencies_ms.append(latency)
-                result.connect_times_ms.append(connect)
-                result.response_times_ms.append(response)
-            if result.latencies_ms:
-                result.median_latency_ms = statistics.median(result.latencies_ms)
-                result.p95_latency_ms = _percentile(result.latencies_ms, 0.95)
-                result.min_latency_ms = min(result.latencies_ms)
-                result.max_latency_ms = max(result.latencies_ms)
-                result.jitter_ms = (
-                    statistics.pstdev(result.latencies_ms) if len(result.latencies_ms) > 1 else 0.0
-                )
-                result.median_connect_ms = statistics.median(result.connect_times_ms)
-                result.median_response_ms = statistics.median(result.response_times_ms)
-            if result.success_ratio >= float(settings["throughput_probe_ratio"]):
-                result.throughput_bps = await _throughput(socks_port, settings)
-                geo = await _geo(socks_port, settings, directory)
-                result.country = geo.get("country")
-                result.asn = geo.get("asn")
-                result.provider = geo.get("provider")
-        finally:
-            await _stop_process(process)
+        for round_index in range(int(settings["rounds"])):
+            error, throughput = await _test_round(
+                published,
+                lane,
+                core_path,
+                settings,
+                result,
+                directory,
+                round_index,
+            )
+            if error == "CORE_START_FAILED":
+                core_failures += 1
+            if throughput is not None:
+                throughputs.append(throughput)
 
-    if result.success_count == 0:
+    _finish_latency_metrics(result)
+    if throughputs:
+        result.throughput_bps = min(throughputs)
+    if core_failures == result.rounds_attempted:
+        result.reason = "CORE_START_FAILED"
+    elif result.success_count == 0:
         result.reason = "PROXY_FAILED"
     elif result.success_ratio < 0.8:
         result.reason = "UNSTABLE"
-    elif result.throughput_bps is None:
+    elif len(throughputs) < result.rounds_attempted:
         result.reason = "HTTP_FAILED"
     elif result.throughput_bps < float(settings["min_throughput_bps"]):
         result.reason = "TOO_SLOW"
+    elif not result.confirmed:
+        result.reason = "UNSTABLE"
     return result
 
 
