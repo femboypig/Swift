@@ -15,6 +15,7 @@ concurrency:
 env:
   PYTHONPATH: src
   SING_BOX_VERSION: "1.13.19"
+  SING_BOX_SHA256: "ef88a9e577d474210867bd708933d042e9b70106529df2656182c9db90106aa1"
   SWIFT_SING_BOX: .cache/sing-box/sing-box
 
 jobs:
@@ -54,13 +55,7 @@ jobs:
           curl --fail --location --retry 3 --silent --show-error \
             --output "$RUNNER_TEMP/swift-core/$swift_archive" \
             "$swift_release/$swift_archive"
-          curl --fail --location --retry 3 --silent --show-error \
-            --output "$RUNNER_TEMP/swift-core/checksums.txt" \
-            "$swift_release/sing-box-${SING_BOX_VERSION}-checksums.txt"
-
-          swift_checksum=$(awk -v name="$swift_archive" '$2 == name { print $1 }' "$RUNNER_TEMP/swift-core/checksums.txt")
-          [[ "$swift_checksum" =~ ^[0-9a-f]{64}$ ]]
-          echo "$swift_checksum  $RUNNER_TEMP/swift-core/$swift_archive" | sha256sum --check --status
+          echo "$SING_BOX_SHA256  $RUNNER_TEMP/swift-core/$swift_archive" | sha256sum --check --status
           tar -xzf "$RUNNER_TEMP/swift-core/$swift_archive" \
             -C "$RUNNER_TEMP/swift-core" \
             "sing-box-${SING_BOX_VERSION}-linux-amd64/sing-box"
