@@ -11,7 +11,7 @@ from .models import ProxyConfig, RankedConfig, TestResult
 
 
 def empty_history() -> dict[str, Any]:
-    return {"version": 2, "configs": {}}
+    return {"version": 3, "configs": {}}
 
 
 def _lane_record(history: dict[str, Any], fingerprint: str, lane: str) -> dict[str, Any]:
@@ -133,7 +133,11 @@ def _freshness(observations: list[dict[str, Any]], now: datetime) -> float:
     return max(0.0, 1.0 - hours / 24.0)
 
 
-def score_lane(lane_record: dict[str, Any], now: datetime | None = None) -> tuple[float, float]:
+def score_lane(
+    lane_record: dict[str, Any],
+    now: datetime | None = None,
+    lane: str = "main",
+) -> tuple[float, float]:
     observations = lane_record.get("observations", [])
     if not observations:
         return 0.0, 0.0
@@ -159,16 +163,24 @@ def score_lane(lane_record: dict[str, Any], now: datetime | None = None) -> tupl
         throughput_score = min(1.0, math.log2(max(float(throughput), 32768) / 32768) / 6)
     freshness = _freshness(observations, now)
 
-    # Availability and recent consistency deliberately outweigh a single quick response.
-    score = 100 * (
-        0.34 * availability
-        + 0.21 * recent
-        + 0.14 * latency
-        + 0.08 * tail
-        + 0.08 * jitter
-        + 0.10 * throughput_score
-        + 0.05 * freshness
-    )
+    if lane == "white":
+        # Actions latency is a poor signal for configs meant for restricted Russian networks.
+        score = 100 * (
+            0.50 * availability
+            + 0.30 * recent
+            + 0.10 * throughput_score
+            + 0.10 * freshness
+        )
+    else:
+        score = 100 * (
+            0.34 * availability
+            + 0.21 * recent
+            + 0.14 * latency
+            + 0.08 * tail
+            + 0.08 * jitter
+            + 0.10 * throughput_score
+            + 0.05 * freshness
+        )
     return round(score, 2), availability
 
 
@@ -189,7 +201,7 @@ def rank_configs(
             continue
         lane_record = _lane_record(history, config.fingerprint, lane)
         previous_score = float(lane_record.get("score", 0))
-        score, availability = score_lane(lane_record)
+        score, availability = score_lane(lane_record, lane=lane)
         state = lane_record.get("state", "new")
         previous_success = next(
             (item for item in reversed(lane_record.get("observations", [])) if item.get("success")),
