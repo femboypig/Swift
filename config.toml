@@ -1,0 +1,101 @@
+[project]
+name = "Swift"
+tagline = "Filter the garbage. Keep what works."
+repository = "https://github.com/femboypig/swift"
+
+[paths]
+history = "data/history.json"
+order = "data/order.json"
+stats = "stats.json"
+
+[collection]
+fetch_timeout = 25
+
+[limits]
+main = 200
+white = 200
+
+[selection]
+main_candidates = 1000
+white_candidates = 400
+
+[testing]
+concurrency = 20
+probes = 5
+connect_timeout = 5
+request_timeout = 10
+download_bytes = 262144
+download_timeout = 15
+download_url = "https://speed.cloudflare.com/__down?bytes={bytes}"
+geo_url = "https://speed.cloudflare.com/meta"
+throughput_probe_ratio = 0.8
+min_throughput_bps = 65536
+per_config_timeout = 85
+global_timeout = 3000
+probe_urls = [
+  "https://www.gstatic.com/generate_204",
+  "https://cp.cloudflare.com/generate_204",
+  "https://connectivitycheck.platform.hicloud.com/generate_204",
+]
+white_probe_urls = [
+  "https://captive.apple.com/hotspot-detect.html",
+  "https://www.msftconnecttest.com/connecttest.txt",
+  "https://www.gstatic.com/generate_204",
+  "https://cp.cloudflare.com/generate_204",
+]
+
+[history]
+window = 16
+
+[quality]
+main_min_score = 68
+white_min_score = 68
+all_min_throughput_bps = 16384
+
+[diversity]
+endpoint = 3
+subnet = 10
+asn = 30
+
+[[sources]]
+id = "igareck-main-vless"
+name = "igareck"
+url = "https://raw.githubusercontent.com/igareck/vpn-configs-for-russia/main/BLACK_VLESS_RUS.txt"
+lanes = ["main"]
+
+[[sources]]
+id = "igareck-main-mixed"
+name = "igareck"
+url = "https://raw.githubusercontent.com/igareck/vpn-configs-for-russia/main/BLACK_SS%2BAll_RUS.txt"
+lanes = ["main"]
+
+[[sources]]
+id = "igareck-white-cidr"
+name = "igareck"
+url = "https://raw.githubusercontent.com/igareck/vpn-configs-for-russia/main/WHITE-CIDR-RU-all.txt"
+lanes = ["white"]
+
+[[sources]]
+id = "igareck-white-sni"
+name = "igareck"
+url = "https://raw.githubusercontent.com/igareck/vpn-configs-for-russia/main/WHITE-SNI-RU-all.txt"
+lanes = ["white"]
+
+[[sources]]
+id = "mifa-world"
+name = "mifa.world"
+url = "https://mifa.world/"
+lanes = ["main"]
+content_type = "html"
+
+[[sources]]
+id = "radikal-verified"
+name = "0xRadikal"
+url = "https://raw.githubusercontent.com/0xRadikal/Free-v2ray-Configs/main/verified/configs.txt"
+lanes = ["main"]
+
+[[sources]]
+id = "morpheus-best"
+name = "morpheusadam"
+url = "https://raw.githubusercontent.com/morpheusadam/v2ray-config/main/subs/bundles/best.txt"
+lanes = ["main"]
