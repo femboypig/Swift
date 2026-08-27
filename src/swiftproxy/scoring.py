@@ -11,7 +11,7 @@ from .models import ProxyConfig, RankedConfig, TestResult
 
 
 def empty_history() -> dict[str, Any]:
-    return {"version": 1, "configs": {}}
+    return {"version": 2, "configs": {}}
 
 
 def _lane_record(history: dict[str, Any], fingerprint: str, lane: str) -> dict[str, Any]:
@@ -71,11 +71,11 @@ def add_observation(
 
 
 def state_after(previous: str, observations: list[dict[str, Any]], result: TestResult) -> str:
-    if result.success_ratio >= 0.8 and result.success_count >= 4:
+    if result.confirmed and result.success_ratio >= 0.8:
         return "active"
     consecutive_failures = 0
     for observation in reversed(observations):
-        if observation.get("success"):
+        if _observation_availability(observation) >= 0.8:
             break
         consecutive_failures += 1
     if previous == "active" and consecutive_failures <= 1:
@@ -87,6 +87,15 @@ def state_after(previous: str, observations: list[dict[str, Any]], result: TestR
     return "new" if previous == "new" else "degraded"
 
 
+def _observation_availability(observation: dict[str, Any]) -> float:
+    ratio = float(observation.get("success_ratio", int(observation.get("success", False))))
+    rounds = int(observation.get("rounds", 0))
+    if rounds:
+        confirmed = int(observation.get("confirmed_rounds", 0))
+        ratio *= confirmed / rounds
+    return ratio
+
+
 def _weighted_availability(observations: list[dict[str, Any]]) -> float:
     if not observations:
         return 0.0
@@ -94,7 +103,7 @@ def _weighted_availability(observations: list[dict[str, Any]]) -> float:
     total = 0.0
     for age, observation in enumerate(reversed(observations)):
         weight = 0.86**age
-        weighted += float(observation.get("success_ratio", int(observation.get("success", False)))) * weight
+        weighted += _observation_availability(observation) * weight
         total += weight
     return weighted / total
 
@@ -110,7 +119,10 @@ def _linear_score(value: float | None, good: float, bad: float) -> float:
 
 
 def _freshness(observations: list[dict[str, Any]], now: datetime) -> float:
-    successful = next((item for item in reversed(observations) if item.get("success")), None)
+    successful = next(
+        (item for item in reversed(observations) if _observation_availability(item) >= 0.8),
+        None,
+    )
     if not successful:
         return 0.0
     try:
@@ -129,9 +141,12 @@ def score_lane(lane_record: dict[str, Any], now: datetime | None = None) -> tupl
     availability = _weighted_availability(observations)
     current = observations[-1]
     metrics = current
-    if not current.get("success"):
-        metrics = next((item for item in reversed(observations) if item.get("success")), current)
-    recent = sum(float(item.get("success_ratio", 0.0)) for item in observations[-3:]) / min(
+    if _observation_availability(current) < 0.8:
+        metrics = next(
+            (item for item in reversed(observations) if _observation_availability(item) >= 0.8),
+            current,
+        )
+    recent = sum(_observation_availability(item) for item in observations[-3:]) / min(
         3, len(observations)
     )
     latency = _linear_score(metrics.get("median_latency"), 80, 1400)
@@ -173,8 +188,8 @@ def rank_configs(
         if result is None:
             continue
         lane_record = _lane_record(history, config.fingerprint, lane)
+        previous_score = float(lane_record.get("score", 0))
         score, availability = score_lane(lane_record)
-        lane_record["score"] = score
         state = lane_record.get("state", "new")
         previous_success = next(
             (item for item in reversed(lane_record.get("observations", [])) if item.get("success")),
@@ -187,11 +202,20 @@ def rank_configs(
         if result.provider is None:
             result.provider = previous_success.get("provider")
         current_ok = (
-            result.success_ratio >= 0.8
-            and result.success_count >= 4
+            result.confirmed
+            and result.success_ratio >= 0.8
             and (result.throughput_bps or 0) >= min_throughput
         )
-        one_run_grace = state == "degraded" and result.success_count == 0 and availability >= 0.82
+        observations = lane_record.get("observations", [])
+        one_run_grace = (
+            state == "degraded"
+            and result.success_count == 0
+            and len(observations) > 1
+            and _observation_availability(observations[-2]) >= 0.8
+        )
+        if one_run_grace:
+            score = max(score, previous_score - 8)
+        lane_record["score"] = score
         if score < min_score or state not in {"active", "degraded"}:
             continue
         if not current_ok and not one_run_grace:
