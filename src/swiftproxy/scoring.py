@@ -80,7 +80,7 @@ def state_after(previous: str, observations: list[dict[str, Any]], result: TestR
         consecutive_failures += 1
     if previous == "active" and consecutive_failures <= 1:
         return "degraded"
-    if result.success_ratio >= 0.6:
+    if result.success_ratio >= 0.6 and previous != "new":
         return "degraded"
     if consecutive_failures >= 2 or previous == "dead":
         return "dead"
