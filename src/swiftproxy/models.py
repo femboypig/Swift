@@ -72,6 +72,8 @@ class TestResult:
     fingerprint: str
     lane: str
     timestamp: str
+    rounds_attempted: int = 0
+    rounds_succeeded: int = 0
     success_count: int = 0
     failure_count: int = 0
     latencies_ms: list[float] = field(default_factory=list)
@@ -99,11 +101,17 @@ class TestResult:
         total = self.success_count + self.failure_count
         return self.success_count / total if total else 0.0
 
+    @property
+    def confirmed(self) -> bool:
+        return self.rounds_attempted >= 2 and self.rounds_succeeded == self.rounds_attempted
+
     def observation(self) -> dict[str, Any]:
         value: dict[str, Any] = {
             "timestamp": self.timestamp,
             "success": self.worked,
             "success_ratio": round(self.success_ratio, 3),
+            "rounds": self.rounds_attempted,
+            "confirmed_rounds": self.rounds_succeeded,
         }
         optional = {
             "median_latency": self.median_latency_ms,
