@@ -36,6 +36,32 @@ download floor. This can be larger than the recommended lists.
 
 `https://sub.femboypig.ru/all.txt`
 
+## Telegram proxies
+
+Swift also maintains MTProto proxy lists for Telegram:
+
+- `https://sub.femboypig.ru/Telegram/all.txt` contains every proxy that passed the current
+  Telegram check at least twice out of three attempts.
+- `https://sub.femboypig.ru/Telegram/stable.txt` is capped at 50 and requires three successful
+  workflow runs before a new proxy can enter it.
+- `https://sub.femboypig.ru/Telegram/fastest.txt` contains up to 20 currently working proxies,
+  ordered by median Telegram RTT with penalties for a bad tail and jitter.
+
+The checker doesn't stop at DNS or an open TCP port. It opens the MTProxy transport, sends an
+unauthenticated `req_pq_multi` request, and accepts the proxy only after Telegram returns a valid
+`resPQ` with the same nonce. Raw 16-byte, `dd` secure, and `ee` FakeTLS secrets are supported.
+Unknown extended secret formats are reported as unsupported instead of being counted as dead.
+
+MTProto history is kept separately in `data/telegram-history.json`. Stable proxies survive two
+transient failed runs and are removed on the third. A sudden collapse keeps the previous files
+for two valid confirmation runs; broken source downloads, an incomplete run, or a failed direct
+Telegram control check do not wipe them.
+
+`Telegram/status.json` contains current counts, source results, failure reasons, and the proxies
+selected for the optional channel message. Set `TELEGRAM_BOT_TOKEN`, `TELEGRAM_CHAT_ID`, and
+`TELEGRAM_MESSAGE_ID` as GitHub Actions secrets to edit one existing message after each run. If
+any value is missing, this step is skipped. Swift never creates a new message on its own.
+
 ## Karing and Happ
 
 The three normal files are plain URI lists. Karing documents V2Ray/Sub subscriptions and the
@@ -169,6 +195,13 @@ The default config uses:
   currently exposes no config URIs, so Swift reports it as empty instead of scraping an
   undocumented authenticated endpoint.
 
+The Telegram pipeline starts with the current feeds from
+[SoliSpirit/mtproto](https://github.com/SoliSpirit/mtproto),
+[Argh94/Proxy-List](https://github.com/Argh94/Proxy-List),
+[shablin/mtproto-proxy](https://github.com/shablin/mtproto-proxy), and
+[klondike0x/mtp4tg-proxies](https://github.com/klondike0x/mtp4tg-proxies). They overlap heavily;
+Swift normalizes and deduplicates them before testing and keeps their provenance as metadata.
+
 White endpoint evidence comes from
 [hxehex/russia-mobile-internet-whitelist](https://github.com/hxehex/russia-mobile-internet-whitelist).
 Its CIDR file is built from addresses observed as reachable during restrictions across different
@@ -182,13 +215,16 @@ does not stop the other sources.
 
 ## Running it
 
-Python 3.12 or newer, `curl`, and sing-box 1.13.x are required. There are no Python runtime
-dependencies.
+Python 3.12 or newer, `curl`, and sing-box 1.13.x are required. Install the small pinned Python
+dependency set before running either pipeline.
 
 ```console
+python -m pip install .
 PYTHONPATH=src python -m unittest discover -s tests -v
 SWIFT_SING_BOX=/path/to/sing-box PYTHONPATH=src python -m swiftproxy.main
 PYTHONPATH=src python -m swiftproxy.main --check-output
+PYTHONPATH=src python -m swiftproxy.telegram_main
+PYTHONPATH=src python -m swiftproxy.telegram_main --check-output
 ```
 
 The normal place to run the full network job is GitHub Actions. The workflow downloads the pinned
@@ -208,6 +244,7 @@ encryption for anything important.
 Latency is measured from a GitHub-hosted runner. It is not the latency from your home ISP or a
 Russian mobile network. A server measured at 55 ms in Actions can be slow or unreachable for you.
 Swift ranks what the runner can measure; it does not promise the globally fastest servers.
+The same limitation applies to MTProto RTT in `Telegram/fastest.txt`.
 
 The White job is independent, but a GitHub runner cannot reproduce a Russian carrier's restricted
 or whitelist mode. Public lists combine observations from different operators, regions, towers,
