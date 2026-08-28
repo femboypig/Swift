@@ -228,7 +228,9 @@ def rank_configs(
         if one_run_grace:
             score = max(score, previous_score - 8)
         lane_record["score"] = score
-        if score < min_score or state not in {"active", "degraded"}:
+        if state not in {"active", "degraded"}:
+            continue
+        if score < min_score and not one_run_grace:
             continue
         if not current_ok and not one_run_grace:
             continue
