@@ -362,6 +362,52 @@ class ScoringAndHistoryTests(unittest.TestCase):
         self.assertEqual(len(ranked), 1)
         self.assertEqual(ranked[0].state, "degraded")
 
+    def test_partial_failure_gets_one_grace_run_but_not_two(self) -> None:
+        config = parse_uri(vless_uri())
+        config.lanes.add("main")
+        history = empty_history()
+        lane = add_observation(history, config, successful_result(config), 16)
+        lane["score"] = 72
+        partial = TestResult(
+            config.fingerprint,
+            "main",
+            "2026-08-27T12:30:00Z",
+            rounds_attempted=2,
+            rounds_succeeded=1,
+            success_count=6,
+            failure_count=4,
+            median_latency_ms=120,
+            p95_latency_ms=400,
+            jitter_ms=95,
+            throughput_bps=160_000,
+            reason="UNSTABLE",
+        )
+        add_observation(history, config, partial, 16)
+        ranked = rank_configs(
+            [config],
+            {(config.fingerprint, "main"): partial},
+            history,
+            "main",
+            [config.fingerprint],
+            70,
+            131072,
+        )
+        self.assertEqual(len(ranked), 1)
+        self.assertEqual(ranked[0].state, "degraded")
+
+        partial.timestamp = "2026-08-27T13:00:00Z"
+        add_observation(history, config, partial, 16)
+        ranked = rank_configs(
+            [config],
+            {(config.fingerprint, "main"): partial},
+            history,
+            "main",
+            [config.fingerprint],
+            70,
+            131072,
+        )
+        self.assertEqual(ranked, [])
+
     def test_one_successful_round_does_not_promote_a_new_config(self) -> None:
         config = parse_uri(vless_uri())
         result = successful_result(config)
