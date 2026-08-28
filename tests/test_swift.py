@@ -430,10 +430,16 @@ class OutputTests(unittest.TestCase):
             (root / "sub/main.txt").write_text(serialize_uri(config) + "\n")
             (root / "sub/white.txt").write_text("")
             retained = previous_subscription_configs(root, history)
+            removed_source = previous_subscription_configs(
+                root,
+                history,
+                {"main": {"source-b"}, "white": set()},
+            )
         self.assertEqual(len(retained), 1)
         self.assertEqual(retained[0].fingerprint, config.fingerprint)
         self.assertEqual(retained[0].lanes, {"main"})
         self.assertEqual(retained[0].sources, {"source-a"})
+        self.assertEqual(removed_source, [])
 
     def test_numbered_country_names(self) -> None:
         config = parse_uri(vless_uri())
