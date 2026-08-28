@@ -1,1 +1,1 @@
-vless://064a967e-0862-4cea-bdbd-9458cb7b6070@45.152.113.177:9891?encryption=none&type=grpc&security=reality&sni=dl.google.com&fp=edge&pbk=Dfgu8Ey0M8Hz4gXGZAwQ3H9jLt2HByVsjAOTWiuKDB0&sid=aabb&serviceName=grpc-tunnel#DE%20%7C%20Reality%20%7C%20DCD36C
+vless://064a967e-0862-4cea-bdbd-9458cb7b6070@217.168.244.178:9872?encryption=none&type=grpc&security=reality&sni=dl.google.com&fp=chrome&pbk=bnRIb3Er1i-K6NGGByCO9UbGfOvu43ZoiK7ulPd1SzU&sid=aabb&serviceName=grpc-tunnel&mode=gun#SE%20%7C%20Reality%20%7C%20E50F75
