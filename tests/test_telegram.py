@@ -5,6 +5,7 @@ import json
 import tempfile
 import unittest
 from pathlib import Path
+from typing import Self
 from unittest.mock import patch
 
 from swiftproxy.models import SourceResult, SourceSpec
@@ -245,6 +246,34 @@ class TelegramPipelineTests(unittest.IsolatedAsyncioTestCase):
 
 
 class TelegramPublisherTests(unittest.TestCase):
+    def test_working_message_uses_swift_format(self) -> None:
+        text, _ = message_payload(
+            {
+                "healthy_run": True,
+                "working": 252,
+                "tested": 357,
+                "stable": 50,
+                "updated_at": "2026-08-28T21:10:00Z",
+            }
+        )
+        self.assertIn("<b>Swift · Telegram</b>", text)
+        self.assertIn("<b>252</b> of <b>357</b> proxies passed", text)
+        self.assertIn("<b>50</b> are stable", text)
+        self.assertIn("29.08.2026 · 00:10 MSK", text)
+        self.assertIn("<i>Filter the garbage. Keep what works.</i>", text)
+
+    def test_failed_message_distinguishes_checker_failure(self) -> None:
+        text, markup = message_payload(
+            {
+                "healthy_run": False,
+                "last_successful_set": "2026-08-28T21:10:00Z",
+            }
+        )
+        self.assertIn("Latest proxy check failed", text)
+        self.assertIn("previous verified set is being kept", text)
+        self.assertIn("Last verified: 29.08.2026 · 00:10 MSK", text)
+        self.assertEqual(markup, {"inline_keyboard": []})
+
     def test_dynamic_button_count(self) -> None:
         base = {
             "healthy_run": True,
@@ -275,13 +304,49 @@ class TelegramPublisherTests(unittest.TestCase):
 
     def test_zero_proxy_message_has_no_buttons(self) -> None:
         text, markup = message_payload(
-            {"healthy_run": True, "working": 0, "tested": 527, "last_successful_set": "earlier"}
+            {
+                "healthy_run": True,
+                "working": 0,
+                "tested": 527,
+                "last_successful_set": "2026-08-28T21:10:00Z",
+            }
         )
         self.assertIn("No working proxies", text)
+        self.assertIn("<b>0</b> of <b>527</b>", text)
         self.assertEqual(markup, {"inline_keyboard": []})
 
     def test_publishing_is_disabled_when_secrets_are_missing(self) -> None:
         self.assertFalse(publish_status({"healthy_run": True}, environ={}))
+
+    def test_publisher_enables_html_formatting(self) -> None:
+        requests = []
+
+        class Response:
+            def __enter__(self) -> Self:
+                return self
+
+            def __exit__(self, *args: object) -> None:
+                return None
+
+            def read(self, limit: int) -> bytes:
+                return b'{"ok": true}'
+
+        def opener(request: object, timeout: int) -> Response:
+            requests.append(request)
+            return Response()
+
+        published = publish_status(
+            {"healthy_run": True, "working": 1, "tested": 1, "stable": 0},
+            environ={
+                "TELEGRAM_BOT_TOKEN": "synthetic-token",
+                "TELEGRAM_CHAT_ID": "-100000000001",
+                "TELEGRAM_MESSAGE_ID": "7",
+            },
+            opener=opener,
+        )
+        self.assertTrue(published)
+        payload = json.loads(requests[0].data)
+        self.assertEqual(payload["parse_mode"], "HTML")
 
 
 if __name__ == "__main__":
