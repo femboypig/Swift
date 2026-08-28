@@ -95,3 +95,9 @@ id = "wlunlocker-white"
 name = "wlunlocker"
 url = "https://raw.githubusercontent.com/wlunlocker/vpn-configs/main/whitelist_cidr3_eu.txt"
 lanes = ["white"]
+
+[[sources]]
+id = "user-verified-white"
+name = "user-verified"
+url = "https://raw.githubusercontent.com/femboypig/swift/97c882f8cea9a2196d7e26d20d837e171be04a33/sub/white.txt"
+lanes = ["white"]
