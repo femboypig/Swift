@@ -143,12 +143,6 @@ url = "https://raw.githubusercontent.com/AirLinkVPN1/AirLinkVPN/main/rkn_white_l
 lanes = ["white"]
 
 [[sources]]
-id = "lime-white"
-name = "lime"
-url = "https://raw.githubusercontent.com/LimeHi/LimeVPN/main/whitelist.txt"
-lanes = ["white"]
-
-[[sources]]
 id = "mifa-world"
 name = "mifa.world"
 url = "https://mifa.world/"
