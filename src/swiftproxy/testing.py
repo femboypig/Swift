@@ -63,7 +63,7 @@ async def resolve_public_endpoint(config: ProxyConfig) -> str:
 
 
 async def resolve_candidates(
-    configs: list[ProxyConfig], concurrency: int = 100
+    configs: list[ProxyConfig], concurrency: int = 100, timeout: float = 8.0
 ) -> tuple[list[ProxyConfig], dict[str, str]]:
     semaphore = asyncio.Semaphore(concurrency)
     failures: dict[str, str] = {}
@@ -71,7 +71,9 @@ async def resolve_candidates(
     async def resolve(config: ProxyConfig) -> None:
         async with semaphore:
             try:
-                await resolve_public_endpoint(config)
+                await asyncio.wait_for(resolve_public_endpoint(config), timeout)
+            except TimeoutError:
+                failures[config.fingerprint] = "DNS_TIMEOUT"
             except ValueError as exc:
                 failures[config.fingerprint] = str(exc)
 
