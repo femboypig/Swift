@@ -38,6 +38,7 @@ from swiftproxy.scoring import (
     state_after,
 )
 from swiftproxy.testing import sing_box_config, sing_box_outbound
+from swiftproxy.whitelist import build_evidence, evidence_for
 
 
 UUID_A = "11111111-1111-4111-8111-111111111111"
@@ -218,6 +219,62 @@ class TestingConfigTests(unittest.TestCase):
         self.assertEqual(sing_box_outbound(configs[0])["type"], "shadowsocks")
         self.assertTrue(sing_box_outbound(configs[1])["tls"]["enabled"])
         self.assertEqual(sing_box_outbound(configs[2])["uuid"], UUID_A)
+
+
+class WhiteEvidenceTests(unittest.TestCase):
+    @staticmethod
+    def cidr_feed() -> str:
+        networks = [f"45.10.{index}.0/24" for index in range(100)]
+        networks.append("93.184.216.0/24")
+        return "\n".join(networks)
+
+    @staticmethod
+    def domain_feed() -> str:
+        return "\n".join(["example.com", *(f"service{index}.ru" for index in range(49))])
+
+    def test_cidr_membership_and_sni_are_separate_evidence(self) -> None:
+        cidr = SourceSpec("cidr", "cidr", "https://example.com/cidr", set(), "white-cidr")
+        domains = SourceSpec(
+            "domains", "domains", "https://example.com/domains", set(), "white-domains"
+        )
+        evidence = build_evidence(
+            [
+                SourceResult(cidr, self.cidr_feed()),
+                SourceResult(domains, self.domain_feed()),
+            ]
+        )
+        config = parse_uri(vless_uri())
+        config.resolved_ip = PUBLIC_V4
+        self.assertEqual(evidence_for(config, evidence), "cidr+sni")
+        config.options["sni"] = "not-example.net"
+        self.assertEqual(evidence_for(config, evidence), "cidr")
+        config.resolved_ip = "8.8.8.8"
+        self.assertIsNone(evidence_for(config, evidence))
+        config.resolved_ip = PUBLIC_V6
+        self.assertIsNone(evidence_for(config, evidence))
+
+    def test_invalid_primary_cidr_feed_uses_the_mirror(self) -> None:
+        primary = SourceSpec(
+            "primary", "primary", "https://example.com/primary", set(), "white-cidr"
+        )
+        mirror = SourceSpec(
+            "mirror", "mirror", "https://example.com/mirror", set(), "white-cidr"
+        )
+        results = [SourceResult(primary, "not-a-network"), SourceResult(mirror, self.cidr_feed())]
+        evidence = build_evidence(results)
+        self.assertEqual(evidence.cidr_source, "mirror")
+        self.assertEqual(results[0].error, "INVALID_CIDR_FEED")
+
+    def test_domain_match_does_not_accept_lookalike_suffixes(self) -> None:
+        cidr = SourceSpec("cidr", "cidr", "https://example.com/cidr", set(), "white-cidr")
+        domains = SourceSpec(
+            "domains", "domains", "https://example.com/domains", set(), "white-domains"
+        )
+        evidence = build_evidence(
+            [SourceResult(cidr, self.cidr_feed()), SourceResult(domains, self.domain_feed())]
+        )
+        self.assertTrue(evidence.contains_sni("cdn.example.com"))
+        self.assertFalse(evidence.contains_sni("notexample.com"))
 
 
 class ScoringAndHistoryTests(unittest.TestCase):
