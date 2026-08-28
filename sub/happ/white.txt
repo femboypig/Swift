@@ -1,3 +1,8 @@
 #profile-title: Swift White
 #profile-update-interval: 1
 #profile-web-page-url: https://github.com/femboypig/swift
+vless://a1a5e8d6-0e55-4546-b2e4-a9e1110f0a44@82.202.182.21:5269?encryption=none&type=tcp&security=reality&sni=max.ru&fp=qq&pbk=OqJqgerwFYs9iKOIbUfbjoGJxj3ZN2ixmNMnYR8gOns&sid=058e7a017a9b3f03&spx=%2F#%F0%9F%87%B1%F0%9F%87%BB%20LV%20%C2%B7%20W001
+vless://132e1fe9-bc28-41ce-9acb-efcf1267be1b@95.129.236.216:443?encryption=none&type=ws&security=tls&sni=cdnguard.org&fp=firefox&path=%2Forigin%2F190546791%2Ffetch&host=cdnguard.org&alpn=http%2F1.1#%F0%9F%87%B1%F0%9F%87%B9%20LT%20%C2%B7%20W002
+vless://20872452-b4be-4823-a25f-37dbe1db22f1@185.178.208.137:443?encryption=none&type=ws&security=tls&sni=games22.fun&fp=edge&path=%2Fv1%2Fdata%2Fsync&host=games22.fun&alpn=http%2F1.1#%F0%9F%87%B3%F0%9F%87%B1%20NL%20%C2%B7%20W003
+vless://20872452-b4be-4823-a25f-37dbe1db22f1@185.178.208.137:443?encryption=none&type=ws&security=tls&sni=games22.fun&fp=safari&path=%2Fv1%2Fdata%2Fsync&host=games22.fun&alpn=http%2F1.1#%F0%9F%87%B3%F0%9F%87%B1%20NL%20%C2%B7%20W004
+vless://3069559b-3446-415e-8db0-633907b17871@185.178.208.137:443?encryption=none&type=ws&security=tls&sni=games22.fun&fp=qq&path=%2Fv1%2Fdata%2Fsync&host=games22.fun&alpn=http%2F1.1#%F0%9F%87%B3%F0%9F%87%B1%20NL%20%C2%B7%20W005
