@@ -93,16 +93,16 @@ blocks. Upstream remarks and credentials are never written to logs.
 The optional country data comes from Cloudflare's small trace response through the proxy. If that
 request fails, the config can still pass. Geo enrichment is not a hard dependency.
 
-Names are intentionally plain: `DE | Reality | A1B2C3`, or `Reality | A1B2C3` when location is
-unknown. The short suffix is a stable config ID. Swift doesn't put Actions latency in the name;
-that number says little about latency from another ISP.
+Names are intentionally plain: `🇫🇮 FI · 001` in Main and `🇫🇮 FI · W001` in White. All uses an
+`A` prefix. Swift doesn't put Actions latency in the name; that number says little about latency
+from another ISP.
 
 ## Scoring and history
 
 History is a compact JSON file with the last 16 observations per config and per list. Main and
 White do not share health observations.
 
-The score is 0–100:
+The Main score is 0–100:
 
 - 34% weighted historical availability
 - 21% the last three runs
@@ -116,10 +116,16 @@ The most recent history has more weight. Latency has a broad curve rather than a
 smallest number. A steady 65 ms config should beat one that sometimes answers in 25 ms but times
 out or stalls regularly.
 
+White uses a separate score: 50% historical availability, 30% recent health, 10% throughput,
+and 10% freshness. GitHub latency is deliberately absent. A restricted-network config can be
+slow or inconsistent from an Actions runner and still be useful from the network it was built
+for.
+
 A new config can become active in one run only after two independent core sessions. Each session
-must pass at least four of five requests and the download floor. An active config gets one
-failed-run grace period if its history is strong. Two consecutive failed observations make it
-dead. This is deliberately small and boring; the states are just values in JSON.
+must pass at least four of five requests and its lane's download floor: 128 KiB/s for Main and
+48 KiB/s for White. An active config gets one failed-run grace period if its history is strong.
+Two consecutive failed observations make it dead. This is deliberately small and boring; the
+states are just values in JSON.
 
 Selection first applies soft caps per exact endpoint, /24 IPv4 or /48 IPv6 subnet, and ASN. If
 those caps would leave space unused, the best deferred configs fill it. Scores are sorted in
