@@ -1,16 +1,15 @@
 {
-  "alive": 56,
-  "collected": 775,
+  "alive": 51,
+  "collected": 962,
   "countries": {
-    "CZ": 11,
-    "DE": 7,
+    "CZ": 10,
+    "DE": 8,
     "FI": 5,
-    "GB": 3,
+    "GB": 7,
     "IN": 1,
-    "KZ": 1,
     "LV": 2,
-    "NL": 11,
-    "PL": 7,
+    "NL": 4,
+    "PL": 6,
     "RO": 1,
     "RU": 1,
     "TR": 1,
@@ -19,29 +18,29 @@
   "failure_reasons": {
     "CONNECT_TIMEOUT": 12,
     "DNS_FAILED": 2,
-    "DUPLICATE": 235,
-    "HTTP_FAILED": 6,
-    "NOT_WHITELISTED": 74,
+    "DUPLICATE": 265,
+    "HTTP_FAILED": 4,
+    "NOT_WHITELISTED": 173,
     "PARSE_ERROR": 3,
-    "PROXY_FAILED": 169,
+    "PROXY_FAILED": 177,
     "SOURCE_EMPTY": 1,
-    "TOO_SLOW": 4,
-    "UNSTABLE": 23,
-    "UNSUPPORTED": 241
+    "TOO_SLOW": 12,
+    "UNSTABLE": 26,
+    "UNSUPPORTED": 293
   },
-  "main": 42,
-  "median_latency_ms": 347.16,
-  "parsed": 579,
+  "main": 38,
+  "median_latency_ms": 373.23,
+  "parsed": 714,
   "pipeline_version": 4,
   "production": {
-    "all": 56,
-    "main": 42,
-    "white": 6
+    "all": 51,
+    "main": 38,
+    "white": 0
   },
   "project": "Swift",
   "protocols": {
-    "hysteria2": 13,
-    "vless": 43
+    "hysteria2": 12,
+    "vless": 39
   },
   "published": true,
   "source_status": {
@@ -54,6 +53,7 @@
     "hxehex-white-domains": "OK",
     "igareck-white-cidr": "OK",
     "igareck-white-mobile": "OK",
+    "lime-white": "OK",
     "mifa-world": "OK",
     "prihs-main-cache": "OK",
     "prihs-white-cache": "OK",
@@ -62,22 +62,19 @@
     "zieng2-white": "OK"
   },
   "sources": {
-    "airlink": 6,
-    "akres": 26,
-    "rkp": 26,
-    "zieng2": 6
+    "akres": 25,
+    "lime": 1,
+    "rkp": 26
   },
   "tagline": "Filter the garbage. Keep what works.",
-  "tested": 270,
-  "unique": 344,
-  "updated_at": "2026-08-28T13:59:00Z",
-  "white": 6,
+  "tested": 282,
+  "unique": 449,
+  "updated_at": "2026-08-28T14:17:12Z",
+  "white": 0,
   "white_evidence": {
     "cidr_source": "hxehex-white-cidr",
     "domain_source": "hxehex-white-domains",
-    "eligible": 28,
-    "published": {
-      "cidr": 6
-    }
+    "eligible": 40,
+    "published": {}
   }
 }
