@@ -83,10 +83,28 @@ subnet = 10
 asn = 30
 
 [[sources]]
-id = "igareck-main-mobile"
-name = "igareck"
-url = "https://raw.githubusercontent.com/igareck/vpn-configs-for-russia/main/BLACK_VLESS_RUS_mobile.txt"
+id = "akres-main-grpc"
+name = "akres"
+url = "https://gitverse.ru/api/repos/Akres/VPN/raw/branch/master/protocols/vless/transports/grpc"
 lanes = ["main"]
+
+[[sources]]
+id = "prihs-main-cache"
+name = "akres"
+url = "https://raw.githubusercontent.com/vpnsvpns/Prihs/main/mifa.json"
+lanes = ["main"]
+
+[[sources]]
+id = "akres-white-bwl"
+name = "akres"
+url = "https://gitverse.ru/api/repos/Akres/VPN/raw/branch/master/bwl"
+lanes = ["white"]
+
+[[sources]]
+id = "prihs-white-cache"
+name = "akres"
+url = "https://raw.githubusercontent.com/vpnsvpns/Prihs/main/white.json"
+lanes = ["white"]
 
 [[sources]]
 id = "igareck-white-mobile"
@@ -106,21 +124,3 @@ name = "mifa.world"
 url = "https://mifa.world/"
 lanes = ["main"]
 content_type = "html"
-
-[[sources]]
-id = "wlunlocker-main"
-name = "wlunlocker"
-url = "https://raw.githubusercontent.com/wlunlocker/vpn-configs/main/blacklist_vpn2.txt"
-lanes = ["main"]
-
-[[sources]]
-id = "wlunlocker-white"
-name = "wlunlocker"
-url = "https://raw.githubusercontent.com/wlunlocker/vpn-configs/main/whitelist_cidr3_eu.txt"
-lanes = ["white"]
-
-[[sources]]
-id = "user-observed-main"
-name = "user-observed"
-url = "https://raw.githubusercontent.com/femboypig/swift/97c882f8cea9a2196d7e26d20d837e171be04a33/sub/white.txt"
-lanes = ["main"]
