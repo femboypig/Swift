@@ -1,56 +1,53 @@
 {
-  "alive": 143,
-  "collected": 999,
+  "alive": 146,
+  "collected": 1027,
   "countries": {
-    "AU": 1,
-    "CH": 2,
+    "CH": 1,
     "CO": 1,
     "CZ": 6,
-    "DE": 8,
-    "FI": 6,
+    "DE": 9,
+    "FI": 8,
     "FR": 2,
-    "GB": 4,
-    "IN": 3,
+    "GB": 3,
+    "IN": 2,
     "JP": 31,
     "KR": 1,
-    "KZ": 2,
-    "LT": 1,
     "LV": 3,
     "MY": 2,
-    "NL": 18,
-    "PL": 4,
+    "NL": 17,
+    "PL": 7,
     "RO": 1,
     "RU": 2,
     "SE": 1,
-    "SG": 24,
-    "TR": 2,
+    "SG": 30,
+    "TR": 1,
     "US": 18
   },
   "failure_reasons": {
-    "CONNECT_TIMEOUT": 16,
-    "DUPLICATE": 179,
+    "CONNECT_TIMEOUT": 19,
+    "DUPLICATE": 302,
     "HTTP_FAILED": 7,
-    "NOT_WHITELISTED": 129,
+    "NOT_WHITELISTED": 120,
     "PARSE_ERROR": 7,
-    "PROXY_FAILED": 225,
+    "PROXY_FAILED": 217,
     "SOURCE_EMPTY": 1,
-    "TOO_SLOW": 16,
-    "UNSTABLE": 24,
-    "UNSUPPORTED": 299
+    "TOO_SLOW": 20,
+    "UNSTABLE": 20,
+    "UNSUPPORTED": 317
   },
-  "main": 143,
-  "median_latency_ms": 660.19,
-  "parsed": 731,
+  "main": 142,
+  "median_latency_ms": 515.28,
+  "parsed": 851,
   "pipeline_version": 4,
   "production": {
-    "all": 143,
-    "main": 143,
-    "white": 5
+    "all": 146,
+    "main": 142,
+    "white": 6
   },
   "project": "Swift",
   "protocols": {
     "hysteria2": 12,
-    "vless": 131
+    "vless": 134
   },
   "published": true,
   "source_status": {
@@ -71,22 +68,22 @@
     "zieng2-white": "OK"
   },
   "sources": {
-    "airlink": 5,
-    "akres": 18,
+    "airlink": 3,
+    "akres": 24,
     "rkp": 119,
-    "zieng2": 6
+    "zieng2": 3
   },
   "tagline": "Filter the garbage. Keep what works.",
-  "tested": 431,
-  "unique": 552,
-  "updated_at": "2026-08-28T16:17:48Z",
-  "white": 5,
+  "tested": 429,
+  "unique": 549,
+  "updated_at": "2026-08-28T16:48:39Z",
+  "white": 6,
   "white_evidence": {
     "cidr_source": "hxehex-white-cidr",
     "domain_source": "hxehex-white-domains",
-    "eligible": 35,
+    "eligible": 29,
     "published": {
-      "cidr": 4,
+      "cidr": 5,
       "cidr+sni": 1
     }
   }
