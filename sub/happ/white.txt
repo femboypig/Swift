@@ -1,4 +1,4 @@
 #profile-title: Swift White
 #profile-update-interval: 1
 #profile-web-page-url: https://github.com/femboypig/swift
-vless://d61e94ca-59a2-47ac-a172-15850c0e4f62@185.178.208.176:443?encryption=none&type=ws&security=tls&sni=ncd.crsmaps.com&fp=firefox&path=%2Fws%2Fnotify%2F817522358&host=ncd.crsmaps.com#%F0%9F%87%A9%F0%9F%87%AA%20DE%20%C2%B7%20W001
+vless://d61e94ca-59a2-47ac-a172-15850c0e4f62@185.178.208.176:443?encryption=none&type=ws&security=tls&sni=ncd.crsmaps.com&fp=firefox&path=%2Fws%2Fnotify%2F817522358&host=ncd.crsmaps.com#%F0%9F%8F%B3%EF%B8%8F%20%3F%3F%20%C2%B7%20W001
