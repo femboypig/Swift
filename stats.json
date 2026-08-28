@@ -1,48 +1,51 @@
 {
-  "alive": 50,
-  "collected": 603,
+  "alive": 56,
+  "collected": 775,
   "countries": {
     "CZ": 11,
     "DE": 7,
     "FI": 5,
-    "GB": 1,
+    "GB": 3,
+    "IN": 1,
+    "KZ": 1,
     "LV": 2,
-    "NL": 10,
-    "PL": 4,
+    "NL": 11,
+    "PL": 7,
     "RO": 1,
     "RU": 1,
-    "SG": 2,
     "TR": 1,
     "US": 5
   },
   "failure_reasons": {
-    "CONNECT_TIMEOUT": 42,
-    "DUPLICATE": 140,
+    "CONNECT_TIMEOUT": 12,
+    "DNS_FAILED": 2,
+    "DUPLICATE": 235,
     "HTTP_FAILED": 6,
     "NOT_WHITELISTED": 74,
     "PARSE_ERROR": 3,
-    "PROXY_FAILED": 176,
+    "PROXY_FAILED": 169,
     "SOURCE_EMPTY": 1,
-    "TOO_SLOW": 10,
-    "UNSTABLE": 17,
-    "UNSUPPORTED": 130
+    "TOO_SLOW": 4,
+    "UNSTABLE": 23,
+    "UNSUPPORTED": 241
   },
   "main": 42,
-  "median_latency_ms": 475.54,
-  "parsed": 514,
+  "median_latency_ms": 347.16,
+  "parsed": 579,
   "pipeline_version": 4,
   "production": {
-    "all": 50,
+    "all": 56,
     "main": 42,
     "white": 6
   },
   "project": "Swift",
   "protocols": {
-    "hysteria2": 15,
-    "vless": 35
+    "hysteria2": 13,
+    "vless": 43
   },
   "published": true,
   "source_status": {
+    "airlink-white": "OK",
     "akres-main-grpc": "OK",
     "akres-white-bwl": "OK",
     "artembsk-white-cidr": "OK",
@@ -59,19 +62,20 @@
     "zieng2-white": "OK"
   },
   "sources": {
-    "akres": 24,
-    "rkp": 22,
+    "airlink": 6,
+    "akres": 26,
+    "rkp": 26,
     "zieng2": 6
   },
   "tagline": "Filter the garbage. Keep what works.",
-  "tested": 301,
-  "unique": 374,
-  "updated_at": "2026-08-28T13:34:18Z",
+  "tested": 270,
+  "unique": 344,
+  "updated_at": "2026-08-28T13:59:00Z",
   "white": 6,
   "white_evidence": {
     "cidr_source": "hxehex-white-cidr",
     "domain_source": "hxehex-white-domains",
-    "eligible": 30,
+    "eligible": 28,
     "published": {
       "cidr": 6
     }
