@@ -155,14 +155,16 @@ without replacing a useful list with an empty one.
 
 The default config uses:
 
+- [Akres/VPN](https://gitverse.ru/Akres/VPN), using its bounded gRPC feed for Main and `bwl` feed
+  for White;
+- [vpnsvpns/Prihs](https://github.com/vpnsvpns/Prihs) as an hourly GitHub-hosted fallback for the
+  same Akres feeds. Prihs does not test configs itself, so duplicate provenance from these two URLs
+  is treated as one source;
 - [igareck/vpn-configs-for-russia](https://github.com/igareck/vpn-configs-for-russia), using its
-  bounded mobile list for Main and its mobile/checked CIDR lists for White. The two lanes stay
-  separate;
+  mobile/checked CIDR lists for White;
 - [mifa.world](https://mifa.world/), fetched independently as requested. Its anonymous homepage
   currently exposes no config URIs, so Swift reports it as empty instead of scraping an
-  undocumented authenticated endpoint;
-- [wlunlocker/vpn-configs](https://github.com/wlunlocker/vpn-configs), using its bounded Main and
-  CIDR feeds. That project checks its generated lists from a separate host.
+  undocumented authenticated endpoint.
 
 White endpoint evidence comes from
 [hxehex/russia-mobile-internet-whitelist](https://github.com/hxehex/russia-mobile-internet-whitelist).
@@ -171,10 +173,6 @@ operators and regions. The actively maintained
 [artembsk mirror](https://github.com/artembsk/russia-mobile-internet-whitelist) is fetched as a
 fallback. Swift uses the CIDR feed rather than treating each entry in `ipwhitelist.txt` as an
 exact `/32`: that file intentionally contains one sampled address per `/24`.
-
-The default config also has a small immutable seed of configs previously observed working by a
-maintainer. It is a Main discovery source, not whitelist evidence. Those configs receive no score
-bonus and still have to pass the current proxy tests.
 
 Adding a plain/Base64 URI source is one `[[sources]]` entry in `config.toml`. A failed upstream
 does not stop the other sources.
