@@ -20,8 +20,10 @@ There is no minimum. If 74 configs meet the threshold, the file contains 74.
 
 ### White
 
-Configs intended for the Russian whitelist/restricted-network case. They come only from sources
-that explicitly put them in that category, then go through a separate test and history track.
+Configs intended for the Russian whitelist/restricted-network case. Swift starts with configs
+that an upstream puts in that category, resolves the real endpoint, and requires its IPv4 address
+to be inside the current community CIDR list. It then runs the proxy and history tests separately
+from Main. SNI-only matches are not enough for this list.
 
 `https://raw.githubusercontent.com/femboypig/swift/main/sub/white.txt`
 
@@ -75,16 +77,18 @@ The Actions job runs this pipeline every 30 minutes:
 1. Fetch each source independently.
 2. Extract supported URIs, validate them, and calculate canonical fingerprints.
 3. Merge duplicates while keeping source provenance.
-4. Pick a bounded candidate set. Active and previously good configs come first; new and older
+4. For White, resolve the candidate endpoints and keep only addresses found in the current
+   whitelist CIDRs. A matching allowed SNI is recorded as an extra signal.
+5. Pick a bounded candidate set. Active and previously good configs come first; new and older
    configs get a rotating discovery sample.
-5. Resolve endpoints and reject local, private, link-local, reserved, and metadata addresses.
-6. Use a cheap TCP connection only as a prefilter for TCP protocols. UDP protocols skip it.
-7. Serialize the config exactly as it will be published and parse it again.
-8. Start an isolated sing-box process with a local SOCKS inbound.
-9. Make five HTTPS requests through that SOCKS proxy, rotating across several targets, then
+6. Resolve endpoints and reject local, private, link-local, reserved, and metadata addresses.
+7. Use a cheap TCP connection only as a prefilter for TCP protocols. UDP protocols skip it.
+8. Serialize the config exactly as it will be published and parse it again.
+9. Start an isolated sing-box process with a local SOCKS inbound.
+10. Make five HTTPS requests through that SOCKS proxy, rotating across several targets, then
    download 256 KiB.
-10. Stop the core and repeat the proxy test with a fresh process and local port.
-11. Update history, score, select, and publish only configs that passed both rounds.
+11. Stop the core and repeat the proxy test with a fresh process and local port.
+12. Update history, score, select, and publish only configs that passed both rounds.
 
 Twenty configs are tested concurrently. Each process has its own temporary JSON file and local
 port. Commands use argument arrays, not a shell, and process groups are terminated in `finally`
@@ -137,6 +141,7 @@ Swift does not publish before the complete run has been assessed. It keeps the o
 files when:
 
 - every source fails;
+- both the primary whitelist CIDR feed and its fallback fail validation or download;
 - the direct target preflight cannot reach at least two targets;
 - most sing-box processes fail to start;
 - the global test deadline leaves too many jobs unfinished;
@@ -158,6 +163,18 @@ The default config uses:
   undocumented authenticated endpoint;
 - [wlunlocker/vpn-configs](https://github.com/wlunlocker/vpn-configs), using its bounded Main and
   CIDR feeds. That project checks its generated lists from a separate host.
+
+White endpoint evidence comes from
+[hxehex/russia-mobile-internet-whitelist](https://github.com/hxehex/russia-mobile-internet-whitelist).
+Its CIDR file is built from addresses observed as reachable during restrictions across different
+operators and regions. The actively maintained
+[artembsk mirror](https://github.com/artembsk/russia-mobile-internet-whitelist) is fetched as a
+fallback. Swift uses the CIDR feed rather than treating each entry in `ipwhitelist.txt` as an
+exact `/32`: that file intentionally contains one sampled address per `/24`.
+
+The default config also has a small immutable seed of configs previously observed working by a
+maintainer. It is a Main discovery source, not whitelist evidence. Those configs receive no score
+bonus and still have to pass the current proxy tests.
 
 Adding a plain/Base64 URI source is one `[[sources]]` entry in `config.toml`. A failed upstream
 does not stop the other sources.
@@ -191,9 +208,16 @@ Russian mobile network. A server measured at 55 ms in Actions can be slow or unr
 Swift ranks what the runner can measure; it does not promise the globally fastest servers.
 
 The White job is independent, but a GitHub runner cannot reproduce a Russian carrier's restricted
-or whitelist mode. The label means that a source built the config for that case and Swift then
-confirmed ordinary proxy traffic through it twice. It does not mean Swift proved that the config
-works during a shutdown. That last part requires a test from the affected carrier and region.
+or whitelist mode. Public lists combine observations from different operators, regions, towers,
+and dates. Some operators check only SNI, some check IP and SNI together, and a total shutdown may
+pass almost nothing. In Swift, White means the endpoint currently matches a published whitelist
+CIDR and the config carried ordinary proxy traffic through sing-box twice. It still does not prove
+that the config works during a shutdown for your SIM. That requires a probe from the affected
+carrier and region.
+
+An address missing from the community list is not necessarily blocked; the data is incomplete.
+Swift still excludes it from White because this subscription prefers a smaller set with positive
+IP evidence over a larger speculative set.
 
 ## License
 
