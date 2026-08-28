@@ -24,7 +24,7 @@ from .output import (
     write_json,
     write_subscriptions,
 )
-from .parsing import deduplicate, parse_sources
+from .parsing import deduplicate, parse_sources, parse_uri
 from .scoring import (
     add_observation,
     choose_candidates,
@@ -61,6 +61,31 @@ def load_json(path: Path, default: Any) -> Any:
 def load_settings(path: Path) -> dict[str, Any]:
     with path.open("rb") as handle:
         return tomllib.load(handle)
+
+
+def previous_subscription_configs(root: Path, history: dict[str, Any]) -> list[ProxyConfig]:
+    configs: list[ProxyConfig] = []
+    rejected = 0
+    records = history.get("configs", {})
+    for lane in ("main", "white"):
+        path = root / f"sub/{lane}.txt"
+        if not path.exists():
+            continue
+        for line in path.read_text().splitlines():
+            if not line.strip():
+                continue
+            try:
+                config = parse_uri(line)
+            except ValueError:
+                rejected += 1
+                continue
+            record = records.get(config.fingerprint, {})
+            config.sources.update(record.get("sources", ["previous-output"]))
+            config.lanes.add(lane)
+            configs.append(config)
+    if rejected:
+        LOGGER.warning("PREVIOUS_PARSE_ERROR count=%d", rejected)
+    return configs
 
 
 def find_core(explicit: str | None) -> str:
@@ -161,11 +186,14 @@ async def run(root: Path, config_path: Path, core_override: str | None = None) -
         source_specs(settings), float(settings["collection"]["fetch_timeout"])
     )
     parsed, parse_failures, collected = parse_sources(source_results)
+    previous_configs = previous_subscription_configs(root, history)
+    parsed.extend(previous_configs)
     unique, duplicate_count = deduplicate(parsed)
     parse_failures["DUPLICATE"] += duplicate_count
     LOGGER.info(
-        "collection collected=%d parsed=%d unique=%d duplicates=%d",
+        "collection collected=%d retained=%d parsed=%d unique=%d duplicates=%d",
         collected,
+        len(previous_configs),
         len(parsed),
         len(unique),
         duplicate_count,
