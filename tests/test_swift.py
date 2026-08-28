@@ -10,6 +10,7 @@ from pathlib import Path
 from urllib.parse import quote
 
 from swiftproxy.models import ProxyConfig, RankedConfig, SourceResult, SourceSpec, TestResult
+from swiftproxy.main import previous_subscription_configs
 from swiftproxy.output import (
     HAPP_PROTOCOLS,
     PIPELINE_VERSION,
@@ -284,6 +285,26 @@ class ScoringAndHistoryTests(unittest.TestCase):
         lane = add_observation(history, config, failure, 16)
         self.assertEqual(lane["state"], "dead")
 
+    def test_grace_run_is_not_removed_by_the_temporary_score_drop(self) -> None:
+        config = parse_uri(vless_uri())
+        config.lanes.add("main")
+        history = empty_history()
+        lane = add_observation(history, config, successful_result(config), 16)
+        lane["score"] = 72
+        failure = TestResult(config.fingerprint, "main", "2026-08-27T12:30:00Z", failure_count=5)
+        add_observation(history, config, failure, 16)
+        ranked = rank_configs(
+            [config],
+            {(config.fingerprint, "main"): failure},
+            history,
+            "main",
+            [config.fingerprint],
+            70,
+            131072,
+        )
+        self.assertEqual(len(ranked), 1)
+        self.assertEqual(ranked[0].state, "degraded")
+
     def test_one_successful_round_does_not_promote_a_new_config(self) -> None:
         config = parse_uri(vless_uri())
         result = successful_result(config)
@@ -341,6 +362,22 @@ class ScoringAndHistoryTests(unittest.TestCase):
 
 
 class OutputTests(unittest.TestCase):
+    def test_previous_subscriptions_are_kept_as_candidates(self) -> None:
+        config = parse_uri(vless_uri())
+        config.sources.add("source-a")
+        history = empty_history()
+        add_observation(history, config, successful_result(config), 16)
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            (root / "sub").mkdir()
+            (root / "sub/main.txt").write_text(serialize_uri(config) + "\n")
+            (root / "sub/white.txt").write_text("")
+            retained = previous_subscription_configs(root, history)
+        self.assertEqual(len(retained), 1)
+        self.assertEqual(retained[0].fingerprint, config.fingerprint)
+        self.assertEqual(retained[0].lanes, {"main"})
+        self.assertEqual(retained[0].sources, {"source-a"})
+
     def test_numbered_country_names(self) -> None:
         config = parse_uri(vless_uri())
         result = successful_result(config)
