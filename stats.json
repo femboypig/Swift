@@ -1,77 +1,68 @@
 {
-  "alive": 22,
-  "collected": 434,
+  "alive": 36,
+  "collected": 287,
   "countries": {
-    "CA": 1,
-    "CH": 1,
-    "DE": 2,
+    "AT": 6,
+    "CZ": 14,
+    "DE": 6,
     "FI": 1,
-    "FR": 1,
-    "GB": 2,
-    "KR": 1,
-    "LV": 4,
-    "NL": 2,
-    "SG": 5,
-    "TW": 1,
-    "US": 1
+    "KZ": 1,
+    "LV": 1,
+    "NL": 1,
+    "PL": 2,
+    "SE": 1,
+    "US": 3
   },
   "failure_reasons": {
-    "CONNECT_TIMEOUT": 128,
-    "DNS_FAILED": 1,
-    "DUPLICATE": 46,
-    "HTTP_FAILED": 8,
-    "NOT_WHITELISTED": 51,
-    "PARSE_ERROR": 2,
-    "PROXY_FAILED": 124,
+    "CONNECT_TIMEOUT": 11,
+    "DUPLICATE": 89,
+    "HTTP_FAILED": 2,
+    "NOT_WHITELISTED": 46,
+    "PROXY_FAILED": 95,
     "SOURCE_EMPTY": 2,
-    "TOO_SLOW": 8,
-    "UNSTABLE": 25,
-    "UNSUPPORTED": 41,
-    "WHITE_DNS_FAILED": 3
+    "TOO_SLOW": 2,
+    "UNSTABLE": 2,
+    "UNSUPPORTED": 4
   },
-  "main": 27,
-  "median_latency_ms": 530.86,
-  "parsed": 416,
+  "main": 35,
+  "median_latency_ms": 297.21,
+  "parsed": 283,
   "pipeline_version": 4,
   "production": {
-    "all": 22,
-    "main": 27,
+    "all": 36,
+    "main": 35,
     "white": 0
   },
   "project": "Swift",
   "protocols": {
-    "hysteria2": 7,
-    "ss": 8,
-    "vless": 7
+    "vless": 36
   },
   "published": true,
   "source_status": {
+    "akres-main-grpc": "OK",
+    "akres-white-bwl": "OK",
     "artembsk-white-cidr": "OK",
     "artembsk-white-domains": "OK",
     "hxehex-white-cidr": "OK",
     "hxehex-white-domains": "OK",
-    "igareck-main-mobile": "OK",
     "igareck-white-checked": "OK",
     "igareck-white-mobile": "OK",
     "mifa-world": "OK",
-    "user-observed-main": "OK",
-    "wlunlocker-main": "OK",
-    "wlunlocker-white": "OK"
+    "prihs-main-cache": "OK",
+    "prihs-white-cache": "OK"
   },
   "sources": {
-    "igareck": 3,
-    "user-observed": 4,
-    "wlunlocker": 15
+    "akres": 36
   },
   "tagline": "Filter the garbage. Keep what works.",
-  "tested": 315,
-  "unique": 370,
-  "updated_at": "2026-08-28T07:07:16Z",
+  "tested": 148,
+  "unique": 194,
+  "updated_at": "2026-08-28T08:09:50Z",
   "white": 0,
   "white_evidence": {
     "cidr_source": "hxehex-white-cidr",
     "domain_source": "hxehex-white-domains",
-    "eligible": 16,
+    "eligible": 25,
     "published": {}
   }
 }
