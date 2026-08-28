@@ -36,6 +36,7 @@ from .scoring import (
 )
 from .sources import fetch_sources, source_specs
 from .testing import preflight_targets, resolve_candidates, test_candidates
+from .whitelist import build_evidence, evidence_for, evidence_specs
 
 
 LOGGER = logging.getLogger("swift")
@@ -182,9 +183,22 @@ async def run(root: Path, config_path: Path, core_override: str | None = None) -
         history = empty_history()
         order = {"main": [], "white": []}
 
-    source_results = await fetch_sources(
-        source_specs(settings), float(settings["collection"]["fetch_timeout"])
+    source_results, evidence_results = await asyncio.gather(
+        fetch_sources(source_specs(settings), float(settings["collection"]["fetch_timeout"])),
+        fetch_sources(
+            evidence_specs(settings),
+            float(settings["white_evidence"]["fetch_timeout"]),
+        ),
     )
+    try:
+        white_evidence = build_evidence(evidence_results)
+    except ValueError:
+        _hold(
+            root,
+            previous_stats,
+            "WHITE_EVIDENCE_FAILED",
+            {"source_status": _source_status(evidence_results)},
+        )
     parsed, parse_failures, collected = parse_sources(source_results)
     previous_configs = previous_subscription_configs(root, history)
     parsed.extend(previous_configs)
@@ -213,6 +227,30 @@ async def run(root: Path, config_path: Path, core_override: str | None = None) -
             "NO_VALID_CONFIGS",
             {"collected": collected, "failure_reasons": dict(parse_failures)},
         )
+
+    white_pool = [config for config in unique if "white" in config.lanes]
+    resolved_white, white_resolution_failures = await resolve_candidates(white_pool)
+    resolved_white_fingerprints = {config.fingerprint for config in resolved_white}
+    white_signals: dict[str, str] = {}
+    for config in white_pool:
+        if config.fingerprint not in resolved_white_fingerprints:
+            config.lanes.discard("white")
+            reason = white_resolution_failures.get(config.fingerprint, "DNS_FAILED")
+            parse_failures[f"WHITE_{reason}"] += 1
+            continue
+        signal = evidence_for(config, white_evidence)
+        if signal is None:
+            config.lanes.discard("white")
+            parse_failures["NOT_WHITELISTED"] += 1
+            continue
+        white_signals[config.fingerprint] = signal
+    LOGGER.info(
+        "white evidence candidates=%d eligible=%d cidr_sni=%d rejected=%d",
+        len(white_pool),
+        len(white_signals),
+        sum(signal == "cidr+sni" for signal in white_signals.values()),
+        len(white_pool) - len(white_signals),
+    )
     if not await preflight_targets(settings["testing"]):
         _hold(root, previous_stats, "TEST_TARGET_OUTAGE", {})
 
@@ -232,7 +270,10 @@ async def run(root: Path, config_path: Path, core_override: str | None = None) -
         for lane_configs in candidates.values()
         for config in lane_configs
     }
-    resolved_configs, resolution_failures = await resolve_candidates(list(candidate_map.values()))
+    already_resolved = [config for config in candidate_map.values() if config.resolved_ip]
+    unresolved = [config for config in candidate_map.values() if not config.resolved_ip]
+    newly_resolved, resolution_failures = await resolve_candidates(unresolved)
+    resolved_configs = [*already_resolved, *newly_resolved]
     resolved = {config.fingerprint for config in resolved_configs}
     parse_failures.update(resolution_failures.values())
     jobs = _jobs(candidates, resolved)
@@ -308,7 +349,12 @@ async def run(root: Path, config_path: Path, core_override: str | None = None) -
     )
     if len(results_list) < len(jobs) * 0.8:
         reason = reason or "GLOBAL_TIMEOUT"
-    source_status = _source_status(source_results)
+    source_status = _source_status([*source_results, *evidence_results])
+    published_evidence = Counter(
+        white_signals[item.config.fingerprint]
+        for item in white
+        if item.config.fingerprint in white_signals
+    )
     stats = build_stats(
         updated_at=utc_now(),
         collected=collected,
@@ -320,6 +366,12 @@ async def run(root: Path, config_path: Path, core_override: str | None = None) -
         white=white,
         failures=failures,
         source_status=source_status,
+        white_evidence={
+            "cidr_source": white_evidence.cidr_source,
+            "domain_source": white_evidence.domain_source,
+            "eligible": len(white_signals),
+            "published": dict(sorted(published_evidence.items())),
+        },
         published=reason is None,
         previous=previous_stats,
         reason=reason,
