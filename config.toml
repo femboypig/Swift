@@ -137,6 +137,12 @@ url = "https://raw.githubusercontent.com/RKPchannel/RKP_bypass_configs/main/whit
 lanes = ["white"]
 
 [[sources]]
+id = "airlink-white"
+name = "airlink"
+url = "https://raw.githubusercontent.com/AirLinkVPN1/AirLinkVPN/main/rkn_white_list"
+lanes = ["white"]
+
+[[sources]]
 id = "mifa-world"
 name = "mifa.world"
 url = "https://mifa.world/"
