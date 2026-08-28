@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import argparse
+import html
 import json
 import logging
 import os
@@ -8,40 +9,57 @@ import sys
 import urllib.error
 import urllib.request
 from collections.abc import Mapping
+from datetime import UTC, datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any
 
 LOGGER = logging.getLogger("swift.telegram.publish")
+MSK = timezone(timedelta(hours=3))
+
+
+def _message_time(value: Any) -> str:
+    if not isinstance(value, str) or not value:
+        return "not available"
+    try:
+        timestamp = datetime.fromisoformat(value)
+    except ValueError:
+        return html.escape(value)
+    if timestamp.tzinfo is None:
+        timestamp = timestamp.replace(tzinfo=UTC)
+    return timestamp.astimezone(MSK).strftime("%d.%m.%Y · %H:%M MSK")
 
 
 def message_payload(status: dict[str, Any]) -> tuple[str, dict[str, Any]]:
     tested = int(status.get("tested", 0))
     working = int(status.get("working", 0))
-    updated = status.get("updated_at", "unknown")
-    last_good = status.get("last_successful_set") or "not available"
+    updated = _message_time(status.get("updated_at"))
+    last_good = _message_time(status.get("last_successful_set"))
     if not status.get("healthy_run", False):
         text = (
-            "Telegram proxies\n\n"
+            "<b>Swift · Telegram</b>\n\n"
             "Latest proxy check failed.\n"
-            "The previous verified set is being kept while Swift retries on the next run.\n"
-            f"Last successful set: {last_good}"
+            "The previous verified set is being kept.\n\n"
+            "Swift will retry automatically.\n"
+            f"Last verified: {last_good}"
         )
         return text, {"inline_keyboard": []}
     if working == 0:
         text = (
-            "Telegram proxies\n\n"
-            "No working proxies available right now.\n"
-            f"0 / {tested} passed the latest checks.\n"
-            f"Last successful set: {last_good}\n"
-            "Swift will update this message automatically when proxies recover."
+            "<b>Swift · Telegram</b>\n\n"
+            "No working proxies right now.\n"
+            f"<b>0</b> of <b>{tested}</b> passed the latest checks.\n\n"
+            f"Last verified: {last_good}\n"
+            "Swift will update this post automatically."
         )
         return text, {"inline_keyboard": []}
 
     text = (
-        "Telegram proxies\n\n"
-        f"{working} / {tested} passed the latest checks.\n"
-        f"Stable: {int(status.get('stable', 0))}. Fastest: {int(status.get('fastest', 0))}.\n"
-        f"Updated: {updated}"
+        "<b>Swift · Telegram</b>\n\n"
+        f"<b>{working}</b> of <b>{tested}</b> proxies passed\n"
+        f"<b>{int(status.get('stable', 0))}</b> are stable\n\n"
+        f"Updated {updated}\n"
+        "Validated with a real Telegram handshake.\n\n"
+        "<i>Filter the garbage. Keep what works.</i>"
     )
     selected = status.get("selected", {})
     buttons = []
@@ -82,6 +100,7 @@ def publish_status(
             "chat_id": chat_id,
             "message_id": parsed_message_id,
             "text": text,
+            "parse_mode": "HTML",
             "link_preview_options": {"is_disabled": True},
             "reply_markup": reply_markup,
         }
