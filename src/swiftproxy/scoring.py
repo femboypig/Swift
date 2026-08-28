@@ -221,7 +221,6 @@ def rank_configs(
         observations = lane_record.get("observations", [])
         one_run_grace = (
             state == "degraded"
-            and result.success_count == 0
             and len(observations) > 1
             and _observation_availability(observations[-2]) >= 0.8
         )
