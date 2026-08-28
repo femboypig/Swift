@@ -82,6 +82,63 @@ endpoint = 3
 subnet = 10
 asn = 30
 
+[telegram.paths]
+history = "data/telegram-history.json"
+status = "Telegram/status.json"
+
+[telegram.collection]
+fetch_timeout = 25
+
+[telegram.testing]
+candidate_limit = 600
+concurrency = 35
+attempts = 3
+connect_timeout = 3
+response_timeout = 4
+global_timeout = 900
+control_timeout = 5
+control_endpoints = [
+  "149.154.175.50:443",
+  "149.154.167.50:443",
+  "91.108.56.130:443",
+]
+
+[telegram.history]
+window = 24
+promotion_runs = 3
+remove_failures = 3
+
+[telegram.limits]
+stable = 50
+fastest = 20
+
+[telegram.quality]
+stable_min_score = 65
+
+[telegram.failure]
+collapse_ratio = 0.10
+hold_runs = 2
+
+[[telegram.sources]]
+id = "solispirit"
+name = "SoliSpirit"
+url = "https://raw.githubusercontent.com/SoliSpirit/mtproto/master/all_proxies.txt"
+
+[[telegram.sources]]
+id = "argh94"
+name = "Argh94"
+url = "https://raw.githubusercontent.com/Argh94/Proxy-List/main/MTProto.txt"
+
+[[telegram.sources]]
+id = "shablin"
+name = "shablin"
+url = "https://raw.githubusercontent.com/shablin/mtproto-proxy/main/data/valid_proxy.txt"
+
+[[telegram.sources]]
+id = "klondike"
+name = "klondike0x"
+url = "https://raw.githubusercontent.com/klondike0x/mtp4tg-proxies/main/all_proxies.txt"
+
 [[sources]]
 id = "akres-main-grpc"
 name = "akres"
