@@ -11,6 +11,29 @@ stats = "stats.json"
 [collection]
 fetch_timeout = 25
 
+[white_evidence]
+fetch_timeout = 90
+
+[[white_evidence.cidr_sources]]
+id = "hxehex-white-cidr"
+name = "hxehex"
+url = "https://raw.githubusercontent.com/hxehex/russia-mobile-internet-whitelist/main/cidrwhitelist.txt"
+
+[[white_evidence.cidr_sources]]
+id = "artembsk-white-cidr"
+name = "artembsk"
+url = "https://raw.githubusercontent.com/artembsk/russia-mobile-internet-whitelist/main/cidrwhitelist.txt"
+
+[[white_evidence.domain_sources]]
+id = "hxehex-white-domains"
+name = "hxehex"
+url = "https://raw.githubusercontent.com/hxehex/russia-mobile-internet-whitelist/main/whitelist.txt"
+
+[[white_evidence.domain_sources]]
+id = "artembsk-white-domains"
+name = "artembsk"
+url = "https://raw.githubusercontent.com/artembsk/russia-mobile-internet-whitelist/main/whitelist.txt"
+
 [limits]
 main = 200
 white = 200
@@ -97,7 +120,7 @@ url = "https://raw.githubusercontent.com/wlunlocker/vpn-configs/main/whitelist_c
 lanes = ["white"]
 
 [[sources]]
-id = "user-verified-white"
-name = "user-verified"
+id = "user-observed-main"
+name = "user-observed"
 url = "https://raw.githubusercontent.com/femboypig/swift/97c882f8cea9a2196d7e26d20d837e171be04a33/sub/white.txt"
-lanes = ["white"]
+lanes = ["main"]
