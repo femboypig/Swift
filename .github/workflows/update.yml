@@ -38,6 +38,11 @@ jobs:
         uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
         with:
           python-version: "3.12"
+          cache: pip
+          cache-dependency-path: pyproject.toml
+
+      - name: Install Python dependencies
+        run: python -m pip install --disable-pip-version-check .
 
       - name: Restore sing-box cache
         id: core-cache
@@ -85,15 +90,32 @@ jobs:
             exit "$swift_exit"
           fi
 
+      - name: Collect and test Telegram proxies
+        id: telegram
+        shell: bash
+        run: |
+          set +e
+          python -m swiftproxy.telegram_main
+          swift_exit=$?
+          set -e
+          echo "exit_code=$swift_exit" >> "$GITHUB_OUTPUT"
+          if [[ "$swift_exit" -ne 0 && "$swift_exit" -ne 2 ]]; then
+            exit "$swift_exit"
+          fi
+
       - name: Check generated subscriptions
         if: steps.pipeline.outputs.exit_code == '0'
         run: python -m swiftproxy.main --check-output
+
+      - name: Check generated Telegram proxies
+        if: steps.telegram.outputs.exit_code == '0'
+        run: python -m swiftproxy.telegram_main --check-output
 
       - name: Commit changed data
         shell: bash
         run: |
           set -euo pipefail
-          git add sub data stats.json
+          git add sub data stats.json Telegram
           if git diff --cached --quiet; then
             exit 0
           fi
@@ -103,22 +125,41 @@ jobs:
           git push
 
       - name: Configure GitHub Pages
-        if: steps.pipeline.outputs.exit_code == '0'
         uses: actions/configure-pages@45bfe0192ca1faeb007ade9deae92b16b8254a0d # v6.0.0
 
+      - name: Prepare Pages files
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/swift-pages/Telegram"
+          cp -a sub/. "$RUNNER_TEMP/swift-pages/"
+          cp -a Telegram/. "$RUNNER_TEMP/swift-pages/Telegram/"
+
       - name: Upload subscriptions
-        if: steps.pipeline.outputs.exit_code == '0'
         uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9 # v5.0.0
         with:
-          path: sub
+          path: ${{ runner.temp }}/swift-pages
 
       - name: Deploy subscriptions
-        if: steps.pipeline.outputs.exit_code == '0'
         id: deployment
         uses: actions/deploy-pages@cd2ce8fcbc39b97be8ca5fce6e763baed58fa128 # v5.0.0
 
+      - name: Update Telegram status message
+        continue-on-error: true
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          TELEGRAM_MESSAGE_ID: ${{ secrets.TELEGRAM_MESSAGE_ID }}
+        run: python -m swiftproxy.telegram_publish
+
       - name: Report held publish
-        if: steps.pipeline.outputs.exit_code == '2'
+        if: always() && steps.pipeline.outputs.exit_code == '2'
         run: |
           echo "Swift kept the previous subscriptions because this run looked unhealthy." >&2
+          exit 1
+
+      - name: Report held Telegram publish
+        if: always() && steps.telegram.outputs.exit_code == '2'
+        run: |
+          echo "Swift kept the previous Telegram proxies because this run looked unhealthy." >&2
           exit 1
