@@ -34,15 +34,15 @@ def _percentile(values: list[float], percentile: float) -> float | None:
     return ordered[index]
 
 
-async def resolve_public_endpoint(config: ProxyConfig) -> str:
+async def resolve_public_host(host: str, port: int) -> str:
     try:
-        address = ipaddress.ip_address(config.host)
+        address = ipaddress.ip_address(host)
     except ValueError:
         loop = asyncio.get_running_loop()
         try:
             answers = await loop.getaddrinfo(
-                config.host,
-                config.port,
+                host,
+                port,
                 type=socket.SOCK_STREAM,
                 proto=socket.IPPROTO_TCP,
             )
@@ -58,7 +58,11 @@ async def resolve_public_endpoint(config: ProxyConfig) -> str:
         address = parsed[0]
     if not address.is_global:
         raise ValueError("PRIVATE_ENDPOINT")
-    config.resolved_ip = str(address)
+    return str(address)
+
+
+async def resolve_public_endpoint(config: ProxyConfig) -> str:
+    config.resolved_ip = await resolve_public_host(config.host, config.port)
     return config.resolved_ip
 
 
