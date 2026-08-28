@@ -10,7 +10,10 @@ readme = "README.md"
 requires-python = ">=3.12"
 license = { text = "MIT" }
 authors = [{ name = "Swift contributors" }]
-dependencies = []
+dependencies = [
+    "cryptography==50.0.1",
+    "mtproxy-checker @ git+https://github.com/alimghmi/mtproxychecker.git@80224c93c47242575107c83eb603d675e49226e8",
+]
 
 [project.scripts]
 swift-filter = "swiftproxy.main:cli"
@@ -24,4 +27,3 @@ where = ["src"]
 [tool.ruff]
 line-length = 100
 target-version = "py312"
-
