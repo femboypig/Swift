@@ -14,7 +14,7 @@ actually carry traffic.
 
 The normal list. It contains at most 200 configs.
 
-`https://raw.githubusercontent.com/femboypig/swift/main/sub/main.txt`
+`https://sub.femboypig.ru/main.txt`
 
 There is no minimum. If 74 configs meet the threshold, the file contains 74.
 
@@ -25,7 +25,7 @@ that an upstream puts in that category, resolves the real endpoint, and requires
 to be inside the current community CIDR list. It then runs the proxy and history tests separately
 from Main. SNI-only matches are not enough for this list.
 
-`https://raw.githubusercontent.com/femboypig/swift/main/sub/white.txt`
+`https://sub.femboypig.ru/white.txt`
 
 This is also capped at 200. A config passing the normal test does not make it eligible for White.
 
@@ -34,7 +34,7 @@ This is also capped at 200. A config passing the normal test does not make it el
 Every unique candidate from the current run that passed both proxy test rounds and the small
 download floor. This can be larger than the recommended lists.
 
-`https://raw.githubusercontent.com/femboypig/swift/main/sub/all.txt`
+`https://sub.femboypig.ru/all.txt`
 
 ## Karing and Happ
 
@@ -44,9 +44,9 @@ current public protocol list does not include TUIC.
 
 For Happ, use these versions. They omit TUIC and include Happ's profile metadata:
 
-`https://raw.githubusercontent.com/femboypig/swift/main/sub/happ/main.txt`
+`https://sub.femboypig.ru/happ/main.txt`
 
-`https://raw.githubusercontent.com/femboypig/swift/main/sub/happ/white.txt`
+`https://sub.femboypig.ru/happ/white.txt`
 
 Keeping `#profile-title`, `#profile-update-interval`, and `#profile-web-page-url` out of the
 universal files avoids depending on how other clients treat Happ-specific lines.
@@ -160,8 +160,11 @@ The default config uses:
 - [vpnsvpns/Prihs](https://github.com/vpnsvpns/Prihs) as an hourly GitHub-hosted fallback for the
   same Akres feeds. Prihs does not test configs itself, so duplicate provenance from these two URLs
   is treated as one source;
+- [RKPchannel/RKP_bypass_configs](https://github.com/RKPchannel/RKP_bypass_configs), using its
+  independently maintained and core-tested normal and whitelist feeds;
+- [zieng2/wl](https://github.com/zieng2/wl), using its hourly `vless_universal.txt` feed for White;
 - [igareck/vpn-configs-for-russia](https://github.com/igareck/vpn-configs-for-russia), using its
-  mobile/checked CIDR lists for White;
+  mobile and full CIDR lists for White;
 - [mifa.world](https://mifa.world/), fetched independently as requested. Its anonymous homepage
   currently exposes no config URIs, so Swift reports it as empty instead of scraping an
   undocumented authenticated endpoint.
@@ -190,7 +193,8 @@ PYTHONPATH=src python -m swiftproxy.main --check-output
 
 The normal place to run the full network job is GitHub Actions. The workflow downloads the pinned
 sing-box release, verifies its published SHA-256 checksum, caches the binary, tests, performs
-output sanity checks, and commits only when tracked data changed.
+output sanity checks, commits only when tracked data changed, and deploys the subscriptions to
+GitHub Pages. The raw GitHub files remain usable as a fallback if the custom domain is unavailable.
 
 Tuning lives in `config.toml`. Candidate counts, concurrency, timeouts, probes, history window,
 quality thresholds, and list caps are there. Protocol details and parser behavior are code, not
