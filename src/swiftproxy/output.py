@@ -12,7 +12,7 @@ from .parsing import serialize_uri
 
 
 HAPP_PROTOCOLS = {"vless", "vmess", "trojan", "ss", "hysteria2"}
-PIPELINE_VERSION = 3
+PIPELINE_VERSION = 4
 
 
 def display_name(
@@ -108,6 +108,7 @@ def build_stats(
     failures: Counter[str],
     source_status: dict[str, str],
     published: bool,
+    white_evidence: dict[str, Any] | None = None,
     previous: dict[str, Any] | None = None,
     reason: str | None = None,
 ) -> dict[str, Any]:
@@ -162,6 +163,7 @@ def build_stats(
         "sources": dict(sorted(sources.items())),
         "countries": dict(sorted(countries.items())),
         "source_status": dict(sorted(source_status.items())),
+        "white_evidence": white_evidence or {},
         "failure_reasons": dict(sorted(failures.items())),
     }
     if reason:
