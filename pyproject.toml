@@ -17,6 +17,8 @@ dependencies = [
 
 [project.scripts]
 swift-filter = "swiftproxy.main:cli"
+swift-mtproto = "swiftproxy.telegram_main:cli"
+swift-telegram-publish = "swiftproxy.telegram_publish:cli"
 
 [tool.setuptools]
 package-dir = { "" = "src" }
