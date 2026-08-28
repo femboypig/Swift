@@ -64,7 +64,11 @@ def load_settings(path: Path) -> dict[str, Any]:
         return tomllib.load(handle)
 
 
-def previous_subscription_configs(root: Path, history: dict[str, Any]) -> list[ProxyConfig]:
+def previous_subscription_configs(
+    root: Path,
+    history: dict[str, Any],
+    allowed_sources: dict[str, set[str]] | None = None,
+) -> list[ProxyConfig]:
     configs: list[ProxyConfig] = []
     rejected = 0
     records = history.get("configs", {})
@@ -81,7 +85,10 @@ def previous_subscription_configs(root: Path, history: dict[str, Any]) -> list[P
                 rejected += 1
                 continue
             record = records.get(config.fingerprint, {})
-            config.sources.update(record.get("sources", ["previous-output"]))
+            sources = set(record.get("sources", ["previous-output"]))
+            if allowed_sources is not None and sources.isdisjoint(allowed_sources[lane]):
+                continue
+            config.sources.update(sources)
             config.lanes.add(lane)
             configs.append(config)
     if rejected:
@@ -183,8 +190,13 @@ async def run(root: Path, config_path: Path, core_override: str | None = None) -
         history = empty_history()
         order = {"main": [], "white": []}
 
+    proxy_specs = source_specs(settings)
+    allowed_sources = {
+        lane: {spec.name for spec in proxy_specs if lane in spec.lanes}
+        for lane in ("main", "white")
+    }
     source_results, evidence_results = await asyncio.gather(
-        fetch_sources(source_specs(settings), float(settings["collection"]["fetch_timeout"])),
+        fetch_sources(proxy_specs, float(settings["collection"]["fetch_timeout"])),
         fetch_sources(
             evidence_specs(settings),
             float(settings["white_evidence"]["fetch_timeout"]),
@@ -200,7 +212,7 @@ async def run(root: Path, config_path: Path, core_override: str | None = None) -
             {"source_status": _source_status(evidence_results)},
         )
     parsed, parse_failures, collected = parse_sources(source_results)
-    previous_configs = previous_subscription_configs(root, history)
+    previous_configs = previous_subscription_configs(root, history, allowed_sources)
     parsed.extend(previous_configs)
     unique, duplicate_count = deduplicate(parsed)
     parse_failures["DUPLICATE"] += duplicate_count
