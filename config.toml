@@ -224,6 +224,12 @@ url = "https://raw.githubusercontent.com/heops6767/PypsCFG/main/output/LiteWhite
 lanes = ["white"]
 
 [[sources]]
+id = "rjsxrd-white-tested"
+name = "rjsxrd"
+url = "https://raw.githubusercontent.com/whoahaow/rjsxrd/main/githubmirror/bypass/bypass-all.txt"
+lanes = ["white"]
+
+[[sources]]
 id = "mifa-world"
 name = "mifa.world"
 url = "https://mifa.world/"
