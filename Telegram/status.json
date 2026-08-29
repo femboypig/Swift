@@ -2,39 +2,38 @@
   "control_ok": true,
   "failure_reasons": {
     "CONNECT_FAILED": 9,
-    "CONNECT_TIMEOUT": 18,
+    "CONNECT_TIMEOUT": 17,
     "DNS_FAILED": 8,
     "DUPLICATE": 963,
     "MALFORMED_SECRET": 10,
-    "NETWORK_ERROR": 4,
-    "PROTOCOL_ERROR": 66,
+    "PROTOCOL_ERROR": 64,
     "RESPONSE_TIMEOUT": 3,
     "UNSTABLE": 12,
     "UNSUPPORTED_SECRET": 10
   },
   "fastest": 20,
   "healthy_run": true,
-  "last_successful_set": "2026-08-29T07:07:03Z",
+  "last_successful_set": "2026-08-29T07:21:08Z",
   "production": {
     "fastest": 20,
     "stable": 50,
-    "working": 259
+    "working": 263
   },
   "project": "Swift",
   "selected": {
     "backup": {
-      "median_rtt_ms": 433.13,
-      "score": 97.1,
+      "median_rtt_ms": 424.42,
+      "score": 97.18,
       "url": "https://t.me/proxy?server=sioms.co.uk&port=25565&secret=ee104462821249bd7ac519130220c25d0963646e2e79656b74616e65742e636f6d"
     },
     "fastest": {
-      "median_rtt_ms": 281.66,
-      "score": 96.56,
-      "url": "https://t.me/proxy?server=qadim.zhigool.co.uk&port=22&secret=104462821249bd7ac519130220c25d09"
+      "median_rtt_ms": 280.11,
+      "score": 96.58,
+      "url": "https://t.me/proxy?server=basic.valmira.co.uk&port=22&secret=104462821249bd7ac519130220c25d09"
     },
     "stable": {
-      "median_rtt_ms": 425.92,
-      "score": 97.17,
+      "median_rtt_ms": 420.31,
+      "score": 97.22,
       "url": "https://t.me/proxy?server=jadid.zhigool.co.uk&port=25565&secret=ee1603010200010001fc030386e24c3add6d656469612e737465616d706f77657265642e636f6d"
     }
   },
@@ -43,31 +42,31 @@
       "fetched": 241,
       "status": "OK",
       "unique": 221,
-      "working": 209
+      "working": 210
     },
     "klondike": {
       "fetched": 234,
       "status": "OK",
       "unique": 230,
-      "working": 193
+      "working": 194
     },
     "shablin": {
       "fetched": 303,
       "status": "OK",
       "unique": 292,
-      "working": 219
+      "working": 222
     },
     "solispirit": {
       "fetched": 236,
       "status": "OK",
       "unique": 230,
-      "working": 193
+      "working": 194
     }
   },
   "stable": 50,
   "suspicious_streak": 0,
   "tagline": "Filter the garbage. Keep what works.",
-  "tested": 363,
-  "updated_at": "2026-08-29T07:07:03Z",
-  "working": 259
+  "tested": 360,
+  "updated_at": "2026-08-29T07:21:08Z",
+  "working": 263
 }
