@@ -13,6 +13,7 @@ import statistics
 import tempfile
 from datetime import UTC, datetime
 from pathlib import Path
+from collections.abc import Callable
 from typing import Any
 
 from .models import ProxyConfig, TestResult
@@ -34,7 +35,11 @@ def _percentile(values: list[float], percentile: float) -> float | None:
     return ordered[index]
 
 
-async def resolve_public_host(host: str, port: int) -> str:
+async def resolve_public_host(
+    host: str,
+    port: int,
+    prefer: Callable[[str], bool] | None = None,
+) -> str:
     try:
         address = ipaddress.ip_address(host)
     except ValueError:
@@ -55,19 +60,28 @@ async def resolve_public_host(host: str, port: int) -> str:
         if any(not value.is_global for value in parsed):
             raise ValueError("PRIVATE_ENDPOINT")
         parsed.sort(key=lambda value: (value.version != 4, str(value)))
-        address = parsed[0]
+        if prefer:
+            address = next((value for value in parsed if prefer(str(value))), parsed[0])
+        else:
+            address = parsed[0]
     if not address.is_global:
         raise ValueError("PRIVATE_ENDPOINT")
     return str(address)
 
 
-async def resolve_public_endpoint(config: ProxyConfig) -> str:
-    config.resolved_ip = await resolve_public_host(config.host, config.port)
+async def resolve_public_endpoint(
+    config: ProxyConfig,
+    prefer: Callable[[str], bool] | None = None,
+) -> str:
+    config.resolved_ip = await resolve_public_host(config.host, config.port, prefer)
     return config.resolved_ip
 
 
 async def resolve_candidates(
-    configs: list[ProxyConfig], concurrency: int = 100, timeout: float = 8.0
+    configs: list[ProxyConfig],
+    concurrency: int = 100,
+    timeout: float = 8.0,
+    prefer: Callable[[str], bool] | None = None,
 ) -> tuple[list[ProxyConfig], dict[str, str]]:
     semaphore = asyncio.Semaphore(concurrency)
     failures: dict[str, str] = {}
@@ -75,7 +89,7 @@ async def resolve_candidates(
     async def resolve(config: ProxyConfig) -> None:
         async with semaphore:
             try:
-                await asyncio.wait_for(resolve_public_endpoint(config), timeout)
+                await asyncio.wait_for(resolve_public_endpoint(config, prefer), timeout)
             except TimeoutError:
                 failures[config.fingerprint] = "DNS_TIMEOUT"
             except ValueError as exc:
