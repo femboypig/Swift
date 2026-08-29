@@ -330,52 +330,6 @@ async def run(root: Path, config_path: Path, core_override: str | None = None) -
         float(quality["main_min_score"]),
         float(settings["testing"]["main_min_throughput_bps"]),
     )
-    if ranked_main and os.environ.get("SWIFT_RU_PROBE_URL"):
-        tcp_candidates = [
-            item
-            for item in ranked_main
-            if item.config.protocol not in {"hysteria2", "tuic"}
-        ]
-        top_main = tcp_candidates[: min(len(tcp_candidates), 120)]
-        probe_targets = [
-            {
-                "host": item.config.resolved_ip or item.config.host,
-                "port": item.config.port,
-                "sni": _visible_server_name(item.config),
-            }
-            for item in top_main
-        ]
-        ru_results = probe_ru_targets(probe_targets, check_type="tcp_tls")
-        if ru_results:
-            passed_count = sum(bool(r.get("ok")) for r in ru_results.values())
-            passed_ratio = passed_count / len(ru_results)
-            if len(ru_results) >= 10 and passed_ratio < 0.10:
-                LOGGER.warning(
-                    "RU_PROBE_OUTAGE_SUSPECTED main total=%d passed=%d ratio=%.2f -> preserving runner selection",
-                    len(ru_results),
-                    passed_count,
-                    passed_ratio,
-                )
-            else:
-                passed_main = []
-                for item in ranked_main:
-                    if item.config.protocol in {"hysteria2", "tuic"}:
-                        passed_main.append(item)
-                        continue
-                    key_id = f"{item.config.resolved_ip or item.config.host}:{item.config.port}"
-                    status_item = ru_results.get(key_id)
-                    if status_item is not None:
-                        if status_item.get("ok"):
-                            passed_main.append(item)
-                    else:
-                        passed_main.append(item)
-                if passed_main:
-                    LOGGER.info(
-                        "main ru_probe filtered passed=%d dropped=%d",
-                        len(passed_main),
-                        len(ranked_main) - len(passed_main),
-                    )
-                    ranked_main = passed_main
     ranked_white = rank_configs(
         unique,
         results,
