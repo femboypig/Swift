@@ -24,6 +24,7 @@ DOMAIN_RE = re.compile(
 LOCAL_NAMES = {"localhost", "localhost.localdomain", "metadata.google.internal"}
 LOCAL_SUFFIXES = (".localhost", ".local", ".internal", ".home.arpa")
 TRANSPORTS = {"tcp", "http", "ws", "grpc", "httpupgrade", "quic"}
+TRANSPORT_ALIASES = {"raw": "tcp", "websocket": "ws"}
 
 
 def _b64decode(value: str) -> bytes:
@@ -100,6 +101,7 @@ def _uuid(value: str) -> str:
 
 
 def _transport_options(query: dict[str, list[str]], transport: str) -> dict[str, Any]:
+    transport = TRANSPORT_ALIASES.get(transport, transport)
     if transport not in TRANSPORTS:
         raise ValueError("unsupported transport")
     options: dict[str, Any] = {"transport": transport}
