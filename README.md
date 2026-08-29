@@ -191,6 +191,13 @@ The default config uses:
 - [zieng2/wl](https://github.com/zieng2/wl), using its hourly `vless_universal.txt` feed for White;
 - [igareck/vpn-configs-for-russia](https://github.com/igareck/vpn-configs-for-russia), using its
   mobile and full CIDR lists for White;
+- [AirLinkVPN](https://github.com/AirLinkVPN1/AirLinkVPN),
+  [bywarm/rser](https://gitverse.ru/bywarm/rser),
+  [AetrisVPN](https://github.com/flaafix/AetrisVPN-white-list-lite),
+  [Kizyak](https://github.com/Maskkost93/kizyak-vpn-4.0), and
+  [PypsCFG](https://github.com/heops6767/PypsCFG) as additional White discovery feeds;
+- [whoahaow/rjsxrd](https://github.com/whoahaow/rjsxrd), using its Xray-tested bypass output for
+  White. Swift still applies its own CIDR and traffic checks instead of trusting the upstream tag;
 - [mifa.world](https://mifa.world/), fetched independently as requested. Its anonymous homepage
   currently exposes no config URIs, so Swift reports it as empty instead of scraping an
   undocumented authenticated endpoint.
