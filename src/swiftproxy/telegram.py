@@ -453,24 +453,51 @@ def select_message_targets(
     working: list[RankedTelegram],
     stable: list[RankedTelegram],
     fastest: list[RankedTelegram],
+    rotation_slot: int = 0,
 ) -> dict[str, Any]:
     selected: list[tuple[str, RankedTelegram]] = []
 
-    def add(label: str, candidates: list[RankedTelegram]) -> None:
+    def suitable(candidates: list[RankedTelegram]) -> list[RankedTelegram]:
+        healthy = [
+            item
+            for item in candidates
+            if item.result.attempts >= 3
+            and item.result.successes == item.result.attempts
+            and (item.result.median_rtt or math.inf) <= 1500
+            and (item.result.p95_rtt or math.inf) <= 2500
+            and (item.result.jitter or math.inf) <= 700
+        ]
+        preferred = [
+            item
+            for item in healthy
+            if item.proxy.port == 443 and item.proxy.secret_kind == "faketls"
+        ]
+        if preferred:
+            return preferred
+        standard_port = [item for item in healthy if item.proxy.port == 443]
+        return standard_port or healthy
+
+    def add(label: str, candidates: list[RankedTelegram], offset: int) -> None:
         used = {item.proxy.fingerprint for _, item in selected}
+        candidates = suitable(candidates)
+        rotating = candidates[: min(3, len(candidates))]
+        if rotating:
+            start = (rotation_slot + offset) % len(rotating)
+            candidates = rotating[start:] + rotating[:start] + candidates[len(rotating) :]
         choice = next((item for item in candidates if item.proxy.fingerprint not in used), None)
         if choice is not None:
             selected.append((label, choice))
 
-    current_stable = [item for item in stable if item.result.working]
-    add("fastest", fastest)
-    add("stable", current_stable or working)
+    current_stable = [item for item in stable if item.result.working and item.state == "active"]
+    add("fastest", fastest, 0)
+    add("stable", current_stable or working, 1)
     add(
         "backup",
         [item for item in working if item.proxy.host not in {x.proxy.host for _, x in selected}],
+        2,
     )
     if len(selected) < 3:
-        add("backup", working)
+        add("backup", working, 2)
     return {
         label: {
             "url": item.proxy.url,
