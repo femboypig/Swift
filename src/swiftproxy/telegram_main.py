@@ -5,6 +5,7 @@ import asyncio
 import copy
 import json
 import logging
+import os
 import sys
 import tomllib
 from datetime import UTC, datetime
@@ -12,6 +13,7 @@ from pathlib import Path
 from typing import Any
 
 from .output import atomic_write, write_json
+from .ru_probe import probe_ru_targets
 from .sources import fetch_sources
 from .telegram import (
     LOGGER,
@@ -115,6 +117,35 @@ async def run(root: Path, settings: dict[str, Any]) -> int:
 
     previous_order = _previous_order(root, "all.txt")
     working, stable_candidates = rank_proxies(candidates, results, temp_history, previous_order)
+    if working and os.environ.get("SWIFT_RU_PROBE_URL"):
+        top_telegram = working[: min(len(working), 50)]
+        probe_targets = [
+            {
+                "host": item.proxy.resolved_ip or item.proxy.host,
+                "port": item.proxy.port,
+                "secret": item.proxy.secret,
+            }
+            for item in top_telegram
+        ]
+        ru_results = probe_ru_targets(probe_targets, check_type="mtproto")
+        if ru_results:
+            passed_working = []
+            for item in working:
+                key_id = f"{item.proxy.resolved_ip or item.proxy.host}:{item.proxy.port}"
+                status_item = ru_results.get(key_id)
+                if status_item is not None:
+                    if status_item.get("ok"):
+                        passed_working.append(item)
+                else:
+                    passed_working.append(item)
+            if passed_working:
+                LOGGER.info(
+                    "telegram ru_probe filtered passed=%d dropped=%d",
+                    len(passed_working),
+                    len(working) - len(passed_working),
+                )
+                working = passed_working
+                stable_candidates = [item for item in stable_candidates if item in passed_working]
     stable = [
         item
         for item in stable_candidates
