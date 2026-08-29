@@ -1,9 +1,5 @@
 #profile-title: Swift White
 #profile-update-interval: 1
 #profile-web-page-url: https://github.com/femboypig/swift
-vless://eaee7415-f1eb-4404-8801-f3dcd340cb50@82.202.179.92:5269?encryption=none&type=tcp&security=reality&sni=max.ru&fp=chrome&pbk=s4-6wXzdAwaUFvAYsXCwyFsq61kjmFJ5w5rYW7z_uB8&sid=5f24112b&insecure=1#%F0%9F%87%B1%F0%9F%87%BB%20LV%20%C2%B7%20W001
-vless://eaee7415-f1eb-4404-8801-f3dcd340cb50@82.202.179.92:5269?encryption=none&type=tcp&security=reality&sni=max.ru&fp=qq&pbk=s4-6wXzdAwaUFvAYsXCwyFsq61kjmFJ5w5rYW7z_uB8&sid=5f24112b&insecure=1#%F0%9F%87%B1%F0%9F%87%BB%20LV%20%C2%B7%20W002
-vless://eaee7415-f1eb-4404-8801-f3dcd340cb50@82.202.179.92:5269?encryption=none&type=tcp&security=reality&sni=max.ru&fp=safari&pbk=s4-6wXzdAwaUFvAYsXCwyFsq61kjmFJ5w5rYW7z_uB8&sid=5f24112b&insecure=1#%F0%9F%87%B1%F0%9F%87%BB%20LV%20%C2%B7%20W003
-vless://87f56eb8-8e02-4d51-b8d8-9476d5c46e41@45.9.15.77:443?encryption=none&type=tcp&security=reality&flow=xtls-rprx-vision&sni=www.max.ru&fp=firefox&pbk=kYmAepOhG51VCI1ABUsCyBv1H_AOkOg2u6JH5AC3nl4&sid=9b00f431750d671c#%F0%9F%87%B3%F0%9F%87%B1%20NL%20%C2%B7%20W004
-vless://633f424e-2b11-48da-a6b3-a849dd71456f@45.12.75.242:26424?encryption=none&type=tcp&security=reality&sni=ya.ru&fp=chrome&pbk=l8AubqcxQO-HRFJy4pZL1vbLOo-eXit69s-XulSELE0&sid=23103e1e#%F0%9F%87%B7%F0%9F%87%BA%20RU%20%C2%B7%20W005
-vless://eaee7415-f1eb-4404-8801-f3dcd340cb50@82.202.179.92:5269?encryption=none&type=tcp&security=reality&sni=max.ru&fp=edge&pbk=s4-6wXzdAwaUFvAYsXCwyFsq61kjmFJ5w5rYW7z_uB8&sid=5f24112b&insecure=1#%F0%9F%87%B1%F0%9F%87%BB%20LV%20%C2%B7%20W006
+vless://87f56eb8-8e02-4d51-b8d8-9476d5c46e41@45.9.15.77:443?encryption=none&type=tcp&security=reality&flow=xtls-rprx-vision&sni=www.max.ru&fp=firefox&pbk=kYmAepOhG51VCI1ABUsCyBv1H_AOkOg2u6JH5AC3nl4&sid=9b00f431750d671c#%F0%9F%8F%B3%EF%B8%8F%20%3F%3F%20%C2%B7%20W001
+vless://633f424e-2b11-48da-a6b3-a849dd71456f@45.12.75.242:26424?encryption=none&type=tcp&security=reality&sni=ya.ru&fp=chrome&pbk=l8AubqcxQO-HRFJy4pZL1vbLOo-eXit69s-XulSELE0&sid=23103e1e#%F0%9F%8F%B3%EF%B8%8F%20%3F%3F%20%C2%B7%20W002
