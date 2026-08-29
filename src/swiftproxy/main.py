@@ -34,9 +34,16 @@ from .scoring import (
     prune_history,
     rank_configs,
 )
+from .ru_probe import probe_ru_targets
 from .sources import fetch_sources, source_specs
 from .testing import preflight_targets, resolve_candidates, test_candidates
-from .whitelist import build_evidence, evidence_for, evidence_priority, evidence_specs
+from .whitelist import (
+    _visible_server_name,
+    build_evidence,
+    evidence_for,
+    evidence_priority,
+    evidence_specs,
+)
 
 
 LOGGER = logging.getLogger("swift")
@@ -336,6 +343,34 @@ async def run(root: Path, config_path: Path, core_override: str | None = None) -
         key=lambda item: evidence_priority(white_signals.get(item.config.fingerprint, "")),
         reverse=True,
     )
+    if ranked_white and os.environ.get("SWIFT_RU_PROBE_URL"):
+        top_white = ranked_white[: min(len(ranked_white), 60)]
+        probe_targets = [
+            {
+                "host": item.config.resolved_ip or item.config.host,
+                "port": item.config.port,
+                "sni": _visible_server_name(item.config),
+            }
+            for item in top_white
+        ]
+        ru_results = probe_ru_targets(probe_targets, check_type="tcp_tls")
+        if ru_results:
+            passed_white = []
+            for item in ranked_white:
+                key_id = f"{item.config.resolved_ip or item.config.host}:{item.config.port}"
+                status_item = ru_results.get(key_id)
+                if status_item is not None:
+                    if status_item.get("ok"):
+                        passed_white.append(item)
+                else:
+                    passed_white.append(item)
+            if passed_white:
+                LOGGER.info(
+                    "white ru_probe filtered passed=%d dropped=%d",
+                    len(passed_white),
+                    len(ranked_white) - len(passed_white),
+                )
+                ranked_white = passed_white
     diversity = settings["diversity"]
     main = diverse_selection(
         ranked_main,
