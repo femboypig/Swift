@@ -2,39 +2,38 @@
   "control_ok": true,
   "failure_reasons": {
     "CONNECT_FAILED": 7,
-    "CONNECT_TIMEOUT": 17,
+    "CONNECT_TIMEOUT": 18,
     "DNS_FAILED": 16,
-    "DUPLICATE": 927,
+    "DUPLICATE": 954,
     "MALFORMED_SECRET": 10,
-    "NETWORK_ERROR": 1,
-    "PROTOCOL_ERROR": 72,
-    "RESPONSE_TIMEOUT": 4,
-    "UNSTABLE": 18,
+    "PROTOCOL_ERROR": 58,
+    "RESPONSE_TIMEOUT": 3,
+    "UNSTABLE": 8,
     "UNSUPPORTED_SECRET": 6
   },
   "fastest": 20,
   "healthy_run": true,
-  "last_successful_set": "2026-08-29T19:37:31Z",
+  "last_successful_set": "2026-08-29T20:08:19Z",
   "production": {
     "fastest": 20,
     "stable": 50,
-    "working": 258
+    "working": 253
   },
   "project": "Swift",
   "selected": {
     "backup": {
-      "median_rtt_ms": 437.93,
-      "score": 97.05,
-      "url": "https://t.me/proxy?server=download.lv426.co.uk&port=443&secret=eeddffffffc5a1168b2ff3eba31cbfffff7765622e62616c652e6169"
+      "median_rtt_ms": 573.1,
+      "score": 95.7,
+      "url": "https://t.me/proxy?server=gen.foriran.co.uk&port=443&secret=ee1603010200010001fc030386e24c3add6d656469612e737465616d706f77657265642e636f6d"
     },
     "fastest": {
-      "median_rtt_ms": 307.77,
-      "score": 89.26,
-      "url": "https://t.me/proxy?server=forever.startnetwork.shop&port=443&secret=dd0ef5f4a09c2e33527338e9184a9a6178"
+      "median_rtt_ms": 453.83,
+      "score": 90.9,
+      "url": "https://t.me/proxy?server=run.helloworld.surf&port=443&secret=dde80c91fa5050b02631672334ecb38b6a"
     },
     "stable": {
-      "median_rtt_ms": 401.23,
-      "score": 97.41,
+      "median_rtt_ms": 588.38,
+      "score": 95.6,
       "url": "https://t.me/proxy?server=t.meow-network.com&port=443&secret=ee5622e11fff3e49bcc85280197a6106b5742e6d656f772d6e6574776f726b2e636f6d"
     }
   },
@@ -43,31 +42,31 @@
       "fetched": 239,
       "status": "OK",
       "unique": 220,
-      "working": 198
+      "working": 192
     },
     "klondike": {
       "fetched": 234,
       "status": "OK",
       "unique": 230,
-      "working": 187
+      "working": 178
     },
     "shablin": {
       "fetched": 300,
       "status": "OK",
       "unique": 293,
-      "working": 216
+      "working": 215
     },
     "solispirit": {
       "fetched": 236,
       "status": "OK",
       "unique": 230,
-      "working": 187
+      "working": 178
     }
   },
   "stable": 50,
   "suspicious_streak": 0,
   "tagline": "Filter the garbage. Keep what works.",
   "tested": 367,
-  "updated_at": "2026-08-29T19:37:31Z",
-  "working": 258
+  "updated_at": "2026-08-29T20:08:19Z",
+  "working": 253
 }
