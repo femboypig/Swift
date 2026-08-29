@@ -238,9 +238,10 @@ PYTHONPATH=src python -m swiftproxy.telegram_main --check-output
 ```
 
 To enable live probing from inside Russia during the run, configure `SWIFT_RU_PROBE_URL` and
-`SWIFT_RU_PROBE_KEY` (pointing to the Yandex Cloud Serverless probe). Both Main, White, and Telegram
-pipelines will automatically verify candidates from Moscow before final selection. If the probe is
-absent or experiences an outage, Swift gracefully preserves verified runner results without wiping.
+`SWIFT_RU_PROBE_KEY` (pointing to the Yandex Cloud Function probe). Both White (whitelist TLS reachability)
+and Telegram (MTProto handshake and latency) pipelines will automatically verify candidates from Moscow
+before final selection. If the probe is absent or experiences an outage, Swift gracefully preserves verified
+runner results without wiping.
 
 The normal place to run the full network job is GitHub Actions. The workflow downloads the pinned
 sing-box release, verifies its published SHA-256 checksum, caches the binary, tests, performs
