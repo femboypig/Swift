@@ -1,53 +1,50 @@
 {
-  "alive": 111,
-  "collected": 1665,
+  "alive": 72,
+  "collected": 1975,
   "countries": {
-    "DE": 14,
+    "DE": 15,
     "EE": 1,
-    "FI": 3,
+    "FI": 2,
     "FR": 2,
     "GB": 5,
-    "IN": 1,
-    "IT": 1,
-    "JP": 20,
-    "KR": 1,
-    "LT": 2,
-    "LV": 1,
-    "NL": 18,
-    "PL": 4,
+    "JP": 1,
+    "KZ": 1,
+    "LT": 4,
+    "MD": 1,
+    "NL": 16,
+    "PL": 2,
     "RO": 2,
     "RU": 2,
-    "SG": 3,
-    "TR": 3,
-    "TW": 3,
-    "US": 25
+    "TR": 2,
+    "TW": 2,
+    "US": 14
   },
   "failure_reasons": {
-    "CONNECT_TIMEOUT": 120,
+    "CONNECT_TIMEOUT": 116,
     "CORE_START_FAILED": 2,
-    "DUPLICATE": 461,
-    "HTTP_FAILED": 10,
-    "NOT_WHITELISTED": 227,
-    "PARSE_ERROR": 28,
-    "PROXY_FAILED": 360,
-    "SOURCE_EMPTY": 2,
-    "TOO_SLOW": 25,
-    "UNSTABLE": 22,
-    "UNSUPPORTED": 171
+    "DUPLICATE": 579,
+    "HTTP_FAILED": 12,
+    "NOT_WHITELISTED": 383,
+    "PARSE_ERROR": 39,
+    "PROXY_FAILED": 368,
+    "SOURCE_EMPTY": 1,
+    "TOO_SLOW": 20,
+    "UNSTABLE": 31,
+    "UNSUPPORTED": 180
   },
-  "main": 50,
-  "median_latency_ms": 489.58,
-  "parsed": 1571,
+  "main": 48,
+  "median_latency_ms": 414.39,
+  "parsed": 1806,
   "pipeline_version": 4,
   "production": {
-    "all": 111,
-    "main": 50,
-    "white": 0
+    "all": 72,
+    "main": 48,
+    "white": 1
   },
   "project": "Swift",
   "protocols": {
     "hysteria2": 14,
-    "vless": 97
+    "vless": 58
   },
   "published": true,
   "source_status": {
@@ -73,22 +70,22 @@
     "zieng2-white": "OK"
   },
   "sources": {
-    "airlink": 1,
     "akres": 15,
-    "kizyak": 7,
     "rjsxrd": 10,
-    "rkp": 97,
-    "zieng2": 1
+    "rkp": 54,
+    "zieng2": 4
   },
   "tagline": "Filter the garbage. Keep what works.",
-  "tested": 650,
-  "unique": 1110,
-  "updated_at": "2026-08-29T16:39:27Z",
-  "white": 0,
+  "tested": 621,
+  "unique": 1227,
+  "updated_at": "2026-08-29T17:07:20Z",
+  "white": 1,
   "white_evidence": {
     "cidr_source": "hxehex-white-cidr",
     "domain_source": "hxehex-white-domains",
-    "eligible": 482,
-    "published": {}
+    "eligible": 501,
+    "published": {
+      "cidr": 1
+    }
   }
 }
