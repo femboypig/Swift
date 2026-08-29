@@ -115,7 +115,9 @@ The Actions job runs this pipeline every 30 minutes:
 10. Make five HTTPS requests through that SOCKS proxy, rotating across several targets, then
    download 256 KiB.
 11. Stop the core and repeat the proxy test with a fresh process and local port.
-12. Update history, score, select, and publish only configs that passed both rounds.
+12. For Main and White candidates, perform a secondary live verification via the Russian network probe
+    (Yandex Cloud Serverless in Moscow) to ensure physical reachability under Russian ISP and TSPU conditions.
+13. Update history, score, select, and publish only configs that passed both rounds.
 
 Twenty configs are tested concurrently. Each process has its own temporary JSON file and local
 port. Commands use argument arrays, not a shell, and process groups are terminated in `finally`
@@ -235,6 +237,11 @@ PYTHONPATH=src python -m swiftproxy.telegram_main
 PYTHONPATH=src python -m swiftproxy.telegram_main --check-output
 ```
 
+To enable live probing from inside Russia during the run, configure `SWIFT_RU_PROBE_URL` and
+`SWIFT_RU_PROBE_KEY` (pointing to the Yandex Cloud Serverless probe). Both Main, White, and Telegram
+pipelines will automatically verify candidates from Moscow before final selection. If the probe is
+absent or experiences an outage, Swift gracefully preserves verified runner results without wiping.
+
 The normal place to run the full network job is GitHub Actions. The workflow downloads the pinned
 sing-box release, verifies its published SHA-256 checksum, caches the binary, tests, performs
 output sanity checks, commits only when tracked data changed, and deploys the subscriptions to
@@ -249,10 +256,12 @@ configuration knobs.
 These are free public proxies run by unknown people. Treat them as untrusted. Use end-to-end
 encryption for anything important.
 
-Latency is measured from a GitHub-hosted runner. It is not the latency from your home ISP or a
-Russian mobile network. A server measured at 55 ms in Actions can be slow or unreachable for you.
-Swift ranks what the runner can measure; it does not promise the globally fastest servers.
-The same limitation applies to MTProto RTT in `Telegram/fastest.txt`.
+Primary latency and throughput are measured from a GitHub-hosted runner, with secondary connectivity
+verified through the Moscow probe. While this eliminates servers completely blocked at the Russian
+gateway level, local mobile ISP filters, regional DPI throttles, and dynamic carrier whitelists can
+still differ across operators. Swift selects what can be verified; it does not promise globally
+bulletproof bypass under every local carrier restriction.
+The same applies to MTProto RTT in `Telegram/fastest.txt`.
 
 The White job is independent, but a GitHub runner cannot reproduce a Russian carrier's restricted
 or whitelist mode. Public lists combine observations from different operators, regions, towers,
