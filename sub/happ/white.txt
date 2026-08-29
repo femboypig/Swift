@@ -1,5 +1,5 @@
 #profile-title: Swift White
 #profile-update-interval: 1
 #profile-web-page-url: https://github.com/femboypig/swift
-vless://87f56eb8-8e02-4d51-b8d8-9476d5c46e41@45.9.15.77:443?encryption=none&type=tcp&security=reality&flow=xtls-rprx-vision&sni=www.max.ru&fp=firefox&pbk=kYmAepOhG51VCI1ABUsCyBv1H_AOkOg2u6JH5AC3nl4&sid=9b00f431750d671c#%F0%9F%8F%B3%EF%B8%8F%20%3F%3F%20%C2%B7%20W001
-vless://633f424e-2b11-48da-a6b3-a849dd71456f@45.12.75.242:26424?encryption=none&type=tcp&security=reality&sni=ya.ru&fp=chrome&pbk=l8AubqcxQO-HRFJy4pZL1vbLOo-eXit69s-XulSELE0&sid=23103e1e#%F0%9F%8F%B3%EF%B8%8F%20%3F%3F%20%C2%B7%20W002
+vless://411bacb5-3838-49dc-9890-b59295c35544@37.143.14.212:443?encryption=none&type=tcp&security=reality&flow=xtls-rprx-vision&sni=wl-8-1.nodes.ac&fp=qq&pbk=knrqm393ghxJNYj-4qu2BYpwpG5_zOG5h5-H7yyyR38&sid=0be28edc1b0278d6#%F0%9F%87%B1%F0%9F%87%B9%20LT%20%C2%B7%20W001
+vless://48894eaa-4830-4f9f-a3ec-f2ecc876a907@46.243.233.98:443?encryption=none&type=tcp&security=reality&flow=xtls-rprx-vision&sni=optim.tildacdn.pub&fp=edge&pbk=uYiZWRgbowvS9uOhVZTe0FBS1pLzA3QMyQ_NfDh4_h8&sid=5f50ac74b1ce9610#%F0%9F%87%AB%F0%9F%87%B7%20FR%20%C2%B7%20W002
