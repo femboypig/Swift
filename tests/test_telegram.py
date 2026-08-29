@@ -20,6 +20,7 @@ from swiftproxy.telegram import (
     fastest_proxies,
     parse_proxy_url,
     score_proxy,
+    select_message_targets,
 )
 from swiftproxy.telegram_main import run
 from swiftproxy.telegram_publish import message_payload, publish_status
@@ -145,6 +146,22 @@ class TelegramScoringTests(unittest.TestCase):
         self.assertEqual(
             fastest_proxies([spiky, steady], 2)[0].proxy.fingerprint, steady_proxy.fingerprint
         )
+
+    def test_message_targets_require_clean_faketls_on_port_443(self) -> None:
+        preferred = []
+        for host in ("1.1.1.1", "8.8.8.8", "9.9.9.9"):
+            proxy = parse_proxy_url(proxy_url(secret=EE_SECRET, host=host))
+            preferred.append(RankedTelegram(proxy, good_result(proxy), 90, "active", 1.0))
+        raw = parse_proxy_url(proxy_url(secret=RAW_SECRET, port=22))
+        raw_item = RankedTelegram(raw, good_result(raw, [40, 41, 42]), 99, "active", 1.0)
+
+        first = select_message_targets([raw_item, *preferred], preferred, [raw_item, *preferred], 0)
+        second = select_message_targets(
+            [raw_item, *preferred], preferred, [raw_item, *preferred], 1
+        )
+
+        self.assertTrue(all(item["url"].endswith(EE_SECRET) for item in first.values()))
+        self.assertNotEqual(first["fastest"]["url"], second["fastest"]["url"])
 
     def test_repeated_valid_zero_runs_eventually_replace_stale_data(self) -> None:
         previous = {"production": {"working": 80}, "suspicious_streak": 0}
