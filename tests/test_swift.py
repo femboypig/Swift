@@ -367,6 +367,7 @@ class ScoringAndHistoryTests(unittest.TestCase):
                     "jitter": 2500,
                     "throughput": 65536,
                 }
+                for _ in range(4)
             ]
         }
         now = datetime(2026, 8, 27, 12, 10, tzinfo=UTC)
@@ -505,6 +506,39 @@ class ScoringAndHistoryTests(unittest.TestCase):
             ranked.append(RankedConfig(config, "main", result, 90 - index, "active", 1.0))
         selected = diverse_selection(ranked, 4, endpoint_limit=1, subnet_limit=1, asn_limit=1)
         self.assertEqual(len(selected), 4)
+
+    def test_bayesian_confidence_promotes_veteran_over_one_hit_wonder(self) -> None:
+        obs_veteran = [
+            {
+                "timestamp": "2026-08-29T12:00:00Z",
+                "success": True,
+                "success_ratio": 1.0,
+                "rounds": 2,
+                "confirmed_rounds": 2,
+                "median_latency": 120,
+                "p95_latency": 150,
+                "jitter": 15,
+                "throughput": 1_000_000,
+            }
+            for _ in range(16)
+        ]
+        obs_new = [
+            {
+                "timestamp": "2026-08-29T12:00:00Z",
+                "success": True,
+                "success_ratio": 1.0,
+                "rounds": 2,
+                "confirmed_rounds": 2,
+                "median_latency": 45,
+                "p95_latency": 55,
+                "jitter": 5,
+                "throughput": 1_000_000,
+            }
+        ]
+        now = datetime(2026, 8, 29, 12, 10, tzinfo=UTC)
+        score_veteran, _ = score_lane({"observations": obs_veteran}, now, lane="main")
+        score_new, _ = score_lane({"observations": obs_new}, now, lane="main")
+        self.assertGreater(score_veteran, score_new)
 
 
 class OutputTests(unittest.TestCase):
