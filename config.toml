@@ -200,6 +200,30 @@ url = "https://raw.githubusercontent.com/AirLinkVPN1/AirLinkVPN/main/rkn_white_l
 lanes = ["white"]
 
 [[sources]]
+id = "bywarm-white-selected"
+name = "bywarm"
+url = "https://gitverse.ru/api/repos/bywarm/rser/raw/branch/master/selected.txt"
+lanes = ["white"]
+
+[[sources]]
+id = "aetris-white-lite"
+name = "aetris"
+url = "https://raw.githubusercontent.com/flaafix/AetrisVPN-white-list-lite/main/AetrisVPN.txt"
+lanes = ["white"]
+
+[[sources]]
+id = "kizyak-white-v7"
+name = "kizyak"
+url = "https://raw.githubusercontent.com/Maskkost93/kizyak-vpn-4.0/main/kizyakbeta7.txt"
+lanes = ["white"]
+
+[[sources]]
+id = "pyps-white-lite-checked"
+name = "pyps"
+url = "https://raw.githubusercontent.com/heops6767/PypsCFG/main/output/LiteWhiteListChecked.txt"
+lanes = ["white"]
+
+[[sources]]
 id = "mifa-world"
 name = "mifa.world"
 url = "https://mifa.world/"
