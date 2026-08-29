@@ -72,8 +72,27 @@ white_probe_urls = [
 [history]
 window = 16
 
+[scoring.main]
+availability_weight = 0.45
+recent_weight = 0.20
+throughput_weight = 0.10
+latency_weight = 0.10
+tail_weight = 0.05
+jitter_weight = 0.05
+freshness_weight = 0.05
+confidence_window = 10
+neutral_availability = 0.50
+
+[scoring.white]
+availability_weight = 0.50
+recent_weight = 0.30
+throughput_weight = 0.10
+freshness_weight = 0.10
+confidence_window = 8
+neutral_availability = 0.50
+
 [quality]
-main_min_score = 70
+main_min_score = 65
 white_min_score = 60
 all_min_throughput_bps = 49152
 
