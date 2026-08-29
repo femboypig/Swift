@@ -1,51 +1,54 @@
 {
-  "alive": 63,
-  "collected": 1919,
+  "alive": 71,
+  "collected": 1913,
   "countries": {
     "AL": 1,
     "CZ": 1,
-    "DE": 10,
-    "EE": 2,
-    "FI": 2,
+    "DE": 9,
+    "EE": 1,
+    "FI": 3,
     "FR": 1,
     "GB": 5,
-    "KZ": 1,
-    "LT": 2,
+    "IN": 1,
+    "JP": 1,
+    "KZ": 2,
+    "LT": 1,
     "MD": 1,
-    "NL": 12,
-    "PL": 2,
-    "RU": 2,
+    "NL": 14,
+    "PL": 4,
+    "RO": 1,
+    "RU": 5,
     "SG": 2,
     "TR": 2,
-    "TW": 4,
-    "US": 13
+    "TW": 5,
+    "US": 11
   },
   "failure_reasons": {
-    "CONNECT_TIMEOUT": 132,
+    "CONNECT_TIMEOUT": 135,
     "CORE_START_FAILED": 2,
-    "DUPLICATE": 612,
-    "HTTP_FAILED": 8,
-    "NOT_WHITELISTED": 359,
-    "PARSE_ERROR": 39,
-    "PROXY_FAILED": 370,
+    "DUPLICATE": 599,
+    "HTTP_FAILED": 12,
+    "NOT_WHITELISTED": 361,
+    "PARSE_ERROR": 36,
+    "PROXY_FAILED": 363,
     "SOURCE_EMPTY": 1,
-    "TOO_SLOW": 16,
-    "UNSTABLE": 24,
-    "UNSUPPORTED": 187
+    "TOO_SLOW": 13,
+    "UNSTABLE": 19,
+    "UNSUPPORTED": 231
   },
   "main": 53,
-  "median_latency_ms": 565.91,
-  "parsed": 1749,
+  "median_latency_ms": 486.18,
+  "parsed": 1700,
   "pipeline_version": 4,
   "production": {
-    "all": 63,
+    "all": 71,
     "main": 53,
     "white": 1
   },
   "project": "Swift",
   "protocols": {
-    "hysteria2": 11,
-    "vless": 52
+    "hysteria2": 12,
+    "vless": 59
   },
   "published": true,
   "source_status": {
@@ -72,22 +75,22 @@
   },
   "sources": {
     "aetris": 1,
-    "airlink": 2,
-    "akres": 8,
-    "kizyak": 1,
+    "airlink": 3,
+    "akres": 13,
+    "kizyak": 4,
     "rjsxrd": 13,
     "rkp": 53,
-    "zieng2": 2
+    "zieng2": 3
   },
   "tagline": "Filter the garbage. Keep what works.",
   "tested": 615,
-  "unique": 1137,
-  "updated_at": "2026-08-29T20:06:48Z",
+  "unique": 1101,
+  "updated_at": "2026-08-29T21:59:34Z",
   "white": 1,
   "white_evidence": {
     "cidr_source": "hxehex-white-cidr",
     "domain_source": "hxehex-white-domains",
-    "eligible": 442,
+    "eligible": 402,
     "published": {
       "sni": 1
     }

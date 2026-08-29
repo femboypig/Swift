@@ -1,1 +1,1 @@
-vless://633f424e-2b11-48da-a6b3-a849dd71456f@45.12.75.242:26424?encryption=none&type=tcp&security=reality&sni=ya.ru&fp=chrome&pbk=l8AubqcxQO-HRFJy4pZL1vbLOo-eXit69s-XulSELE0&sid=23103e1e#%F0%9F%87%B7%F0%9F%87%BA%20RU%20%C2%B7%20W001
+vless://2c634977-584e-4e1f-b501-1b70c77a6743@185.141.227.150:9001?encryption=none&type=grpc&security=reality&sni=api-maps.yandex.ru&fp=chrome&pbk=SbVKOEMjK0sIlbwg4akyBg5mL5KZwwB-ed4eEE7YnRc&sid=6ba85179e30d4fc2&serviceName=grpc-reality&mode=gun#%F0%9F%87%B7%F0%9F%87%BA%20RU%20%C2%B7%20W001
