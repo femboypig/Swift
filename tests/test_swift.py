@@ -8,6 +8,7 @@ from collections import Counter
 from datetime import UTC, datetime
 from pathlib import Path
 from urllib.parse import quote
+from unittest.mock import AsyncMock, patch
 
 from swiftproxy.models import ProxyConfig, RankedConfig, SourceResult, SourceSpec, TestResult
 from swiftproxy.main import previous_subscription_configs
@@ -37,7 +38,7 @@ from swiftproxy.scoring import (
     score_lane,
     state_after,
 )
-from swiftproxy.testing import sing_box_config, sing_box_outbound
+from swiftproxy.testing import resolve_public_host, sing_box_config, sing_box_outbound
 from swiftproxy.whitelist import build_evidence, evidence_for
 
 
@@ -231,6 +232,19 @@ class TestingConfigTests(unittest.TestCase):
         self.assertEqual(sing_box_outbound(configs[0])["type"], "shadowsocks")
         self.assertTrue(sing_box_outbound(configs[1])["tls"]["enabled"])
         self.assertEqual(sing_box_outbound(configs[2])["uuid"], UUID_A)
+
+
+class EndpointResolutionTests(unittest.IsolatedAsyncioTestCase):
+    async def test_prefers_an_allowlisted_address_from_all_dns_answers(self) -> None:
+        answers = [
+            (2, 1, 6, "", ("8.8.8.8", 443)),
+            (2, 1, 6, "", (PUBLIC_V4, 443)),
+        ]
+        with patch("asyncio.BaseEventLoop.getaddrinfo", new=AsyncMock(return_value=answers)):
+            resolved = await resolve_public_host(
+                "edge.example.com", 443, lambda address: address == PUBLIC_V4
+            )
+        self.assertEqual(resolved, PUBLIC_V4)
 
 
 class WhiteEvidenceTests(unittest.TestCase):
