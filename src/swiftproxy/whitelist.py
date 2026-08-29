@@ -104,10 +104,28 @@ def build_evidence(results: list[SourceResult]) -> WhiteEvidence:
 
 
 def evidence_for(config: ProxyConfig, evidence: WhiteEvidence) -> str | None:
-    if config.resolved_ip is None or not evidence.contains(config.resolved_ip):
+    endpoint_allowed = bool(config.resolved_ip and evidence.contains(config.resolved_ip))
+    server_name = _visible_server_name(config)
+    sni_allowed = bool(server_name and evidence.contains_sni(server_name))
+    if endpoint_allowed and sni_allowed:
+        return "cidr+sni"
+    if endpoint_allowed:
+        return "cidr"
+    if sni_allowed:
+        return "sni"
+    return None
+
+
+def evidence_priority(signal: str) -> int:
+    return {"cidr+sni": 3, "cidr": 2, "sni": 1}.get(signal, 0)
+
+
+def _visible_server_name(config: ProxyConfig) -> str | None:
+    security = str(config.options.get("security", "none"))
+    always_tls = config.protocol in {"trojan", "hysteria2", "tuic"}
+    if security not in {"tls", "reality"} and not always_tls:
         return None
-    sni = str(config.options.get("sni") or "")
-    return "cidr+sni" if sni and evidence.contains_sni(sni) else "cidr"
+    return str(config.options.get("sni") or config.host)
 
 
 def _networks(content: str) -> tuple[ipaddress.IPv4Network, ...]:
