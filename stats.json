@@ -1,49 +1,54 @@
 {
-  "alive": 66,
-  "collected": 1975,
+  "alive": 76,
+  "collected": 1971,
   "countries": {
-    "DE": 13,
-    "FI": 2,
-    "FR": 2,
+    "AL": 1,
+    "CZ": 1,
+    "DE": 14,
+    "EE": 1,
+    "FI": 1,
+    "FR": 1,
     "GB": 6,
-    "IN": 1,
+    "IT": 2,
     "JP": 1,
+    "KZ": 1,
     "LT": 1,
-    "NL": 13,
-    "PL": 2,
+    "MD": 1,
+    "NL": 17,
+    "PL": 3,
     "RO": 2,
-    "RU": 1,
+    "RU": 2,
     "SG": 1,
     "TR": 2,
     "TW": 4,
-    "US": 15
+    "US": 14
   },
   "failure_reasons": {
     "CONNECT_TIMEOUT": 114,
     "CORE_START_FAILED": 2,
-    "DUPLICATE": 578,
-    "HTTP_FAILED": 9,
-    "NOT_WHITELISTED": 383,
+    "DUPLICATE": 604,
+    "HTTP_FAILED": 6,
+    "NOT_WHITELISTED": 385,
     "PARSE_ERROR": 39,
-    "PROXY_FAILED": 373,
+    "PROXY_FAILED": 384,
     "SOURCE_EMPTY": 1,
-    "TOO_SLOW": 22,
-    "UNSTABLE": 35,
-    "UNSUPPORTED": 180
+    "TOO_SLOW": 19,
+    "UNSTABLE": 27,
+    "UNSUPPORTED": 172
   },
-  "main": 46,
-  "median_latency_ms": 562.94,
-  "parsed": 1805,
+  "main": 63,
+  "median_latency_ms": 420.67,
+  "parsed": 1809,
   "pipeline_version": 4,
   "production": {
-    "all": 66,
-    "main": 46,
-    "white": 3
+    "all": 76,
+    "main": 63,
+    "white": 1
   },
   "project": "Swift",
   "protocols": {
-    "hysteria2": 14,
-    "vless": 52
+    "hysteria2": 13,
+    "vless": 63
   },
   "published": true,
   "source_status": {
@@ -69,22 +74,23 @@
     "zieng2-white": "OK"
   },
   "sources": {
-    "akres": 12,
-    "rjsxrd": 7,
-    "rkp": 53,
-    "zieng2": 2
+    "airlink": 1,
+    "akres": 18,
+    "rjsxrd": 13,
+    "rkp": 58,
+    "zieng2": 1
   },
   "tagline": "Filter the garbage. Keep what works.",
-  "tested": 621,
-  "unique": 1227,
-  "updated_at": "2026-08-29T17:31:52Z",
-  "white": 3,
+  "tested": 628,
+  "unique": 1205,
+  "updated_at": "2026-08-29T18:30:32Z",
+  "white": 1,
   "white_evidence": {
     "cidr_source": "hxehex-white-cidr",
     "domain_source": "hxehex-white-domains",
-    "eligible": 501,
+    "eligible": 472,
     "published": {
-      "cidr": 3
+      "cidr": 1
     }
   }
 }
