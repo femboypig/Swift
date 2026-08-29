@@ -65,6 +65,27 @@ class TestRuProbe(unittest.TestCase):
         )
         self.assertEqual(res, {})
 
+    @patch("urllib.request.urlopen")
+    def test_probe_chunking(self, mock_urlopen):
+        mock_response = MagicMock()
+        mock_response.status = 200
+        mock_response.read.return_value = json.dumps(
+            {"results": [{"target": {"host": "1.2.3.4", "port": 443}, "ok": True}]}
+        ).encode("utf-8")
+        mock_response.__enter__.return_value = mock_response
+        mock_urlopen.return_value = mock_response
+
+        targets = [
+            {"host": "1.2.3.4", "port": 443},
+            {"host": "1.2.3.4", "port": 443},
+            {"host": "1.2.3.4", "port": 443},
+        ]
+        res = probe_ru_targets(
+            targets, probe_url="https://example.com/probe", chunk_size=1
+        )
+        self.assertEqual(mock_urlopen.call_count, 3)
+        self.assertTrue(res["1.2.3.4:443"]["ok"])
+
 
 if __name__ == "__main__":
     unittest.main()
