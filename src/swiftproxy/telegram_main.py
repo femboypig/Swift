@@ -173,7 +173,14 @@ async def run(root: Path, settings: dict[str, Any]) -> int:
         "last_successful_set": last_successful_set,
         "sources": dict(sorted(source_stats.items())),
         "failure_reasons": dict(sorted(failures.items())),
-        "selected": select_message_targets(working, stable, fastest) if healthy else {},
+        "selected": select_message_targets(
+            working,
+            stable,
+            fastest,
+            int(datetime.now(UTC).timestamp() // (6 * 3600)),
+        )
+        if healthy
+        else {},
     }
     if reason:
         status["failure_reason"] = reason
