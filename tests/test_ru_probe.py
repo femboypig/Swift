@@ -12,6 +12,11 @@ class TestRuProbe(unittest.TestCase):
         res = probe_ru_targets([{"host": "1.1.1.1", "port": 443}], probe_url="")
         self.assertEqual(res, {})
 
+    @patch.dict("os.environ", {}, clear=True)
+    def test_probe_no_env(self):
+        res = probe_ru_targets([{"host": "1.1.1.1", "port": 443}])
+        self.assertEqual(res, {})
+
     def test_probe_no_targets(self):
         res = probe_ru_targets([], probe_url="https://example.com/probe")
         self.assertEqual(res, {})
