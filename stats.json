@@ -1,48 +1,56 @@
 {
-  "alive": 99,
-  "collected": 1890,
+  "alive": 147,
+  "collected": 1927,
   "countries": {
-    "DE": 7,
+    "CO": 1,
+    "CZ": 1,
+    "DE": 14,
+    "EE": 2,
     "FI": 4,
-    "FR": 1,
-    "GB": 2,
+    "FR": 3,
+    "GB": 8,
     "IN": 1,
-    "JP": 23,
+    "JP": 19,
     "KR": 1,
-    "LV": 5,
-    "NL": 12,
-    "PL": 4,
-    "RO": 1,
-    "SG": 17,
-    "TR": 1,
-    "US": 20
+    "KZ": 1,
+    "LT": 5,
+    "LV": 1,
+    "MD": 1,
+    "NL": 31,
+    "PL": 8,
+    "RO": 2,
+    "RU": 2,
+    "SG": 7,
+    "TR": 3,
+    "TW": 1,
+    "US": 31
   },
   "failure_reasons": {
-    "CONNECT_TIMEOUT": 172,
-    "DNS_FAILED": 3,
-    "DUPLICATE": 419,
-    "HTTP_FAILED": 2,
-    "NOT_WHITELISTED": 420,
-    "PARSE_ERROR": 10,
-    "PROXY_FAILED": 327,
+    "CONNECT_TIMEOUT": 57,
+    "CORE_START_FAILED": 2,
+    "DUPLICATE": 497,
+    "HTTP_FAILED": 14,
+    "NOT_WHITELISTED": 405,
+    "PARSE_ERROR": 23,
+    "PROXY_FAILED": 354,
     "SOURCE_EMPTY": 1,
-    "TOO_SLOW": 22,
-    "UNSTABLE": 20,
-    "UNSUPPORTED": 490
+    "TOO_SLOW": 24,
+    "UNSTABLE": 52,
+    "UNSUPPORTED": 187
   },
-  "main": 103,
-  "median_latency_ms": 466.21,
-  "parsed": 1489,
+  "main": 144,
+  "median_latency_ms": 480.35,
+  "parsed": 1825,
   "pipeline_version": 4,
   "production": {
-    "all": 99,
-    "main": 103,
-    "white": 5
+    "all": 147,
+    "main": 144,
+    "white": 6
   },
   "project": "Swift",
   "protocols": {
-    "hysteria2": 10,
-    "vless": 89
+    "hysteria2": 22,
+    "vless": 125
   },
   "published": true,
   "source_status": {
@@ -68,24 +76,26 @@
     "zieng2-white": "OK"
   },
   "sources": {
-    "akres": 12,
-    "igareck": 4,
-    "kizyak": 8,
-    "rjsxrd": 5,
-    "rkp": 83
+    "airlink": 1,
+    "akres": 15,
+    "kizyak": 11,
+    "pyps": 1,
+    "rjsxrd": 9,
+    "rkp": 131,
+    "zieng2": 1
   },
   "tagline": "Filter the garbage. Keep what works.",
-  "tested": 642,
-  "unique": 1070,
-  "updated_at": "2026-08-29T10:22:19Z",
-  "white": 5,
+  "tested": 650,
+  "unique": 1328,
+  "updated_at": "2026-08-29T12:07:07Z",
+  "white": 6,
   "white_evidence": {
     "cidr_source": "hxehex-white-cidr",
     "domain_source": "hxehex-white-domains",
-    "eligible": 273,
+    "eligible": 500,
     "published": {
-      "cidr": 1,
-      "cidr+sni": 4
+      "cidr+sni": 4,
+      "sni": 2
     }
   }
 }
