@@ -102,6 +102,18 @@ class ParsingTests(unittest.TestCase):
         )
         self.assertEqual(first.fingerprint, second.fingerprint)
 
+    def test_xray_transport_names_are_normalized(self) -> None:
+        raw = parse_uri(vless_uri().replace("type=tcp", "type=raw"))
+        websocket = parse_uri(
+            vless_uri()
+            .replace("type=tcp", "type=websocket")
+            .replace("&sni=", "&path=%2Fws&sni=")
+        )
+        self.assertEqual(raw.options["transport"], "tcp")
+        self.assertEqual(websocket.options["transport"], "ws")
+        self.assertEqual(raw.fingerprint, parse_uri(vless_uri()).fingerprint)
+        self.assertEqual(raw.fingerprint, parse_uri(serialize_uri(raw)).fingerprint)
+
     def test_vmess_round_trip(self) -> None:
         payload = {
             "v": "2",
