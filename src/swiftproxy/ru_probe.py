@@ -17,8 +17,8 @@ def probe_ru_targets(
     probe_key: str | None = None,
     timeout: float = 12.0,
 ) -> dict[str, dict[str, Any]]:
-    url = probe_url or os.environ.get("SWIFT_RU_PROBE_URL")
-    key = probe_key or os.environ.get("SWIFT_RU_PROBE_KEY", "")
+    url = os.environ.get("SWIFT_RU_PROBE_URL", "") if probe_url is None else probe_url
+    key = os.environ.get("SWIFT_RU_PROBE_KEY", "") if probe_key is None else probe_key
 
     if not url or not targets:
         return {}
