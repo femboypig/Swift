@@ -19,6 +19,8 @@ env:
   SING_BOX_VERSION: "1.13.19"
   SING_BOX_SHA256: "ef88a9e577d474210867bd708933d042e9b70106529df2656182c9db90106aa1"
   SWIFT_SING_BOX: .cache/sing-box/sing-box
+  SWIFT_RU_PROBE_URL: ${{ secrets.SWIFT_RU_PROBE_URL }}
+  SWIFT_RU_PROBE_KEY: ${{ secrets.SWIFT_RU_PROBE_KEY }}
 
 jobs:
   update:
