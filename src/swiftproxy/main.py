@@ -241,7 +241,9 @@ async def run(root: Path, config_path: Path, core_override: str | None = None) -
         )
 
     white_pool = [config for config in unique if "white" in config.lanes]
-    resolved_white, white_resolution_failures = await resolve_candidates(white_pool)
+    resolved_white, white_resolution_failures = await resolve_candidates(
+        white_pool, prefer=white_evidence.contains
+    )
     resolved_white_fingerprints = {config.fingerprint for config in resolved_white}
     white_signals: dict[str, str] = {}
     for config in white_pool:
