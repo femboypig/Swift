@@ -200,7 +200,6 @@ def rank_configs(
         if result is None:
             continue
         lane_record = _lane_record(history, config.fingerprint, lane)
-        previous_score = float(lane_record.get("score", 0))
         score, availability = score_lane(lane_record, lane=lane)
         state = lane_record.get("state", "new")
         previous_success = next(
@@ -218,20 +217,18 @@ def rank_configs(
             and result.success_ratio >= 0.8
             and (result.throughput_bps or 0) >= min_throughput
         )
-        observations = lane_record.get("observations", [])
-        one_run_grace = (
-            state == "degraded"
-            and len(observations) > 1
-            and _observation_availability(observations[-2]) >= 0.8
-        )
-        if one_run_grace:
-            score = max(score, previous_score - 8)
         lane_record["score"] = score
         if state not in {"active", "degraded"}:
             continue
-        if score < min_score and not one_run_grace:
+        if score < min_score:
             continue
-        if not current_ok and not one_run_grace:
+        if not current_ok:
+            continue
+        successful_runs = sum(
+            _observation_availability(item) >= 0.8 and int(item.get("confirmed_rounds", 0)) >= 2
+            for item in lane_record.get("observations", [])
+        )
+        if lane == "main" and successful_runs < 2:
             continue
         ranked.append(RankedConfig(config, lane, result, score, state, availability))
 
