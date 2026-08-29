@@ -10,19 +10,13 @@ from typing import Any
 LOGGER = logging.getLogger("swift")
 
 
-def probe_ru_targets(
+def _send_probe_chunk(
     targets: list[dict[str, Any]],
-    check_type: str = "tcp_tls",
-    probe_url: str | None = None,
-    probe_key: str | None = None,
-    timeout: float = 12.0,
+    check_type: str,
+    url: str,
+    key: str,
+    timeout: float,
 ) -> dict[str, dict[str, Any]]:
-    url = os.environ.get("SWIFT_RU_PROBE_URL", "") if probe_url is None else probe_url
-    key = os.environ.get("SWIFT_RU_PROBE_KEY", "") if probe_key is None else probe_key
-
-    if not url or not targets:
-        return {}
-
     payload = json.dumps({"type": check_type, "targets": targets}).encode("utf-8")
     headers = {
         "Content-Type": "application/json",
@@ -42,18 +36,41 @@ def probe_ru_targets(
         LOGGER.warning("RU_PROBE_FAILED error=%s", exc)
         return {}
 
-    results_map: dict[str, dict[str, Any]] = {}
+    chunk_map: dict[str, dict[str, Any]] = {}
     for item in data.get("results", []):
         target_info = item.get("target", {})
         host = target_info.get("host")
         port = target_info.get("port")
         if host and port is not None:
             key_id = f"{host}:{port}"
-            results_map[key_id] = {
+            chunk_map[key_id] = {
                 "ok": bool(item.get("ok")),
                 "latency_ms": item.get("latency_ms"),
                 "error": item.get("error"),
             }
+    return chunk_map
+
+
+def probe_ru_targets(
+    targets: list[dict[str, Any]],
+    check_type: str = "tcp_tls",
+    probe_url: str | None = None,
+    probe_key: str | None = None,
+    timeout: float = 25.0,
+    chunk_size: int = 25,
+) -> dict[str, dict[str, Any]]:
+    url = os.environ.get("SWIFT_RU_PROBE_URL", "") if probe_url is None else probe_url
+    key = os.environ.get("SWIFT_RU_PROBE_KEY", "") if probe_key is None else probe_key
+
+    if not url or not targets:
+        return {}
+
+    results_map: dict[str, dict[str, Any]] = {}
+    for start in range(0, len(targets), max(1, chunk_size)):
+        chunk = targets[start : start + chunk_size]
+        chunk_results = _send_probe_chunk(chunk, check_type, url, key, timeout)
+        results_map.update(chunk_results)
+
     LOGGER.info(
         "ru_probe type=%s sent=%d responded=%d passed=%d",
         check_type,
