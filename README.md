@@ -21,9 +21,10 @@ There is no minimum. If 74 configs meet the threshold, the file contains 74.
 ### White
 
 Configs intended for the Russian whitelist/restricted-network case. Swift starts with configs
-that an upstream puts in that category, resolves the real endpoint, and requires its IPv4 address
-to be inside the current community CIDR list. It then runs the proxy and history tests separately
-from Main. SNI-only matches are not enough for this list.
+that an upstream puts in that category and checks two independent pieces of community evidence:
+the resolved endpoint IP and the TLS SNI visible to the operator. Candidates matching both are
+preferred, followed by IP-only matches and then SNI-only matches. Every candidate still has to
+carry real proxy traffic twice; an upstream `white` label is not enough on its own.
 
 `https://sub.femboypig.ru/white.txt`
 
@@ -103,8 +104,8 @@ The Actions job runs this pipeline every 30 minutes:
 1. Fetch each source independently.
 2. Extract supported URIs, validate them, and calculate canonical fingerprints.
 3. Merge duplicates while keeping source provenance.
-4. For White, resolve the candidate endpoints and keep only addresses found in the current
-   whitelist CIDRs. A matching allowed SNI is recorded as an extra signal.
+4. For White, resolve every endpoint address and compare both the IP and visible TLS SNI with the
+   current community lists. Prefer combined IP+SNI evidence, then IP-only, then SNI-only.
 5. Pick a bounded candidate set. Active and previously good configs come first; new and older
    configs get a rotating discovery sample.
 6. Resolve endpoints and reject local, private, link-local, reserved, and metadata addresses.
@@ -257,13 +258,14 @@ The White job is independent, but a GitHub runner cannot reproduce a Russian car
 or whitelist mode. Public lists combine observations from different operators, regions, towers,
 and dates. Some operators check only SNI, some check IP and SNI together, and a total shutdown may
 pass almost nothing. In Swift, White means the endpoint currently matches a published whitelist
-CIDR and the config carried ordinary proxy traffic through sing-box twice. It still does not prove
-that the config works during a shutdown for your SIM. That requires a probe from the affected
-carrier and region.
+CIDR or uses an allowed visible SNI, and the config carried ordinary proxy traffic through
+sing-box twice. SNI-only entries are conditional: they can work where the operator checks SNI but
+will normally fail under combined IP+SNI filtering. None of these checks proves that a config works
+during a shutdown for your SIM. That requires a probe from the affected carrier and region.
 
-An address missing from the community list is not necessarily blocked; the data is incomplete.
-Swift still excludes it from White because this subscription prefers a smaller set with positive
-IP evidence over a larger speculative set.
+An address or SNI missing from the community lists is not necessarily blocked; the data is
+incomplete. Swift still excludes candidates with neither kind of evidence instead of filling White
+with ordinary proxies carrying a speculative upstream label.
 
 ## License
 
