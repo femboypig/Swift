@@ -1,50 +1,49 @@
 {
-  "alive": 72,
+  "alive": 66,
   "collected": 1975,
   "countries": {
-    "DE": 15,
-    "EE": 1,
+    "DE": 13,
     "FI": 2,
     "FR": 2,
-    "GB": 5,
+    "GB": 6,
+    "IN": 1,
     "JP": 1,
-    "KZ": 1,
-    "LT": 4,
-    "MD": 1,
-    "NL": 16,
+    "LT": 1,
+    "NL": 13,
     "PL": 2,
     "RO": 2,
-    "RU": 2,
+    "RU": 1,
+    "SG": 1,
     "TR": 2,
-    "TW": 2,
-    "US": 14
+    "TW": 4,
+    "US": 15
   },
   "failure_reasons": {
-    "CONNECT_TIMEOUT": 116,
+    "CONNECT_TIMEOUT": 114,
     "CORE_START_FAILED": 2,
-    "DUPLICATE": 579,
-    "HTTP_FAILED": 12,
+    "DUPLICATE": 578,
+    "HTTP_FAILED": 9,
     "NOT_WHITELISTED": 383,
     "PARSE_ERROR": 39,
-    "PROXY_FAILED": 368,
+    "PROXY_FAILED": 373,
     "SOURCE_EMPTY": 1,
-    "TOO_SLOW": 20,
-    "UNSTABLE": 31,
+    "TOO_SLOW": 22,
+    "UNSTABLE": 35,
     "UNSUPPORTED": 180
   },
-  "main": 48,
-  "median_latency_ms": 414.39,
-  "parsed": 1806,
+  "main": 46,
+  "median_latency_ms": 562.94,
+  "parsed": 1805,
   "pipeline_version": 4,
   "production": {
-    "all": 72,
-    "main": 48,
-    "white": 1
+    "all": 66,
+    "main": 46,
+    "white": 3
   },
   "project": "Swift",
   "protocols": {
     "hysteria2": 14,
-    "vless": 58
+    "vless": 52
   },
   "published": true,
   "source_status": {
@@ -70,22 +69,22 @@
     "zieng2-white": "OK"
   },
   "sources": {
-    "akres": 15,
-    "rjsxrd": 10,
-    "rkp": 54,
-    "zieng2": 4
+    "akres": 12,
+    "rjsxrd": 7,
+    "rkp": 53,
+    "zieng2": 2
   },
   "tagline": "Filter the garbage. Keep what works.",
   "tested": 621,
   "unique": 1227,
-  "updated_at": "2026-08-29T17:07:20Z",
-  "white": 1,
+  "updated_at": "2026-08-29T17:31:52Z",
+  "white": 3,
   "white_evidence": {
     "cidr_source": "hxehex-white-cidr",
     "domain_source": "hxehex-white-domains",
     "eligible": 501,
     "published": {
-      "cidr": 1
+      "cidr": 3
     }
   }
 }
