@@ -39,7 +39,7 @@ from swiftproxy.scoring import (
     state_after,
 )
 from swiftproxy.testing import resolve_public_host, sing_box_config, sing_box_outbound
-from swiftproxy.whitelist import build_evidence, evidence_for
+from swiftproxy.whitelist import build_evidence, evidence_for, evidence_priority
 
 
 UUID_A = "11111111-1111-4111-8111-111111111111"
@@ -276,8 +276,25 @@ class WhiteEvidenceTests(unittest.TestCase):
         self.assertEqual(evidence_for(config, evidence), "cidr")
         config.resolved_ip = "8.8.8.8"
         self.assertIsNone(evidence_for(config, evidence))
+        config.options["sni"] = "cdn.example.com"
+        self.assertEqual(evidence_for(config, evidence), "sni")
         config.resolved_ip = PUBLIC_V6
+        self.assertEqual(evidence_for(config, evidence), "sni")
+
+    def test_sni_evidence_requires_a_tls_transport(self) -> None:
+        cidr = SourceSpec("cidr", "cidr", "https://example.com/cidr", set(), "white-cidr")
+        domains = SourceSpec(
+            "domains", "domains", "https://example.com/domains", set(), "white-domains"
+        )
+        evidence = build_evidence(
+            [SourceResult(cidr, self.cidr_feed()), SourceResult(domains, self.domain_feed())]
+        )
+        config = parse_uri(
+            f"vless://{UUID_A}@8.8.8.8:443?encryption=none&type=ws&host=example.com"
+        )
+        config.resolved_ip = "8.8.8.8"
         self.assertIsNone(evidence_for(config, evidence))
+        self.assertGreater(evidence_priority("cidr+sni"), evidence_priority("sni"))
 
     def test_invalid_primary_cidr_feed_uses_the_mirror(self) -> None:
         primary = SourceSpec(
