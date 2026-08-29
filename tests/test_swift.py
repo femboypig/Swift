@@ -385,7 +385,7 @@ class ScoringAndHistoryTests(unittest.TestCase):
         lane = add_observation(history, config, failure, 16)
         self.assertEqual(lane["state"], "dead")
 
-    def test_grace_run_is_not_removed_by_the_temporary_score_drop(self) -> None:
+    def test_failed_current_run_is_not_published_during_hysteresis(self) -> None:
         config = parse_uri(vless_uri())
         config.lanes.add("main")
         history = empty_history()
@@ -402,10 +402,9 @@ class ScoringAndHistoryTests(unittest.TestCase):
             70,
             131072,
         )
-        self.assertEqual(len(ranked), 1)
-        self.assertEqual(ranked[0].state, "degraded")
+        self.assertEqual(ranked, [])
 
-    def test_partial_failure_gets_one_grace_run_but_not_two(self) -> None:
+    def test_partial_current_run_is_not_published(self) -> None:
         config = parse_uri(vless_uri())
         config.lanes.add("main")
         history = empty_history()
@@ -435,8 +434,7 @@ class ScoringAndHistoryTests(unittest.TestCase):
             70,
             131072,
         )
-        self.assertEqual(len(ranked), 1)
-        self.assertEqual(ranked[0].state, "degraded")
+        self.assertEqual(ranked, [])
 
         partial.timestamp = "2026-08-27T13:00:00Z"
         add_observation(history, config, partial, 16)
@@ -491,6 +489,8 @@ class ScoringAndHistoryTests(unittest.TestCase):
         for config in (first, second):
             result = successful_result(config)
             results[(config.fingerprint, "main")] = result
+            add_observation(history, config, result, 16)
+            result.timestamp = "2026-08-27T12:30:00Z"
             add_observation(history, config, result, 16)
         previous = [second.fingerprint, first.fingerprint]
         ranked = rank_configs([first, second], results, history, "main", previous, 50, 65536)
