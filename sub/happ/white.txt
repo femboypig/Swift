@@ -1,4 +1,8 @@
 #profile-title: Swift White
 #profile-update-interval: 1
 #profile-web-page-url: https://github.com/femboypig/swift
-vless://41633b30-6fa0-4093-aa61-69996cf0b834@95.129.236.216:443?encryption=none&type=ws&security=tls&sni=cdnguard.org&fp=firefox&path=%2Forigin%2F190546791%2Ffetch&host=cdnguard.org&alpn=http%2F1.1#%F0%9F%87%B1%F0%9F%87%B9%20LT%20%C2%B7%20W001
+vless://eaee7415-f1eb-4404-8801-f3dcd340cb50@82.202.179.92:5269?encryption=none&type=tcp&security=reality&sni=max.ru&fp=chrome&pbk=s4-6wXzdAwaUFvAYsXCwyFsq61kjmFJ5w5rYW7z_uB8&sid=5f24112b&insecure=1#%F0%9F%87%B1%F0%9F%87%BB%20LV%20%C2%B7%20W001
+vless://eaee7415-f1eb-4404-8801-f3dcd340cb50@82.202.179.92:5269?encryption=none&type=tcp&security=reality&sni=max.ru&fp=qq&pbk=s4-6wXzdAwaUFvAYsXCwyFsq61kjmFJ5w5rYW7z_uB8&sid=5f24112b&insecure=1#%F0%9F%87%B1%F0%9F%87%BB%20LV%20%C2%B7%20W002
+vless://eaee7415-f1eb-4404-8801-f3dcd340cb50@82.202.179.92:5269?encryption=none&type=tcp&security=reality&sni=max.ru&fp=safari&pbk=s4-6wXzdAwaUFvAYsXCwyFsq61kjmFJ5w5rYW7z_uB8&sid=5f24112b&insecure=1#%F0%9F%87%B1%F0%9F%87%BB%20LV%20%C2%B7%20W003
+vless://7a322a80-b9ae-0007-bec7-affed230a484@46.8.210.143:443?encryption=none&type=tcp&security=reality&flow=xtls-rprx-vision&sni=smartcaptcha.yandexcloud.net&fp=safari&pbk=DM3bRAvFPKomKjjmatlS2dH5VYZnUkPHw0BmA40kI2k&sid=0f4daaf87f9dff&insecure=1#%F0%9F%87%AA%F0%9F%87%AA%20EE%20%C2%B7%20W004
+vless://eaee7415-f1eb-4404-8801-f3dcd340cb50@82.202.179.92:5269?encryption=none&type=tcp&security=reality&sni=max.ru&fp=edge&pbk=s4-6wXzdAwaUFvAYsXCwyFsq61kjmFJ5w5rYW7z_uB8&sid=5f24112b&insecure=1#%F0%9F%87%B1%F0%9F%87%BB%20LV%20%C2%B7%20W005
