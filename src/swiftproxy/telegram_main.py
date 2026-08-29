@@ -129,23 +129,33 @@ async def run(root: Path, settings: dict[str, Any]) -> int:
         ]
         ru_results = probe_ru_targets(probe_targets, check_type="mtproto")
         if ru_results:
-            passed_working = []
-            for item in working:
-                key_id = f"{item.proxy.resolved_ip or item.proxy.host}:{item.proxy.port}"
-                status_item = ru_results.get(key_id)
-                if status_item is not None:
-                    if status_item.get("ok"):
-                        passed_working.append(item)
-                else:
-                    passed_working.append(item)
-            if passed_working:
-                LOGGER.info(
-                    "telegram ru_probe filtered passed=%d dropped=%d",
-                    len(passed_working),
-                    len(working) - len(passed_working),
+            passed_count = sum(bool(r.get("ok")) for r in ru_results.values())
+            passed_ratio = passed_count / len(ru_results)
+            if len(ru_results) >= 10 and passed_ratio < 0.10:
+                LOGGER.warning(
+                    "RU_PROBE_OUTAGE_SUSPECTED telegram total=%d passed=%d ratio=%.2f -> preserving runner MTProto rankings",
+                    len(ru_results),
+                    passed_count,
+                    passed_ratio,
                 )
-                working = passed_working
-                stable_candidates = [item for item in stable_candidates if item in passed_working]
+            else:
+                passed_working = []
+                for item in working:
+                    key_id = f"{item.proxy.resolved_ip or item.proxy.host}:{item.proxy.port}"
+                    status_item = ru_results.get(key_id)
+                    if status_item is not None:
+                        if status_item.get("ok"):
+                            passed_working.append(item)
+                    else:
+                        passed_working.append(item)
+                if passed_working:
+                    LOGGER.info(
+                        "telegram ru_probe filtered passed=%d dropped=%d",
+                        len(passed_working),
+                        len(working) - len(passed_working),
+                    )
+                    working = passed_working
+                    stable_candidates = [item for item in stable_candidates if item in passed_working]
     stable = [
         item
         for item in stable_candidates
