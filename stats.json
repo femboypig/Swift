@@ -1,54 +1,54 @@
 {
-  "alive": 71,
-  "collected": 1913,
+  "alive": 68,
+  "collected": 1874,
   "countries": {
     "AL": 1,
+    "BG": 1,
     "CZ": 1,
-    "DE": 9,
+    "DE": 10,
     "EE": 1,
     "FI": 3,
     "FR": 1,
     "GB": 5,
     "IN": 1,
     "JP": 1,
-    "KZ": 2,
     "LT": 1,
     "MD": 1,
     "NL": 14,
     "PL": 4,
     "RO": 1,
-    "RU": 5,
+    "RU": 1,
     "SG": 2,
-    "TR": 2,
+    "TR": 3,
     "TW": 5,
     "US": 11
   },
   "failure_reasons": {
-    "CONNECT_TIMEOUT": 135,
+    "CONNECT_TIMEOUT": 136,
     "CORE_START_FAILED": 2,
-    "DUPLICATE": 599,
-    "HTTP_FAILED": 12,
-    "NOT_WHITELISTED": 361,
-    "PARSE_ERROR": 36,
-    "PROXY_FAILED": 363,
+    "DUPLICATE": 593,
+    "HTTP_FAILED": 11,
+    "NOT_WHITELISTED": 349,
+    "PARSE_ERROR": 31,
+    "PROXY_FAILED": 355,
     "SOURCE_EMPTY": 1,
-    "TOO_SLOW": 13,
-    "UNSTABLE": 19,
-    "UNSUPPORTED": 231
+    "TOO_SLOW": 14,
+    "UNSTABLE": 21,
+    "UNSUPPORTED": 221
   },
-  "main": 53,
-  "median_latency_ms": 486.18,
-  "parsed": 1700,
+  "main": 59,
+  "median_latency_ms": 581.55,
+  "parsed": 1676,
   "pipeline_version": 4,
   "production": {
-    "all": 71,
-    "main": 53,
-    "white": 1
+    "all": 68,
+    "main": 59,
+    "white": 2
   },
   "project": "Swift",
   "protocols": {
     "hysteria2": 12,
-    "vless": 59
+    "vless": 56
   },
   "published": true,
   "source_status": {
@@ -74,25 +74,24 @@
     "zieng2-white": "OK"
   },
   "sources": {
-    "aetris": 1,
-    "airlink": 3,
-    "akres": 13,
-    "kizyak": 4,
-    "rjsxrd": 13,
-    "rkp": 53,
-    "zieng2": 3
+    "airlink": 1,
+    "akres": 11,
+    "kizyak": 2,
+    "rjsxrd": 12,
+    "rkp": 55,
+    "zieng2": 1
   },
   "tagline": "Filter the garbage. Keep what works.",
-  "tested": 615,
-  "unique": 1101,
-  "updated_at": "2026-08-29T21:59:34Z",
-  "white": 1,
+  "tested": 607,
+  "unique": 1083,
+  "updated_at": "2026-08-29T22:47:43Z",
+  "white": 2,
   "white_evidence": {
     "cidr_source": "hxehex-white-cidr",
     "domain_source": "hxehex-white-domains",
-    "eligible": 402,
+    "eligible": 403,
     "published": {
-      "sni": 1
+      "sni": 2
     }
   }
 }
