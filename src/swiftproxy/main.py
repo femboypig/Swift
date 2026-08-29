@@ -36,7 +36,7 @@ from .scoring import (
 )
 from .sources import fetch_sources, source_specs
 from .testing import preflight_targets, resolve_candidates, test_candidates
-from .whitelist import build_evidence, evidence_for, evidence_specs
+from .whitelist import build_evidence, evidence_for, evidence_priority, evidence_specs
 
 
 LOGGER = logging.getLogger("swift")
@@ -259,10 +259,12 @@ async def run(root: Path, config_path: Path, core_override: str | None = None) -
             continue
         white_signals[config.fingerprint] = signal
     LOGGER.info(
-        "white evidence candidates=%d eligible=%d cidr_sni=%d rejected=%d",
+        "white evidence candidates=%d eligible=%d cidr_sni=%d cidr=%d sni=%d rejected=%d",
         len(white_pool),
         len(white_signals),
         sum(signal == "cidr+sni" for signal in white_signals.values()),
+        sum(signal == "cidr" for signal in white_signals.values()),
+        sum(signal == "sni" for signal in white_signals.values()),
         len(white_pool) - len(white_signals),
     )
     if not await preflight_targets(settings["testing"]):
@@ -329,6 +331,10 @@ async def run(root: Path, config_path: Path, core_override: str | None = None) -
         order.get("white", []),
         float(quality["white_min_score"]),
         float(settings["testing"]["white_min_throughput_bps"]),
+    )
+    ranked_white.sort(
+        key=lambda item: evidence_priority(white_signals.get(item.config.fingerprint, "")),
+        reverse=True,
     )
     diversity = settings["diversity"]
     main = diverse_selection(
