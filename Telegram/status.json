@@ -1,72 +1,73 @@
 {
   "control_ok": true,
   "failure_reasons": {
-    "CONNECT_FAILED": 8,
-    "CONNECT_TIMEOUT": 19,
+    "CONNECT_FAILED": 9,
+    "CONNECT_TIMEOUT": 20,
     "DNS_FAILED": 8,
-    "DUPLICATE": 991,
-    "MALFORMED_SECRET": 6,
-    "PROTOCOL_ERROR": 60,
-    "RESPONSE_TIMEOUT": 1,
-    "UNSTABLE": 3,
-    "UNSUPPORTED_SECRET": 8
+    "DUPLICATE": 965,
+    "MALFORMED_SECRET": 10,
+    "NETWORK_ERROR": 1,
+    "PROTOCOL_ERROR": 63,
+    "RESPONSE_TIMEOUT": 4,
+    "UNSTABLE": 7,
+    "UNSUPPORTED_SECRET": 10
   },
   "fastest": 20,
   "healthy_run": true,
-  "last_successful_set": "2026-08-29T00:50:52Z",
+  "last_successful_set": "2026-08-29T06:53:55Z",
   "production": {
     "fastest": 20,
     "stable": 50,
-    "working": 264
+    "working": 262
   },
   "project": "Swift",
   "selected": {
     "backup": {
-      "median_rtt_ms": 424.46,
-      "score": 97.18,
-      "url": "https://t.me/proxy?server=sioms.co.uk&port=25565&secret=ee104462821249bd7ac519130220c25d0963646e2e79656b74616e65742e636f6d"
+      "median_rtt_ms": 287.79,
+      "score": 96.5,
+      "url": "https://t.me/proxy?server=qadim.zhigool.co.uk&port=22&secret=104462821249bd7ac519130220c25d09"
     },
     "fastest": {
-      "median_rtt_ms": 279.93,
-      "score": 96.58,
+      "median_rtt_ms": 288.13,
+      "score": 96.5,
       "url": "https://t.me/proxy?server=basic.valmira.co.uk&port=22&secret=104462821249bd7ac519130220c25d09"
     },
     "stable": {
-      "median_rtt_ms": 422.04,
-      "score": 97.21,
+      "median_rtt_ms": 436.75,
+      "score": 97.05,
       "url": "https://t.me/proxy?server=jadid.zhigool.co.uk&port=25565&secret=ee1603010200010001fc030386e24c3add6d656469612e737465616d706f77657265642e636f6d"
     }
   },
   "sources": {
     "argh94": {
-      "fetched": 253,
+      "fetched": 241,
       "status": "OK",
-      "unique": 220,
-      "working": 214
+      "unique": 221,
+      "working": 209
     },
     "klondike": {
       "fetched": 234,
       "status": "OK",
       "unique": 230,
-      "working": 199
+      "working": 193
     },
     "shablin": {
-      "fetched": 300,
+      "fetched": 303,
       "status": "OK",
-      "unique": 287,
-      "working": 223
+      "unique": 292,
+      "working": 220
     },
     "solispirit": {
       "fetched": 236,
       "status": "OK",
       "unique": 230,
-      "working": 199
+      "working": 193
     }
   },
   "stable": 50,
   "suspicious_streak": 0,
   "tagline": "Filter the garbage. Keep what works.",
-  "tested": 356,
-  "updated_at": "2026-08-29T00:50:52Z",
-  "working": 264
+  "tested": 363,
+  "updated_at": "2026-08-29T06:53:55Z",
+  "working": 262
 }
