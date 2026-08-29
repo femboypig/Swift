@@ -133,16 +133,33 @@ def _freshness(observations: list[dict[str, Any]], now: datetime) -> float:
     return max(0.0, 1.0 - hours / 24.0)
 
 
+def _recent_availability(
+    observations: list[dict[str, Any]], window: int = 5, decay: float = 0.80
+) -> float:
+    recent_obs = observations[-window:]
+    if not recent_obs:
+        return 0.0
+    weighted = 0.0
+    total = 0.0
+    for age, observation in enumerate(reversed(recent_obs)):
+        weight = decay**age
+        weighted += _observation_availability(observation) * weight
+        total += weight
+    return weighted / total if total > 0 else 0.0
+
+
 def score_lane(
     lane_record: dict[str, Any],
     now: datetime | None = None,
     lane: str = "main",
+    settings: dict[str, Any] | None = None,
 ) -> tuple[float, float]:
     observations = lane_record.get("observations", [])
     if not observations:
         return 0.0, 0.0
     now = now or datetime.now(UTC)
-    availability = _weighted_availability(observations)
+    raw_availability = _weighted_availability(observations)
+    recent = _recent_availability(observations, window=5, decay=0.80)
     current = observations[-1]
     metrics = current
     if _observation_availability(current) < 0.8:
@@ -150,9 +167,15 @@ def score_lane(
             (item for item in reversed(observations) if _observation_availability(item) >= 0.8),
             current,
         )
-    recent = sum(_observation_availability(item) for item in observations[-3:]) / min(
-        3, len(observations)
-    )
+
+    # Bayesian confidence shrinkage for history components
+    confidence_window = float(settings.get("confidence_window", 10.0) if settings else (10.0 if lane == "main" else 4.0))
+    neutral_availability = float(settings.get("neutral_availability", 0.50) if settings else 0.50)
+    confidence = min(len(observations) / max(1.0, confidence_window), 1.0)
+
+    shrunk_availability = raw_availability * confidence + neutral_availability * (1.0 - confidence)
+    shrunk_recent = recent * confidence + neutral_availability * (1.0 - confidence)
+
     latency = _linear_score(metrics.get("median_latency"), 80, 1400)
     tail = _linear_score(metrics.get("p95_latency"), 140, 2200)
     jitter = _linear_score(metrics.get("jitter"), 25, 700)
@@ -164,24 +187,24 @@ def score_lane(
     freshness = _freshness(observations, now)
 
     if lane == "white":
-        # Actions latency is a poor signal for configs meant for restricted Russian networks.
         score = 100 * (
-            0.50 * availability
-            + 0.30 * recent
+            0.50 * shrunk_availability
+            + 0.30 * shrunk_recent
             + 0.10 * throughput_score
             + 0.10 * freshness
         )
     else:
+        # 65% Actual Traffic History + 10% Throughput + 20% Latency/Jitter/Tail + 5% Freshness
         score = 100 * (
-            0.34 * availability
-            + 0.21 * recent
-            + 0.14 * latency
-            + 0.08 * tail
-            + 0.08 * jitter
+            0.45 * shrunk_availability
+            + 0.20 * shrunk_recent
             + 0.10 * throughput_score
+            + 0.10 * latency
+            + 0.05 * tail
+            + 0.05 * jitter
             + 0.05 * freshness
         )
-    return round(score, 2), availability
+    return round(score, 2), raw_availability
 
 
 def rank_configs(
