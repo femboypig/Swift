@@ -503,7 +503,7 @@ async def run_ru_verify(
                 line for line in verified_main_lines
                 if parse_uri(line).protocol in HAPP_PROTOCOLS
             ]
-            happ_content = happ_subscription(happ_lines, "Swift Main", "https://github.com/femboypig/Swift") if happ_lines else ""
+            happ_content = happ_subscription(happ_lines, "Swift Main", "https://github.com/femboypig/Swift")
             happ_main.write_text(happ_content)
 
     # Filter White
@@ -525,7 +525,7 @@ async def run_ru_verify(
                 line for line in verified_white_lines
                 if parse_uri(line).protocol in HAPP_PROTOCOLS
             ]
-            happ_content = happ_subscription(happ_lines, "Swift White", "https://github.com/femboypig/Swift") if happ_lines else ""
+            happ_content = happ_subscription(happ_lines, "Swift White", "https://github.com/femboypig/Swift")
             happ_white.write_text(happ_content)
 
     # Invariant enforcement: file line count must strictly equal Mac pass count

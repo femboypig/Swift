@@ -442,7 +442,9 @@ class TestRuVerify(unittest.TestCase):
             self.assertEqual(stats["mac_verification"]["white"]["mac_pass"], 2)
 
     @patch("swiftproxy.ru_verify._verify_single")
-    def test_plain_and_happ_outputs_contain_identical_final_fingerprint_set(self, mock_verify):
+    def test_white_0_pass_happ_metadata_and_check_outputs(self, mock_verify):
+        from swiftproxy.output import check_outputs
+
         with tempfile.TemporaryDirectory() as temp_dir:
             root = Path(temp_dir)
             sub_dir = root / "sub"
@@ -452,38 +454,46 @@ class TestRuVerify(unittest.TestCase):
             happ_main = happ_dir / "main.txt"
             white_file = sub_dir / "white.txt"
             happ_white = happ_dir / "white.txt"
+            all_file = sub_dir / "all.txt"
+            all_file.write_text("")
+            stats_file = root / "stats.json"
+            stats_file.write_text(json.dumps({"project": "Swift", "tagline": "Filter the garbage. Keep what works.", "production": {"main": 1, "white": 1}}))
 
-            line_vless_main = "vless://11111111-1111-1111-1111-111111111111@1.2.3.4:443?security=none#vless_m"
-            line_hy2_main = "hysteria2://hy2password@5.6.7.8:443?sni=example.com#hy2_m"
-            line_vless_white = "vless://22222222-2222-2222-2222-222222222222@9.9.9.9:443?security=none#vless_w"
-
-            main_file.write_text(f"{line_vless_main}\n{line_hy2_main}\n")
-            happ_main.write_text(f"{line_vless_main}\n{line_hy2_main}\n")
-            white_file.write_text(f"{line_vless_white}\n")
-            happ_white.write_text(f"{line_vless_white}\n")
+            line_m = "vless://11111111-1111-1111-1111-111111111111@1.2.3.4:443?security=none#node_m"
+            line_w = "vless://22222222-2222-2222-2222-222222222222@5.6.7.8:443?security=none#node_w"
+            main_file.write_text(f"{line_m}\n")
+            happ_main.write_text(f"{line_m}\n")
+            white_file.write_text(f"{line_w}\n")
+            happ_white.write_text(f"{line_w}\n")
 
             async def fake_verify(config, *args, **kwargs):
+                if config.remark == "node_m":
+                    return RuVerifyResult(
+                        fingerprint=config.fingerprint,
+                        passed=True,
+                        reason=None,
+                        r1_kbps=150.0,
+                        r2_kbps=140.0,
+                        min_kbps=140.0,
+                        https_passed=3,
+                    )
                 return RuVerifyResult(
                     fingerprint=config.fingerprint,
-                    passed=True,
-                    reason=None,
-                    r1_kbps=200.0,
-                    r2_kbps=190.0,
-                    min_kbps=190.0,
-                    https_passed=3,
+                    passed=False,
+                    reason="HTTPS_FAILED",
+                    https_passed=0,
                 )
 
             mock_verify.side_effect = fake_verify
             code = asyncio.run(run_ru_verify(root, "sing-box"))
             self.assertEqual(code, 0)
 
-            # Check that happ files contain the verified lines
-            happ_main_text = happ_main.read_text()
-            self.assertIn("1.2.3.4", happ_main_text)
-            self.assertIn("5.6.7.8", happ_main_text)
-
+            # Check that happ/white.txt still has valid Swift metadata header
             happ_white_text = happ_white.read_text()
-            self.assertIn("9.9.9.9", happ_white_text)
+            self.assertTrue(happ_white_text.startswith("#profile-title: Swift White"))
+
+            # check_outputs must succeed without error!
+            check_outputs(root, 200, 200)
 
     @patch("swiftproxy.ru_verify._stop_process", new_callable=AsyncMock)
     @patch("swiftproxy.ru_verify._wait_for_core", new_callable=AsyncMock)
