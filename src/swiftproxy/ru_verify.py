@@ -11,7 +11,7 @@ from pathlib import Path
 from typing import Any
 
 from .models import ProxyConfig
-from .output import write_json
+from .output import HAPP_PROTOCOLS, happ_subscription, write_json
 from .parsing import parse_uri, serialize_uri
 from .testing import sing_box_config, _free_port, _wait_for_core, _stop_process
 
@@ -171,7 +171,22 @@ async def run_ru_verify(
     main_file.write_text("\n".join(verified_lines) + "\n")
     happ_main = root / "sub/happ/main.txt"
     if happ_main.exists():
-        happ_main.write_text("\n".join(verified_lines) + "\n")
+        happ_lines = [
+            line for line in verified_lines
+            if parse_uri(line).protocol in HAPP_PROTOCOLS
+        ]
+        happ_content = happ_subscription(happ_lines, "Swift Main", "https://github.com/femboypig/Swift")
+        happ_main.write_text(happ_content)
+
+    stats_file = root / "stats.json"
+    if stats_file.exists():
+        try:
+            stats = json.loads(stats_file.read_text())
+            stats.setdefault("production", {})["main"] = len(verified_lines)
+            stats["main"] = len(verified_lines)
+            write_json(stats_file, stats)
+        except Exception:
+            pass
 
     LOGGER.info("Published RU-verified main.txt with %d configs (dropped %d blocked nodes)",
                 len(verified_lines), len(lines) - len(verified_lines))
