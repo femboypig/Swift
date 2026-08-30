@@ -1,51 +1,55 @@
 {
-  "alive": 85,
-  "collected": 3547,
+  "alive": 138,
+  "collected": 3397,
   "countries": {
     "AL": 1,
     "AT": 2,
     "CO": 2,
-    "DE": 20,
-    "FI": 6,
-    "GB": 3,
+    "DE": 26,
+    "FI": 7,
+    "FR": 1,
+    "GB": 8,
     "IN": 1,
+    "IT": 1,
+    "JP": 22,
     "KZ": 1,
     "LT": 1,
-    "NL": 21,
+    "LV": 1,
+    "NL": 24,
     "PL": 3,
-    "RO": 1,
-    "RU": 4,
+    "RO": 3,
+    "RU": 8,
     "SE": 1,
-    "SG": 1,
+    "SG": 5,
     "TR": 1,
-    "US": 16
+    "US": 19
   },
   "failure_reasons": {
-    "CONNECT_TIMEOUT": 55,
-    "CORE_START_FAILED": 1,
-    "DUPLICATE": 1202,
-    "HTTP_FAILED": 7,
-    "NOT_WHITELISTED": 1009,
-    "PARSE_ERROR": 53,
-    "PROXY_FAILED": 409,
+    "CONNECT_TIMEOUT": 105,
+    "DUPLICATE": 1091,
+    "HTTP_FAILED": 20,
+    "NOT_WHITELISTED": 977,
+    "PARSE_ERROR": 51,
+    "PROXY_FAILED": 265,
     "SOURCE_EMPTY": 1,
-    "TOO_SLOW": 22,
-    "UNSTABLE": 71,
+    "TOO_SLOW": 38,
+    "UNSTABLE": 84,
     "UNSUPPORTED": 438
   },
-  "main": 11,
-  "median_latency_ms": 497.96,
-  "parsed": 3073,
+  "main": 13,
+  "median_latency_ms": 547.6,
+  "parsed": 2922,
   "pipeline_version": 4,
   "production": {
-    "all": 85,
-    "main": 11,
+    "all": 138,
+    "main": 13,
     "white": 3
   },
   "project": "Swift",
   "protocols": {
-    "hysteria2": 16,
-    "vless": 69
+    "hysteria2": 18,
+    "ss": 10,
+    "vless": 110
   },
   "published": true,
   "source_status": {
@@ -71,27 +75,28 @@
     "zieng2-white": "OK"
   },
   "sources": {
-    "aetris": 1,
-    "airlink": 1,
-    "akres": 12,
-    "igareck": 2,
-    "kizyak": 4,
-    "rjsxrd": 22,
-    "rkp": 69,
-    "zieng2": 1
+    "aetris": 5,
+    "airlink": 3,
+    "akres": 8,
+    "igareck": 7,
+    "kizyak": 10,
+    "pyps": 2,
+    "rjsxrd": 77,
+    "rkp": 73,
+    "zieng2": 3
   },
   "tagline": "Filter the garbage. Keep what works.",
   "tested": 650,
-  "unique": 1871,
-  "updated_at": "2026-08-30T09:34:29Z",
+  "unique": 1831,
+  "updated_at": "2026-08-30T10:18:53Z",
   "white": 3,
   "white_evidence": {
     "cidr_source": "hxehex-white-cidr",
     "domain_source": "hxehex-white-domains",
-    "eligible": 488,
+    "eligible": 489,
     "published": {
-      "cidr": 1,
-      "sni": 2
+      "cidr": 2,
+      "sni": 1
     }
   }
 }

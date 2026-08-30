@@ -1,40 +1,40 @@
 {
   "control_ok": true,
   "failure_reasons": {
-    "CONNECT_FAILED": 9,
-    "CONNECT_TIMEOUT": 28,
-    "DNS_FAILED": 20,
-    "DUPLICATE": 943,
+    "CONNECT_FAILED": 10,
+    "CONNECT_TIMEOUT": 29,
+    "DNS_FAILED": 22,
+    "DUPLICATE": 939,
     "MALFORMED_SECRET": 7,
     "NETWORK_ERROR": 2,
-    "PROTOCOL_ERROR": 66,
-    "RESPONSE_TIMEOUT": 11,
-    "UNSTABLE": 10,
+    "PROTOCOL_ERROR": 64,
+    "RESPONSE_TIMEOUT": 2,
+    "UNSTABLE": 14,
     "UNSUPPORTED_SECRET": 8
   },
   "fastest": 20,
   "healthy_run": true,
-  "last_successful_set": "2026-08-30T09:36:14Z",
+  "last_successful_set": "2026-08-30T10:20:34Z",
   "production": {
     "fastest": 20,
     "stable": 50,
-    "working": 263
+    "working": 266
   },
   "project": "Swift",
   "selected": {
     "backup": {
-      "median_rtt_ms": 515.15,
-      "score": 96.31,
+      "median_rtt_ms": 619.27,
+      "score": 95.29,
       "url": "https://t.me/proxy?server=forward-gree.server-space52.info&port=443&secret=ee1603010200010001fc030386e24c3add6d656469612e737465616d706f77657265642e636f6d"
     },
     "fastest": {
-      "median_rtt_ms": 418.63,
-      "score": 95.63,
-      "url": "https://t.me/proxy?server=forever.startnetwork.shop&port=443&secret=dd0ef5f4a09c2e33527338e9184a9a6178"
+      "median_rtt_ms": 358.55,
+      "score": 95.29,
+      "url": "https://t.me/proxy?server=172.65.113.134&port=22&secret=00000000000000000000000000000000"
     },
     "stable": {
-      "median_rtt_ms": 539.18,
-      "score": 96.05,
+      "median_rtt_ms": 640.18,
+      "score": 95.1,
       "url": "https://t.me/proxy?server=72.56.25.212&port=443&secret=ee7d026761b388c46302df84b4b812aef0706574726f766963682e7275"
     }
   },
@@ -55,19 +55,19 @@
       "fetched": 299,
       "status": "OK",
       "unique": 291,
-      "working": 199
+      "working": 203
     },
     "solispirit": {
       "fetched": 250,
       "status": "OK",
       "unique": 245,
-      "working": 184
+      "working": 182
     }
   },
   "stable": 50,
   "suspicious_streak": 0,
   "tagline": "Filter the garbage. Keep what works.",
-  "tested": 404,
-  "updated_at": "2026-08-30T09:36:14Z",
-  "working": 263
+  "tested": 399,
+  "updated_at": "2026-08-30T10:20:34Z",
+  "working": 266
 }

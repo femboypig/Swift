@@ -1,14 +1,16 @@
 #profile-title: Swift Main
 #profile-update-interval: 1
 #profile-web-page-url: https://github.com/femboypig/Swift
-hysteria2://h_B9x3942fJ9x_Kpx3914KQ_nZ934HFg_rT@103.246.248.237:8443?sni=hopp-legend-se.roxa.org#%F0%9F%87%B5%F0%9F%87%B1%20PL%20%C2%B7%20023
-hysteria2://e9a98960-e28b-434d-984d-c0aee9df8978@66.154.113.16:7001?sni=www.apple.com&insecure=1#%F0%9F%87%BA%F0%9F%87%B8%20US%20%C2%B7%20024
-vless://d53f098c-c146-4c16-b8fc-263743fdb6b3@203.23.179.222:8443?encryption=none&type=tcp&security=reality&sni=minecraft.mega-play.app&fp=firefox&pbk=y9dQYV_XNHvZeVhXfUVjTDATXpqPSw9HHOtqiobp0io&sid=038d56046630fc9a#%F0%9F%87%A9%F0%9F%87%AA%20DE%20%C2%B7%20026
-vless://1206bad5-dcc9-410e-9595-d9fe9ee54085@31.77.220.152:5015?encryption=none&type=tcp&security=reality&flow=xtls-rprx-vision&sni=special.aeternavpn.space&fp=firefox&pbk=-6SjfnZXAYm69euKQ3XNhq0nC7No7YE4qfdc2qx0Xwo&sid=a1b2c3d4#%F0%9F%87%A9%F0%9F%87%AA%20DE%20%C2%B7%20030
-vless://d53f098c-c146-4c16-b8fc-263743fdb6b3@203.23.179.147:8443?encryption=none&type=tcp&security=reality&sni=palworld.mega-play.app&fp=firefox&pbk=ADsgS2NlS_Mi16n8h1beCVgWL4KvNj5tnRg9qYzFG14&sid=ae47480fa46b76b0#%F0%9F%87%A9%F0%9F%87%AA%20DE%20%C2%B7%20033
-vless://76186f1e-3062-4a2b-98c2-fab3c61a9511@91.224.87.22:9873?encryption=none&type=grpc&security=reality&sni=dl.google.com&fp=firefox&pbk=bnRIb3Er1i-K6NGGByCO9UbGfOvu43ZoiK7ulPd1SzU&sid=aabbccdd&serviceName=grpc-tunnel#%F0%9F%87%BA%F0%9F%87%B8%20US%20%C2%B7%20034
-hysteria2://Jz40_mIJ934vK0_k9D3jz92_Vx48q_GHa1_sz0@85.204.107.183:8080?sni=hopp-romania-new.roxa.org#%F0%9F%87%A9%F0%9F%87%AA%20DE%20%C2%B7%20035
-hysteria2://Jz40_mIJ934vK0_k9D3jz92_Vx48q_GHa1_sz0@85.204.107.183:8443?sni=hopp-romania-new.roxa.org#%F0%9F%87%B7%F0%9F%87%B4%20RO%20%C2%B7%20037
-hysteria2://9Me_Jx935gnHx13_Nx45M_NYXe037js_Be4z@162.249.124.125:8443?sni=hopp-germany-new.ddnsguru.com#%F0%9F%87%A9%F0%9F%87%AA%20DE%20%C2%B7%20038
-hysteria2://Oz_Kx9342gefwJ89x3_M9z32kzf9KJq003_s@205.237.109.173:8443?sni=hopp-netherland-new.dynuddns.net#%F0%9F%87%B3%F0%9F%87%B1%20NL%20%C2%B7%20042
-vless://57a2ff90-fadd-4655-9624-c51374ab6f32@us1.lunariai.ru:8443?encryption=none&type=ws&security=none#%F0%9F%87%BA%F0%9F%87%B8%20US%20%C2%B7%20043
+hysteria2://h_B9x3942fJ9x_Kpx3914KQ_nZ934HFg_rT@103.246.248.237:8443?sni=hopp-legend-se.roxa.org#%F0%9F%87%B5%F0%9F%87%B1%20PL%20%C2%B7%20032
+vless://1206bad5-dcc9-410e-9595-d9fe9ee54085@31.77.220.152:5015?encryption=none&type=tcp&security=reality&flow=xtls-rprx-vision&sni=special.aeternavpn.space&fp=firefox&pbk=-6SjfnZXAYm69euKQ3XNhq0nC7No7YE4qfdc2qx0Xwo&sid=a1b2c3d4#%F0%9F%87%A9%F0%9F%87%AA%20DE%20%C2%B7%20037
+hysteria2://e9a98960-e28b-434d-984d-c0aee9df8978@66.154.113.16:7001?sni=www.apple.com&insecure=1#%F0%9F%87%BA%F0%9F%87%B8%20US%20%C2%B7%20038
+hysteria2://9Me_Jx935gnHx13_Nx45M_NYXe037js_Be4z@162.249.124.125:8443?sni=hopp-germany-new.ddnsguru.com#%F0%9F%87%A9%F0%9F%87%AA%20DE%20%C2%B7%20039
+hysteria2://Oz_Kx9342gefwJ89x3_M9z32kzf9KJq003_s@205.237.109.173:8443?sni=hopp-netherland-new.dynuddns.net#%F0%9F%87%B3%F0%9F%87%B1%20NL%20%C2%B7%20043
+vless://78c61f86-6229-4994-8389-7d7213ce7f42@140.82.33.78:20827?encryption=none&type=tcp&security=none&sni=--v2raynplus--v2raynplus--v2raynplus--#%F0%9F%87%A9%F0%9F%87%AA%20DE%20%C2%B7%20045
+vless://11af1c47-865a-47c6-92ff-118013655d78@51.15.56.211:8080?encryption=none&type=ws&security=none&sni=51.15.56.211#%F0%9F%87%B3%F0%9F%87%B1%20NL%20%C2%B7%20047
+hysteria2://h_B9x3942fJ9x_Kpx3914KQ_nZ934HFg_rT@103.246.248.237:8080?sni=hopp-legend-se.roxa.org#%F0%9F%87%AC%F0%9F%87%A7%20GB%20%C2%B7%20049
+vless://2f019ee3-d1a0-4a41-84a6-26c9b5d2b9f0@31.76.38.82:443?encryption=none&type=tcp&security=reality&flow=xtls-rprx-vision&sni=www.kicker.de&fp=firefox&pbk=FjnQOip9Vri01Kl3k0Y0uUZVgReYU0P4gt9EOXZoP3w#%F0%9F%87%A9%F0%9F%87%AA%20DE%20%C2%B7%20052
+vless://2f019ee3-d1a0-4a41-84a6-26c9b5d2b9f0@31.76.119.209:443?encryption=none&type=tcp&security=reality&flow=xtls-rprx-vision&sni=www.kicker.de&fp=firefox&pbk=3dBPBALPLgdB-khaj5IsSHoa7pAEn8TNOwVCqfjpIGQ#%F0%9F%87%A9%F0%9F%87%AA%20DE%20%C2%B7%20053
+vless://2f019ee3-d1a0-4a41-84a6-26c9b5d2b9f0@31.76.249.55:443?encryption=none&type=tcp&security=reality&flow=xtls-rprx-vision&sni=www.kicker.de&fp=firefox&pbk=FjnQOip9Vri01Kl3k0Y0uUZVgReYU0P4gt9EOXZoP3w#%F0%9F%87%A9%F0%9F%87%AA%20DE%20%C2%B7%20057
+vless://57a2ff90-fadd-4655-9624-c51374ab6f32@us1.lunariai.ru:8443?encryption=none&type=ws&security=none#%F0%9F%87%BA%F0%9F%87%B8%20US%20%C2%B7%20058
+hysteria2://9Me_Jx935gnHx13_Nx45M_NYXe037js_Be4z@162.249.124.125:8080?sni=hopp-germany-new.ddnsguru.com#%F0%9F%87%B9%F0%9F%87%B7%20TR%20%C2%B7%20060
