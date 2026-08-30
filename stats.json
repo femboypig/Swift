@@ -1,34 +1,35 @@
 {
-  "alive": 374,
-  "collected": 7225,
+  "alive": 378,
+  "collected": 7037,
   "countries": {
-    "AU": 3,
-    "CA": 5,
-    "CO": 1,
-    "DE": 15,
+    "AR": 1,
+    "AT": 1,
+    "AU": 5,
+    "CA": 4,
+    "CZ": 1,
+    "DE": 13,
     "EE": 1,
     "ES": 2,
-    "FI": 8,
-    "FR": 9,
-    "GB": 28,
-    "HK": 1,
+    "FI": 6,
+    "FR": 14,
+    "GB": 30,
+    "HK": 2,
     "IN": 1,
     "IT": 2,
-    "JP": 48,
+    "JP": 47,
     "KR": 2,
-    "KZ": 1,
-    "LT": 2,
+    "LT": 1,
     "LV": 4,
-    "NL": 69,
-    "NO": 2,
-    "PL": 4,
+    "NL": 78,
+    "NO": 1,
+    "PL": 7,
     "RO": 2,
-    "RU": 1,
+    "RU": 4,
     "SE": 1,
-    "SG": 9,
+    "SG": 5,
     "TR": 1,
-    "TW": 2,
-    "US": 149
+    "TW": 1,
+    "US": 141
   },
   "diagnostics": {
     "hysteria_v1": {
@@ -53,35 +54,34 @@
     }
   },
   "discovery": {
-    "average_never_tested_age_hours": 3.03,
-    "backlog_change_this_run": -6,
-    "estimated_hours_to_clear": 176.5,
-    "estimated_runs_to_clear": 353,
-    "new_discovered_this_run": 396,
-    "oldest_never_tested_age_hours": 3.8,
-    "tested_first_time_this_run": 6,
-    "total_never_tested": 2117
+    "average_never_tested_age_hours": 7.68,
+    "backlog_change_this_run": -150,
+    "estimated_hours_to_clear": 8.0,
+    "estimated_runs_to_clear": 16,
+    "new_discovered_this_run": 618,
+    "oldest_never_tested_age_hours": 9.95,
+    "tested_first_time_this_run": 150,
+    "total_never_tested": 2292
   },
   "failure_reasons": {
-    "CONNECT_TIMEOUT": 85,
-    "DUPLICATE": 1391,
-    "HTTP_FAILED": 7,
-    "NOT_WHITELISTED": 1897,
-    "PARSE_ERROR": 59,
-    "PROXY_FAILED": 137,
+    "CONNECT_TIMEOUT": 47,
+    "DUPLICATE": 1099,
+    "HTTP_FAILED": 9,
+    "NOT_WHITELISTED": 1892,
+    "PARSE_ERROR": 54,
+    "PROXY_FAILED": 187,
     "SOURCE_EMPTY": 1,
-    "TOO_SLOW": 18,
-    "UNSTABLE": 28,
-    "UNSUPPORTED": 600,
-    "WHITE_DNS_FAILED": 76
+    "TOO_SLOW": 7,
+    "UNSTABLE": 21,
+    "UNSUPPORTED": 528,
+    "WHITE_DNS_FAILED": 73
   },
   "mac_verification": {
     "main": {
       "before_mac": 200,
       "failure_reasons": {
-        "DOWNLOAD_R1_FAILED": 2,
-        "HTTPS_FAILED": 193,
-        "TOO_SLOW": 1
+        "DOWNLOAD_R1_FAILED": 4,
+        "HTTPS_FAILED": 192
       },
       "final": 4,
       "mac_fail": 196,
@@ -89,35 +89,45 @@
       "mac_tested": 200
     },
     "white": {
-      "before_mac": 2,
+      "before_mac": 4,
       "failure_reasons": {
         "HTTPS_FAILED": 2
       },
-      "final": 0,
+      "final": 2,
       "mac_fail": 2,
-      "mac_pass": 0,
-      "mac_tested": 2
+      "mac_pass": 2,
+      "mac_tested": 4
     }
   },
   "main": 4,
-  "median_latency_ms": 338.67,
-  "parsed": 6572,
+  "median_latency_ms": 428.65,
+  "parsed": 6459,
   "pipeline_version": 4,
   "production": {
-    "all": 374,
+    "all": 378,
     "main": 4,
-    "white": 0
+    "white": 2
   },
   "project": "Swift",
   "protocols": {
-    "hysteria2": 11,
-    "ss": 55,
-    "trojan": 1,
-    "vless": 296,
-    "vmess": 11
+    "hysteria2": 8,
+    "ss": 60,
+    "trojan": 2,
+    "vless": 295,
+    "vmess": 13
   },
   "published": true,
-  "ru_service_diagnostics": {},
+  "ru_service_diagnostics": {
+    "86e6fc8f37d1": {
+      "ru_service_ok": true,
+      "services": {
+        "ozon": "unreachable",
+        "telegram_api": "unreachable",
+        "vk": "reachable",
+        "yandex": "reachable"
+      }
+    }
+  },
   "source_status": {
     "aetris-white-lite": "OK",
     "airlink-white": "OK",
@@ -147,29 +157,29 @@
     "zieng2-white": "OK"
   },
   "sources": {
-    "0xRadikal": 276,
-    "aetris": 1,
-    "airlink": 1,
-    "akres": 5,
-    "igareck": 11,
-    "kizyak": 4,
-    "matryoshka": 15,
-    "rjsxrd": 75,
-    "rkp": 29,
-    "vovaplusexp": 83,
-    "zieng2": 1
+    "0xRadikal": 277,
+    "aetris": 2,
+    "airlink": 2,
+    "akres": 6,
+    "igareck": 2,
+    "kizyak": 6,
+    "matryoshka": 14,
+    "rjsxrd": 82,
+    "rkp": 22,
+    "vovaplusexp": 72,
+    "zieng2": 8
   },
   "tagline": "Filter the garbage. Keep what works.",
   "tested": 650,
-  "unique": 5181,
-  "updated_at": "2026-08-30T16:02:48Z",
-  "white": 0,
+  "unique": 5360,
+  "updated_at": "2026-08-30T22:11:48Z",
+  "white": 2,
   "white_evidence": {
     "cidr_source": "hxehex-white-cidr",
     "domain_source": "hxehex-white-domains",
-    "eligible": 1327,
+    "eligible": 1399,
     "published": {
-      "cidr": 1,
+      "cidr": 3,
       "sni": 1
     }
   }
