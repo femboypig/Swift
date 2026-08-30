@@ -12,11 +12,11 @@ actually carry traffic.
 
 ### Main
 
-The normal list. It contains at most 200 configs.
+The normal list. It contains at most 80 configs.
 
 `https://sub.femboypig.ru/main.txt`
 
-There is no minimum. If 74 configs meet the threshold, the file contains 74.
+80 is strictly a maximum output cap, not a fixed target. Final Main is formed ONLY from configs that successfully pass the Russian sustained actual-traffic verification on the Mac runner. If 12 pass, the file contains 12. If 130 pass, the best 80 are selected with diverse ASN/subnet limits. A Mac verification failure has a 0% chance of publication regardless of historical score.
 
 ### White
 
@@ -108,19 +108,20 @@ The Actions job runs this pipeline every 30 minutes:
 3. Merge duplicates while keeping source provenance.
 4. For White, resolve every endpoint address and compare both the IP and visible TLS SNI with the
    current community lists. Prefer combined IP+SNI evidence, then IP-only, then SNI-only.
-5. Pick a bounded candidate set (up to 400 for Main, 250 for White). Active and previously good configs
-   come first; new and older configs get a rotating discovery sample.
+5. Pick candidate pools for Cloud actual-traffic testing (up to 1000 for Main, 250 for White). Active
+   veterans and previously good configs come first; new and unobserved configs get a rotating discovery sample.
 6. Resolve endpoints and reject local, private, link-local, reserved, and metadata addresses.
 7. Use a cheap TCP connection only as a prefilter for TCP protocols. UDP protocols skip it.
 8. Serialize the config exactly as it will be published and parse it again.
 9. Start an isolated sing-box process with a local SOCKS inbound.
 10. Make five HTTPS requests through that SOCKS proxy, rotating across several targets, then
     download 256 KiB.
-11. Perform a secondary live verification stage directly inside Russia via a dedicated self-hosted
-    runner with physical interface binding (e.g. `wlan0`) to test actual sustained traffic through
-    Russian ISP filters for both Main and White candidates (>=2/3 neutral HTTPS probes, 2x256 KiB downloads,
-    min throughput >= 64 KiB/s, stall detection). If a config belongs to both lists, it is tested once.
-12. Update history, score, select, and publish only configs that passed all verification rounds.
+11. Send up to 300 eligible candidates to the dedicated self-hosted Mac mini runner in Russia with
+    physical interface binding (e.g. `wlan0`) to test actual sustained traffic through Russian ISP
+    filters for both Main and White (>=2/3 neutral HTTPS probes, 2x256 KiB downloads, min throughput >= 64 KiB/s,
+    stall detection). If a config belongs to both lists, it is tested once.
+12. Final ranking, diversity constraints, and hysteresis are applied ONLY among candidates with a
+    valid current Mac PASS. Main is capped at TOP 80 maximum.
 
 Twenty configs are tested concurrently in Cloud. Each process has its own temporary JSON file and local
 port. Commands use argument arrays, not a shell, and process groups are terminated in `finally`
