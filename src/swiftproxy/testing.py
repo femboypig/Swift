@@ -204,6 +204,17 @@ def sing_box_outbound(config: ProxyConfig) -> dict[str, Any]:
     elif config.protocol == "ss":
         base["method"] = options["method"]
         base["password"] = config.auth["password"]
+    elif config.protocol == "hysteria":
+        if config.auth.get("auth"):
+            base["auth_str"] = config.auth["auth"]
+        base["up_mbps"] = options.get("up_mbps", 100)
+        base["down_mbps"] = options.get("down_mbps", 100)
+        if options.get("obfs"):
+            base["obfs"] = options["obfs"]
+        if options.get("server_ports"):
+            base.pop("server_port")
+            base["server_ports"] = options["server_ports"]
+        base["tls"] = _tls(config, required=True)
     elif config.protocol == "hysteria2":
         base["password"] = config.auth["password"]
         base["tls"] = _tls(config, required=True)
