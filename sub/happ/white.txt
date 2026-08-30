@@ -1,6 +1,9 @@
 #profile-title: Swift White
 #profile-update-interval: 1
 #profile-web-page-url: https://github.com/femboypig/swift
-vless://392058de-bb7e-44f5-b5bf-9184109cb42b@45.133.210.83:443?encryption=none&type=tcp&security=reality&flow=xtls-rprx-vision&sni=api-maps.yandex.ru&fp=firefox&pbk=cttKOS1BlF-u-mvX63PWNPJK6W_RXfx1wo8yjBEt1hI&sid=a2eb8d694a5480ff#%F0%9F%87%B3%F0%9F%87%B1%20NL%20%C2%B7%20W001
-vless://633f424e-2b11-48da-a6b3-a849dd71456f@45.12.75.242:26424?encryption=none&type=tcp&security=reality&sni=ya.ru&fp=chrome&pbk=l8AubqcxQO-HRFJy4pZL1vbLOo-eXit69s-XulSELE0&sid=23103e1e#%F0%9F%87%B7%F0%9F%87%BA%20RU%20%C2%B7%20W002
-vless://2c634977-584e-4e1f-b501-1b70c77a6743@185.141.227.150:9001?encryption=none&type=grpc&security=reality&sni=api-maps.yandex.ru&fp=chrome&pbk=SbVKOEMjK0sIlbwg4akyBg5mL5KZwwB-ed4eEE7YnRc&sid=6ba85179e30d4fc2&serviceName=grpc-reality#%F0%9F%87%B7%F0%9F%87%BA%20RU%20%C2%B7%20W003
+vless://91c3fcdf-d85b-46f8-ad85-5c5adadf661b@46.243.235.64:443?encryption=none&type=grpc&security=reality&sni=ads.x5.ru&fp=firefox&pbk=na4liMQYlI_sUt5fxfVoty37p2jNVlG2zUIzpPC95XU&sid=846229eb47b3a5c9&serviceName=api.v2.SyncService%2FStreamUpdates#%F0%9F%87%B7%F0%9F%87%BA%20RU%20%C2%B7%20W001
+vless://392058de-bb7e-44f5-b5bf-9184109cb42b@45.133.210.83:443?encryption=none&type=tcp&security=reality&flow=xtls-rprx-vision&sni=api-maps.yandex.ru&fp=firefox&pbk=cttKOS1BlF-u-mvX63PWNPJK6W_RXfx1wo8yjBEt1hI&sid=a2eb8d694a5480ff#%F0%9F%87%B3%F0%9F%87%B1%20NL%20%C2%B7%20W002
+vless://633f424e-2b11-48da-a6b3-a849dd71456f@45.12.75.242:26424?encryption=none&type=tcp&security=reality&sni=ya.ru&fp=chrome&pbk=l8AubqcxQO-HRFJy4pZL1vbLOo-eXit69s-XulSELE0&sid=23103e1e#%F0%9F%87%B7%F0%9F%87%BA%20RU%20%C2%B7%20W003
+vless://2c634977-584e-4e1f-b501-1b70c77a6743@185.141.227.150:9001?encryption=none&type=grpc&security=reality&sni=api-maps.yandex.ru&fp=chrome&pbk=SbVKOEMjK0sIlbwg4akyBg5mL5KZwwB-ed4eEE7YnRc&sid=6ba85179e30d4fc2&serviceName=grpc-reality#%F0%9F%87%B7%F0%9F%87%BA%20RU%20%C2%B7%20W004
+vless://2c634977-584e-4e1f-b501-1b70c77a6743@185.141.227.153:9001?encryption=none&type=grpc&security=reality&sni=api-maps.yandex.ru&fp=chrome&pbk=SbVKOEMjK0sIlbwg4akyBg5mL5KZwwB-ed4eEE7YnRc&sid=6ba85179e30d4fc2&serviceName=grpc-reality#%F0%9F%87%B7%F0%9F%87%BA%20RU%20%C2%B7%20W005
+vless://2c634977-584e-4e1f-b501-1b70c77a6743@185.141.227.150:9001?encryption=none&type=grpc&security=reality&sni=api-maps.yandex.ru&fp=chrome&pbk=SbVKOEMjK0sIlbwg4akyBg5mL5KZwwB-ed4eEE7YnRc&sid=6ba85179e30d4fc2&serviceName=grpc-reality&mode=gun#%F0%9F%87%B7%F0%9F%87%BA%20RU%20%C2%B7%20W006
