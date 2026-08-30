@@ -285,3 +285,26 @@ def check_outputs(root: Path, main_limit: int, white_limit: int) -> None:
     stats = json.loads((root / "stats.json").read_text())
     if stats.get("project") != "Swift" or stats.get("tagline") != "Filter the garbage. Keep what works.":
         raise RuntimeError("stats.json branding is invalid")
+
+    main_lines = [l for l in (root / "sub/main.txt").read_text().splitlines() if l.strip() and not l.startswith("#")]
+    white_lines = [l for l in (root / "sub/white.txt").read_text().splitlines() if l.strip() and not l.startswith("#")]
+
+    prod_stats = stats.get("production", {})
+    if prod_stats.get("main") is not None and len(main_lines) != prod_stats["main"]:
+        raise RuntimeError(f"sub/main.txt count ({len(main_lines)}) != stats.production.main ({prod_stats['main']})")
+    if prod_stats.get("white") is not None and len(white_lines) != prod_stats["white"]:
+        raise RuntimeError(f"sub/white.txt count ({len(white_lines)}) != stats.production.white ({prod_stats['white']})")
+
+    mac_stats = stats.get("mac_verification")
+    if mac_stats:
+        mac_main = mac_stats.get("main", {})
+        if mac_main.get("mac_pass") is not None and len(main_lines) != mac_main["mac_pass"]:
+            raise RuntimeError(f"sub/main.txt count ({len(main_lines)}) != stats.mac_verification.main.mac_pass ({mac_main['mac_pass']})")
+        if mac_main.get("final") is not None and len(main_lines) != mac_main["final"]:
+            raise RuntimeError(f"sub/main.txt count ({len(main_lines)}) != stats.mac_verification.main.final ({mac_main['final']})")
+
+        mac_white = mac_stats.get("white", {})
+        if mac_white.get("mac_pass") is not None and len(white_lines) != mac_white["mac_pass"]:
+            raise RuntimeError(f"sub/white.txt count ({len(white_lines)}) != stats.mac_verification.white.mac_pass ({mac_white['mac_pass']})")
+        if mac_white.get("final") is not None and len(white_lines) != mac_white["final"]:
+            raise RuntimeError(f"sub/white.txt count ({len(white_lines)}) != stats.mac_verification.white.final ({mac_white['final']})")

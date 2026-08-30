@@ -474,15 +474,15 @@ async def run_ru_verify(
         infra_failures,
     )
 
-    # Outage / LKG Guard: If network is broken or infrastructure failed, preserve previous selection
-    if (len(results_map) >= 10 and passed_ratio < 0.10) or (infra_failures >= len(results_map) * 0.5):
-        LOGGER.warning(
-            "RU_LOCAL_OUTAGE_SUSPECTED passed=%d/%d infra_failures=%d -> preserving all LKG configs for Main and White",
+    # Outage / Infrastructure Guard: If verification infrastructure failed, block publishing
+    if len(results_map) >= 10 and (infra_failures >= len(results_map) * 0.5):
+        LOGGER.error(
+            "RU_INFRASTRUCTURE_FAILURE_DETECTED passed=%d/%d infra_failures=%d -> failing verification to prevent publishing broken data",
             passed_count,
             len(results_map),
             infra_failures,
         )
-        return 0
+        return 1
 
     # Filter Main
     verified_main_lines: list[str] = []
@@ -496,18 +496,15 @@ async def run_ru_verify(
             except Exception:
                 continue
 
-        if verified_main_lines:
-            main_file.write_text("\n".join(verified_main_lines) + "\n")
-            happ_main = root / "sub/happ/main.txt"
-            if happ_main.exists() or (root / "sub/happ").exists():
-                happ_lines = [
-                    line for line in verified_main_lines
-                    if parse_uri(line).protocol in HAPP_PROTOCOLS
-                ]
-                happ_content = happ_subscription(happ_lines, "Swift Main", "https://github.com/femboypig/Swift")
-                happ_main.write_text(happ_content)
-        else:
-            LOGGER.warning("No configs passed RU verification for Main; keeping previous selection")
+        main_file.write_text("\n".join(verified_main_lines) + ("\n" if verified_main_lines else ""))
+        happ_main = root / "sub/happ/main.txt"
+        if happ_main.exists() or (root / "sub/happ").exists():
+            happ_lines = [
+                line for line in verified_main_lines
+                if parse_uri(line).protocol in HAPP_PROTOCOLS
+            ]
+            happ_content = happ_subscription(happ_lines, "Swift Main", "https://github.com/femboypig/Swift") if happ_lines else ""
+            happ_main.write_text(happ_content)
 
     # Filter White
     verified_white_lines: list[str] = []
@@ -521,26 +518,56 @@ async def run_ru_verify(
             except Exception:
                 continue
 
-        if verified_white_lines:
-            white_file.write_text("\n".join(verified_white_lines) + "\n")
-            happ_white = root / "sub/happ/white.txt"
-            if happ_white.exists() or (root / "sub/happ").exists():
-                happ_lines = [
-                    line for line in verified_white_lines
-                    if parse_uri(line).protocol in HAPP_PROTOCOLS
-                ]
-                happ_content = happ_subscription(happ_lines, "Swift White", "https://github.com/femboypig/Swift")
-                happ_white.write_text(happ_content)
-        else:
-            LOGGER.warning("No configs passed RU verification for White; keeping previous selection")
+        white_file.write_text("\n".join(verified_white_lines) + ("\n" if verified_white_lines else ""))
+        happ_white = root / "sub/happ/white.txt"
+        if happ_white.exists() or (root / "sub/happ").exists():
+            happ_lines = [
+                line for line in verified_white_lines
+                if parse_uri(line).protocol in HAPP_PROTOCOLS
+            ]
+            happ_content = happ_subscription(happ_lines, "Swift White", "https://github.com/femboypig/Swift") if happ_lines else ""
+            happ_white.write_text(happ_content)
+
+    # Invariant enforcement: file line count must strictly equal Mac pass count
+    mac_main_pass_count = sum(
+        1 for item in unique_candidates.values()
+        if item[2] and results_map.get(item[0].fingerprint) and results_map[item[0].fingerprint].passed
+    )
+    mac_white_pass_count = sum(
+        1 for item in unique_candidates.values()
+        if item[3] and results_map.get(item[0].fingerprint) and results_map[item[0].fingerprint].passed
+    )
+
+    if len(verified_main_lines) != mac_main_pass_count:
+        raise RuntimeError(
+            f"Invariant violation: verified_main_lines count ({len(verified_main_lines)}) != Mac pass count ({mac_main_pass_count})"
+        )
+    if len(verified_white_lines) != mac_white_pass_count:
+        raise RuntimeError(
+            f"Invariant violation: verified_white_lines count ({len(verified_white_lines)}) != Mac pass count ({mac_white_pass_count})"
+        )
+
+    if main_lines:
+        disk_main = [l for l in main_file.read_text().splitlines() if l.strip() and not l.startswith("#")]
+        if len(disk_main) != mac_main_pass_count:
+            raise RuntimeError(
+                f"Invariant violation: sub/main.txt on disk ({len(disk_main)}) != Mac pass count ({mac_main_pass_count})"
+            )
+
+    if white_lines:
+        disk_white = [l for l in white_file.read_text().splitlines() if l.strip() and not l.startswith("#")]
+        if len(disk_white) != mac_white_pass_count:
+            raise RuntimeError(
+                f"Invariant violation: sub/white.txt on disk ({len(disk_white)}) != Mac pass count ({mac_white_pass_count})"
+            )
 
     # Stats Update
     stats_file = root / "stats.json"
     if stats_file.exists():
         try:
             stats = json.loads(stats_file.read_text())
-            final_main_count = len(verified_main_lines) if verified_main_lines else len(main_lines)
-            final_white_count = len(verified_white_lines) if verified_white_lines else len(white_lines)
+            final_main_count = len(verified_main_lines)
+            final_white_count = len(verified_white_lines)
 
             stats.setdefault("production", {})["main"] = final_main_count
             stats["main"] = final_main_count
@@ -596,10 +623,10 @@ async def run_ru_verify(
 
     LOGGER.info(
         "Published RU-verified subscriptions: Main=%d (dropped %d), White=%d (dropped %d)",
-        len(verified_main_lines) if verified_main_lines else len(main_lines),
-        len(main_lines) - len(verified_main_lines) if verified_main_lines else 0,
-        len(verified_white_lines) if verified_white_lines else len(white_lines),
-        len(white_lines) - len(verified_white_lines) if verified_white_lines else 0,
+        len(verified_main_lines),
+        len(main_lines) - len(verified_main_lines),
+        len(verified_white_lines),
+        len(white_lines) - len(verified_white_lines),
     )
     return 0
 

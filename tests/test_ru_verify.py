@@ -242,72 +242,26 @@ class TestRuVerify(unittest.TestCase):
             self.assertIn(good_line, white_file.read_text())
 
     @patch("swiftproxy.ru_verify._verify_single")
-    def test_infrastructure_failure_preserves_lkg_main(self, mock_verify):
+    def test_200_tested_10_pass_healthy_verification(self, mock_verify):
         with tempfile.TemporaryDirectory() as temp_dir:
             root = Path(temp_dir)
             sub_dir = root / "sub"
             sub_dir.mkdir(parents=True)
             main_file = sub_dir / "main.txt"
+            stats_file = root / "stats.json"
+            stats_file.write_text(json.dumps({"project": "Swift", "tagline": "Filter the garbage. Keep what works."}))
+
+            # 200 configs with valid 8-char hex UUID
             lines = [
-                f"vless://a{i}111111-1111-1111-1111-111111111111@1.2.3.{i}:443?security=none#node{i}"
-                for i in range(12)
+                f"vless://{i:08x}-1111-1111-1111-111111111111@1.2.3.{i%250 + 1}:443?security=none#node{i}"
+                for i in range(200)
             ]
             main_file.write_text("\n".join(lines) + "\n")
 
-            mock_verify.return_value = RuVerifyResult(
-                fingerprint="any",
-                passed=False,
-                reason="CORE_TIMEOUT",
-                is_infrastructure_failure=True,
-            )
-
-            code = asyncio.run(run_ru_verify(root, "sing-box"))
-            self.assertEqual(code, 0)
-            # LKG must be preserved!
-            self.assertEqual(main_file.read_text().splitlines(), lines)
-
-    @patch("swiftproxy.ru_verify._verify_single")
-    def test_infrastructure_failure_preserves_lkg_white(self, mock_verify):
-        with tempfile.TemporaryDirectory() as temp_dir:
-            root = Path(temp_dir)
-            sub_dir = root / "sub"
-            sub_dir.mkdir(parents=True)
-            white_file = sub_dir / "white.txt"
-            lines = [
-                f"vless://b{i}111111-1111-1111-1111-111111111111@1.2.3.{i}:443?security=none#white{i}"
-                for i in range(12)
-            ]
-            white_file.write_text("\n".join(lines) + "\n")
-
-            mock_verify.return_value = RuVerifyResult(
-                fingerprint="any",
-                passed=False,
-                reason="CORE_TIMEOUT",
-                is_infrastructure_failure=True,
-            )
-
-            code = asyncio.run(run_ru_verify(root, "sing-box"))
-            self.assertEqual(code, 0)
-            # LKG must be preserved!
-            self.assertEqual(white_file.read_text().splitlines(), lines)
-
-    @patch("swiftproxy.ru_verify._verify_single")
-    def test_partial_normal_proxy_failure_does_not_trigger_lkg_fallback(self, mock_verify):
-        with tempfile.TemporaryDirectory() as temp_dir:
-            root = Path(temp_dir)
-            sub_dir = root / "sub"
-            sub_dir.mkdir(parents=True)
-            main_file = sub_dir / "main.txt"
-            lines = [
-                f"vless://c{i}111111-1111-1111-1111-111111111111@1.2.3.{i}:443?security=none#node{i}"
-                for i in range(10)
-            ]
-            main_file.write_text("\n".join(lines) + "\n")
-
-            # 4 nodes pass (40% pass rate > 10% outage threshold), 6 fail normally
-            async def fake_verify(config, *args):
-                i = int(config.host.split(".")[-1])
-                if i < 4:
+            # 10 pass, 190 fail with HTTPS_FAILED (normal proxy outcome)
+            async def fake_verify(config, *args, **kwargs):
+                i = int(config.remark.replace("node", ""))
+                if i < 10:
                     return RuVerifyResult(
                         fingerprint=config.fingerprint,
                         passed=True,
@@ -328,9 +282,164 @@ class TestRuVerify(unittest.TestCase):
             code = asyncio.run(run_ru_verify(root, "sing-box"))
             self.assertEqual(code, 0)
 
-            # Exactly 4 nodes must be published (LKG not triggered)
+            # Exactly 10 nodes must be published, NO LKG trigger
             written = [l for l in main_file.read_text().splitlines() if l.strip()]
-            self.assertEqual(len(written), 4)
+            self.assertEqual(len(written), 10)
+            
+            stats = json.loads(stats_file.read_text())
+            self.assertEqual(stats["production"]["main"], 10)
+            self.assertEqual(stats["mac_verification"]["main"]["mac_pass"], 10)
+            self.assertEqual(stats["mac_verification"]["main"]["final"], 10)
+
+    @patch("swiftproxy.ru_verify._verify_single")
+    def test_200_tested_15_pass_healthy_verification(self, mock_verify):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            sub_dir = root / "sub"
+            sub_dir.mkdir(parents=True)
+            main_file = sub_dir / "main.txt"
+            stats_file = root / "stats.json"
+            stats_file.write_text(json.dumps({"project": "Swift", "tagline": "Filter the garbage. Keep what works."}))
+
+            lines = [
+                f"vless://{i:08x}-1111-1111-1111-111111111111@1.2.3.{i%250 + 1}:443?security=none#node{i}"
+                for i in range(200)
+            ]
+            main_file.write_text("\n".join(lines) + "\n")
+
+            # 15 pass, 185 fail normally
+            async def fake_verify(config, *args, **kwargs):
+                i = int(config.remark.replace("node", ""))
+                if i < 15:
+                    return RuVerifyResult(
+                        fingerprint=config.fingerprint,
+                        passed=True,
+                        reason=None,
+                        r1_kbps=180.0,
+                        r2_kbps=170.0,
+                        min_kbps=170.0,
+                        https_passed=3,
+                    )
+                return RuVerifyResult(
+                    fingerprint=config.fingerprint,
+                    passed=False,
+                    reason="HTTPS_FAILED",
+                    https_passed=0,
+                )
+
+            mock_verify.side_effect = fake_verify
+            code = asyncio.run(run_ru_verify(root, "sing-box"))
+            self.assertEqual(code, 0)
+
+            written = [l for l in main_file.read_text().splitlines() if l.strip()]
+            self.assertEqual(len(written), 15)
+
+    @patch("swiftproxy.ru_verify._verify_single")
+    def test_200_tested_0_pass_normal_proxy_fail_not_outage(self, mock_verify):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            sub_dir = root / "sub"
+            sub_dir.mkdir(parents=True)
+            main_file = sub_dir / "main.txt"
+            stats_file = root / "stats.json"
+            stats_file.write_text(json.dumps({"project": "Swift", "tagline": "Filter the garbage. Keep what works."}))
+
+            lines = [
+                f"vless://{i:08x}-1111-1111-1111-111111111111@1.2.3.{i%250 + 1}:443?security=none#node{i}"
+                for i in range(200)
+            ]
+            main_file.write_text("\n".join(lines) + "\n")
+
+            # 0 pass, but all failures are normal proxy failures (HTTPS_FAILED, not infra failure)
+            async def fake_verify(config, *args, **kwargs):
+                return RuVerifyResult(
+                    fingerprint=config.fingerprint,
+                    passed=False,
+                    reason="HTTPS_FAILED",
+                    is_infrastructure_failure=False,
+                )
+
+            mock_verify.side_effect = fake_verify
+            code = asyncio.run(run_ru_verify(root, "sing-box"))
+            self.assertEqual(code, 0)
+
+            written = [l for l in main_file.read_text().splitlines() if l.strip()]
+            self.assertEqual(len(written), 0)
+            stats = json.loads(stats_file.read_text())
+            self.assertEqual(stats["production"]["main"], 0)
+            self.assertEqual(stats["mac_verification"]["main"]["mac_pass"], 0)
+
+    @patch("swiftproxy.ru_verify._verify_single")
+    def test_infrastructure_failure_returns_1_and_blocks_publishing(self, mock_verify):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            sub_dir = root / "sub"
+            sub_dir.mkdir(parents=True)
+            main_file = sub_dir / "main.txt"
+            lines = [
+                f"vless://{i:08x}-1111-1111-1111-111111111111@1.2.3.{i+1}:443?security=none#node{i}"
+                for i in range(12)
+            ]
+            main_file.write_text("\n".join(lines) + "\n")
+
+            # Genuine infra failure (e.g. sing-box cannot start on host)
+            async def fake_verify(config, *args, **kwargs):
+                return RuVerifyResult(
+                    fingerprint=config.fingerprint,
+                    passed=False,
+                    reason="CORE_TIMEOUT",
+                    is_infrastructure_failure=True,
+                )
+
+            mock_verify.side_effect = fake_verify
+            code = asyncio.run(run_ru_verify(root, "sing-box"))
+            # Must return non-zero code to fail GitHub Actions step and prevent commit/deploy!
+            self.assertEqual(code, 1)
+
+    @patch("swiftproxy.ru_verify._verify_single")
+    def test_white_200_tested_2_pass_healthy_verification(self, mock_verify):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            sub_dir = root / "sub"
+            sub_dir.mkdir(parents=True)
+            white_file = sub_dir / "white.txt"
+            stats_file = root / "stats.json"
+            stats_file.write_text(json.dumps({"project": "Swift", "tagline": "Filter the garbage. Keep what works."}))
+
+            lines = [
+                f"vless://{i:08x}-1111-1111-1111-111111111111@1.2.3.{i%250 + 1}:443?security=none#white{i}"
+                for i in range(200)
+            ]
+            white_file.write_text("\n".join(lines) + "\n")
+
+            async def fake_verify(config, *args, **kwargs):
+                i = int(config.remark.replace("white", ""))
+                if i < 2:
+                    return RuVerifyResult(
+                        fingerprint=config.fingerprint,
+                        passed=True,
+                        reason=None,
+                        r1_kbps=200.0,
+                        r2_kbps=190.0,
+                        min_kbps=190.0,
+                        https_passed=3,
+                    )
+                return RuVerifyResult(
+                    fingerprint=config.fingerprint,
+                    passed=False,
+                    reason="HTTPS_FAILED",
+                    https_passed=0,
+                )
+
+            mock_verify.side_effect = fake_verify
+            code = asyncio.run(run_ru_verify(root, "sing-box"))
+            self.assertEqual(code, 0)
+
+            written = [l for l in white_file.read_text().splitlines() if l.strip()]
+            self.assertEqual(len(written), 2)
+            stats = json.loads(stats_file.read_text())
+            self.assertEqual(stats["production"]["white"], 2)
+            self.assertEqual(stats["mac_verification"]["white"]["mac_pass"], 2)
 
     @patch("swiftproxy.ru_verify._verify_single")
     def test_plain_and_happ_outputs_contain_identical_final_fingerprint_set(self, mock_verify):
@@ -353,16 +462,18 @@ class TestRuVerify(unittest.TestCase):
             white_file.write_text(f"{line_vless_white}\n")
             happ_white.write_text(f"{line_vless_white}\n")
 
-            mock_verify.return_value = RuVerifyResult(
-                fingerprint="any",
-                passed=True,
-                reason=None,
-                r1_kbps=200.0,
-                r2_kbps=190.0,
-                min_kbps=190.0,
-                https_passed=3,
-            )
+            async def fake_verify(config, *args, **kwargs):
+                return RuVerifyResult(
+                    fingerprint=config.fingerprint,
+                    passed=True,
+                    reason=None,
+                    r1_kbps=200.0,
+                    r2_kbps=190.0,
+                    min_kbps=190.0,
+                    https_passed=3,
+                )
 
+            mock_verify.side_effect = fake_verify
             code = asyncio.run(run_ru_verify(root, "sing-box"))
             self.assertEqual(code, 0)
 
