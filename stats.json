@@ -1,60 +1,58 @@
 {
-  "alive": 128,
-  "collected": 2808,
+  "alive": 131,
+  "collected": 4118,
   "countries": {
     "AL": 2,
-    "AT": 4,
-    "BE": 1,
-    "BR": 1,
-    "CO": 3,
+    "AT": 5,
+    "BE": 2,
+    "CO": 2,
     "CZ": 1,
-    "DE": 23,
-    "EE": 1,
-    "FI": 3,
+    "DE": 20,
+    "FI": 6,
     "FR": 1,
-    "GB": 5,
+    "GB": 8,
     "HK": 1,
-    "IN": 1,
-    "IT": 3,
+    "IT": 4,
+    "KZ": 1,
     "LT": 2,
-    "LV": 3,
+    "LV": 4,
     "MD": 1,
-    "NL": 22,
+    "NL": 24,
     "PL": 7,
     "RO": 2,
-    "RU": 9,
+    "RU": 1,
     "SG": 1,
     "TR": 4,
     "TW": 4,
-    "US": 23
+    "US": 28
   },
   "failure_reasons": {
-    "CONNECT_TIMEOUT": 77,
-    "CORE_START_FAILED": 6,
-    "DUPLICATE": 706,
-    "HTTP_FAILED": 25,
-    "NOT_WHITELISTED": 648,
-    "PARSE_ERROR": 59,
-    "PROXY_FAILED": 348,
-    "SOURCE_EMPTY": 2,
-    "TOO_SLOW": 15,
-    "UNSTABLE": 51,
-    "UNSUPPORTED": 317
+    "CONNECT_TIMEOUT": 72,
+    "CORE_START_FAILED": 3,
+    "DUPLICATE": 1062,
+    "HTTP_FAILED": 42,
+    "NOT_WHITELISTED": 1574,
+    "PARSE_ERROR": 62,
+    "PROXY_FAILED": 295,
+    "SOURCE_EMPTY": 1,
+    "TOO_SLOW": 19,
+    "UNSTABLE": 88,
+    "UNSUPPORTED": 405
   },
-  "main": 64,
-  "median_latency_ms": 373.24,
-  "parsed": 2500,
+  "main": 85,
+  "median_latency_ms": 359.43,
+  "parsed": 3721,
   "pipeline_version": 4,
   "production": {
-    "all": 128,
-    "main": 64,
-    "white": 6
+    "all": 131,
+    "main": 85,
+    "white": 3
   },
   "project": "Swift",
   "protocols": {
-    "hysteria2": 18,
+    "hysteria2": 19,
     "trojan": 1,
-    "vless": 109
+    "vless": 111
   },
   "published": true,
   "source_status": {
@@ -80,26 +78,24 @@
     "zieng2-white": "OK"
   },
   "sources": {
-    "aetris": 2,
-    "airlink": 4,
-    "akres": 24,
-    "kizyak": 7,
-    "rjsxrd": 12,
-    "rkp": 101,
-    "zieng2": 4
+    "airlink": 1,
+    "akres": 27,
+    "kizyak": 5,
+    "rjsxrd": 37,
+    "rkp": 104,
+    "zieng2": 1
   },
   "tagline": "Filter the garbage. Keep what works.",
   "tested": 650,
-  "unique": 1794,
-  "updated_at": "2026-08-30T03:37:19Z",
-  "white": 6,
+  "unique": 2659,
+  "updated_at": "2026-08-30T06:02:57Z",
+  "white": 3,
   "white_evidence": {
     "cidr_source": "hxehex-white-cidr",
     "domain_source": "hxehex-white-domains",
-    "eligible": 463,
+    "eligible": 498,
     "published": {
-      "cidr": 1,
-      "sni": 5
+      "sni": 3
     }
   }
 }

@@ -1,40 +1,40 @@
 {
   "control_ok": true,
   "failure_reasons": {
-    "CONNECT_FAILED": 10,
-    "CONNECT_TIMEOUT": 18,
+    "CONNECT_FAILED": 9,
+    "CONNECT_TIMEOUT": 20,
     "DNS_FAILED": 16,
-    "DUPLICATE": 966,
-    "MALFORMED_SECRET": 8,
-    "PROTOCOL_ERROR": 58,
-    "RESPONSE_TIMEOUT": 3,
-    "UNSTABLE": 5,
+    "DUPLICATE": 941,
+    "MALFORMED_SECRET": 7,
+    "PROTOCOL_ERROR": 68,
+    "RESPONSE_TIMEOUT": 4,
+    "UNSTABLE": 13,
     "UNSUPPORTED_SECRET": 8
   },
   "fastest": 20,
   "healthy_run": true,
-  "last_successful_set": "2026-08-30T03:38:28Z",
+  "last_successful_set": "2026-08-30T06:04:14Z",
   "production": {
     "fastest": 20,
     "stable": 50,
-    "working": 275
+    "working": 248
   },
   "project": "Swift",
   "selected": {
     "backup": {
-      "median_rtt_ms": 386.14,
-      "score": 97.54,
-      "url": "https://t.me/proxy?server=72.56.25.212&port=443&secret=ee7d026761b388c46302df84b4b812aef0706574726f766963682e7275"
+      "median_rtt_ms": 361.69,
+      "score": 97.49,
+      "url": "https://t.me/proxy?server=forward-gree.server-space52.info&port=443&secret=ee1603010200010001fc030386e24c3add6d656469612e737465616d706f77657265642e636f6d"
     },
     "fastest": {
-      "median_rtt_ms": 302.18,
-      "score": 92.36,
-      "url": "https://t.me/proxy?server=mproxy.vechnostnet.study&port=443&secret=dd667e3e75e43a37365faca2d6e8381c00"
+      "median_rtt_ms": 248.41,
+      "score": 92.87,
+      "url": "https://t.me/proxy?server=close.your.mouth.and.eyse.kiroftopmine.site&port=22&secret=00000000000000000000000000000000"
     },
     "stable": {
-      "median_rtt_ms": 376.23,
-      "score": 97.64,
-      "url": "https://t.me/proxy?server=s5.foriran.co.uk&port=443&secret=ee1603010200010001fc030386e24c3add6d656469612e737465616d706f77657265642e636f6d"
+      "median_rtt_ms": 382.29,
+      "score": 97.57,
+      "url": "https://t.me/proxy?server=72.56.25.212&port=443&secret=ee7d026761b388c46302df84b4b812aef0706574726f766963682e7275"
     }
   },
   "sources": {
@@ -42,31 +42,31 @@
       "fetched": 238,
       "status": "OK",
       "unique": 223,
-      "working": 203
+      "working": 185
     },
     "klondike": {
-      "fetched": 234,
+      "fetched": 233,
       "status": "OK",
-      "unique": 230,
-      "working": 184
+      "unique": 229,
+      "working": 169
     },
     "shablin": {
-      "fetched": 301,
+      "fetched": 299,
       "status": "OK",
-      "unique": 293,
-      "working": 212
+      "unique": 291,
+      "working": 197
     },
     "solispirit": {
       "fetched": 235,
       "status": "OK",
       "unique": 229,
-      "working": 180
+      "working": 169
     }
   },
   "stable": 50,
   "suspicious_streak": 0,
   "tagline": "Filter the garbage. Keep what works.",
-  "tested": 391,
-  "updated_at": "2026-08-30T03:38:28Z",
-  "working": 275
+  "tested": 394,
+  "updated_at": "2026-08-30T06:04:14Z",
+  "working": 248
 }
