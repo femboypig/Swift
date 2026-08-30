@@ -1,9 +1,7 @@
 #profile-title: Swift Main
 #profile-update-interval: 1
 #profile-web-page-url: https://github.com/femboypig/Swift
-vless://de5b01f7-0697-49ec-aeb1-6ef0361344fb@65.109.215.50:39633?encryption=none&type=tcp&security=none#%F0%9F%87%AB%F0%9F%87%AE%20FI%20%C2%B7%20035
-vless://11af1c47-865a-47c6-92ff-118013655d78@51.15.56.211:8080?encryption=none&type=ws&security=none&sni=51.15.56.211#%F0%9F%87%B3%F0%9F%87%B1%20NL%20%C2%B7%20040
-hysteria2://Oz_Kx9342gefwJ89x3_M9z32kzf9KJq003_s@205.237.109.173:8443?sni=hopp-netherland-new.dynuddns.net#%F0%9F%87%B3%F0%9F%87%B1%20NL%20%C2%B7%20062
-hysteria2://9Me_Jx935gnHx13_Nx45M_NYXe037js_Be4z@162.249.124.125:8080?sni=hopp-germany-new.ddnsguru.com#%F0%9F%87%B9%F0%9F%87%B7%20TR%20%C2%B7%20070
-vless://78c61f86-6229-4994-8389-7d7213ce7f42@140.82.33.78:20827?encryption=none&type=tcp&security=none&host=--v2rayNplus--v2rayNplus--v2rayNplus--#%F0%9F%87%A9%F0%9F%87%AA%20DE%20%C2%B7%20130
-vless://11af1c47-865a-47c6-92ff-118013655d78@51.158.238.49:8080?encryption=none&type=ws&security=none&sni=51.158.238.49#%F0%9F%87%B3%F0%9F%87%B1%20NL%20%C2%B7%20186
+vless://78c61f86-6229-4994-8389-7d7213ce7f42@140.82.33.78:20827?encryption=none&type=tcp&security=none&sni=--v2raynplus--v2raynplus--v2raynplus--#%F0%9F%87%A9%F0%9F%87%AA%20DE%20%C2%B7%20006
+vless://d3815c21-ef06-43e2-82e1-ca313962b489@app27.jarvestip.ru:443?encryption=none&type=tcp&security=reality&flow=xtls-rprx-vision&sni=app27.jarvestip.ru&fp=firefox&pbk=OYvSeQqu0XhV12blOVAR2Cn_3m6HI95raTdlqnVobjk&sid=360de9e1#%F0%9F%87%B3%F0%9F%87%B1%20NL%20%C2%B7%20039
+vless://78c61f86-6229-4994-8389-7d7213ce7f42@140.82.33.78:20827?encryption=none&type=tcp&security=none#%F0%9F%87%A9%F0%9F%87%AA%20DE%20%C2%B7%20049
+vless://d3815c21-ef06-43e2-82e1-ca313962b489@app26.jarvestip.ru:443?encryption=none&type=tcp&security=reality&flow=xtls-rprx-vision&sni=app26.jarvestip.ru&fp=firefox&pbk=c5vsnqZ0Lr_bFoto-ES-3bVD63PwFeogqfc7xTj2rig&sid=3f7fb4ee#%F0%9F%87%B3%F0%9F%87%B1%20NL%20%C2%B7%20058

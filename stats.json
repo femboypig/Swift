@@ -1,41 +1,34 @@
 {
-  "alive": 625,
-  "collected": 7388,
+  "alive": 374,
+  "collected": 7225,
   "countries": {
-    "AR": 10,
-    "AT": 2,
-    "AU": 13,
-    "CA": 12,
-    "CH": 1,
+    "AU": 3,
+    "CA": 5,
     "CO": 1,
-    "CZ": 3,
-    "DE": 33,
+    "DE": 15,
     "EE": 1,
-    "ES": 3,
-    "FI": 16,
-    "FR": 17,
-    "GB": 44,
-    "GR": 1,
-    "HK": 3,
+    "ES": 2,
+    "FI": 8,
+    "FR": 9,
+    "GB": 28,
+    "HK": 1,
     "IN": 1,
-    "IT": 6,
-    "JP": 61,
-    "KR": 3,
-    "KZ": 2,
-    "LT": 3,
-    "LV": 6,
-    "MY": 2,
-    "NL": 127,
+    "IT": 2,
+    "JP": 48,
+    "KR": 2,
+    "KZ": 1,
+    "LT": 2,
+    "LV": 4,
+    "NL": 69,
     "NO": 2,
-    "PE": 1,
-    "PL": 8,
-    "RO": 3,
-    "RU": 3,
+    "PL": 4,
+    "RO": 2,
+    "RU": 1,
     "SE": 1,
-    "SG": 36,
-    "TR": 5,
-    "TW": 7,
-    "US": 188
+    "SG": 9,
+    "TR": 1,
+    "TW": 2,
+    "US": 149
   },
   "diagnostics": {
     "hysteria_v1": {
@@ -49,9 +42,9 @@
       "reached_mac": 0
     },
     "ru_hysteria2": {
-      "discovered_total": 12,
+      "discovered_total": 9,
       "first_tested_this_run": 0,
-      "global_pass": 2,
+      "global_pass": 0,
       "history_eligible": 0,
       "mac_pass": 0,
       "never_tested": 6,
@@ -60,68 +53,68 @@
     }
   },
   "discovery": {
-    "average_never_tested_age_hours": 3.17,
-    "backlog_change_this_run": -241,
-    "estimated_hours_to_clear": 4.5,
-    "estimated_runs_to_clear": 9,
-    "new_discovered_this_run": 102,
-    "oldest_never_tested_age_hours": 3.37,
-    "tested_first_time_this_run": 241,
-    "total_never_tested": 1963
+    "average_never_tested_age_hours": 3.03,
+    "backlog_change_this_run": -6,
+    "estimated_hours_to_clear": 176.5,
+    "estimated_runs_to_clear": 353,
+    "new_discovered_this_run": 396,
+    "oldest_never_tested_age_hours": 3.8,
+    "tested_first_time_this_run": 6,
+    "total_never_tested": 2117
   },
   "failure_reasons": {
-    "CONNECT_TIMEOUT": 167,
-    "DNS_FAILED": 12,
-    "DUPLICATE": 1553,
-    "HTTP_FAILED": 33,
-    "NOT_WHITELISTED": 1902,
-    "PARSE_ERROR": 63,
-    "PROXY_FAILED": 255,
+    "CONNECT_TIMEOUT": 85,
+    "DUPLICATE": 1391,
+    "HTTP_FAILED": 7,
+    "NOT_WHITELISTED": 1897,
+    "PARSE_ERROR": 59,
+    "PROXY_FAILED": 137,
     "SOURCE_EMPTY": 1,
-    "TOO_SLOW": 107,
-    "UNSTABLE": 50,
-    "UNSUPPORTED": 703,
-    "WHITE_DNS_FAILED": 74
+    "TOO_SLOW": 18,
+    "UNSTABLE": 28,
+    "UNSUPPORTED": 600,
+    "WHITE_DNS_FAILED": 76
   },
   "mac_verification": {
     "main": {
       "before_mac": 200,
       "failure_reasons": {
-        "DOWNLOAD_R2_FAILED": 4,
-        "HTTPS_FAILED": 190
+        "DOWNLOAD_R1_FAILED": 2,
+        "HTTPS_FAILED": 193,
+        "TOO_SLOW": 1
       },
-      "final": 6,
-      "mac_fail": 194,
-      "mac_pass": 6,
+      "final": 4,
+      "mac_fail": 196,
+      "mac_pass": 4,
       "mac_tested": 200
     },
     "white": {
-      "before_mac": 3,
+      "before_mac": 2,
       "failure_reasons": {
-        "HTTPS_FAILED": 3
+        "HTTPS_FAILED": 2
       },
       "final": 0,
-      "mac_fail": 3,
+      "mac_fail": 2,
       "mac_pass": 0,
-      "mac_tested": 3
+      "mac_tested": 2
     }
   },
-  "main": 6,
-  "median_latency_ms": 466.43,
-  "parsed": 6824,
+  "main": 4,
+  "median_latency_ms": 338.67,
+  "parsed": 6572,
   "pipeline_version": 4,
   "production": {
-    "all": 625,
-    "main": 6,
+    "all": 374,
+    "main": 4,
     "white": 0
   },
   "project": "Swift",
   "protocols": {
-    "hysteria2": 17,
-    "ss": 77,
-    "trojan": 5,
-    "vless": 507,
-    "vmess": 19
+    "hysteria2": 11,
+    "ss": 55,
+    "trojan": 1,
+    "vless": 296,
+    "vmess": 11
   },
   "published": true,
   "ru_service_diagnostics": {},
@@ -154,29 +147,29 @@
     "zieng2-white": "OK"
   },
   "sources": {
-    "0xRadikal": 450,
-    "aetris": 2,
-    "airlink": 2,
-    "akres": 9,
-    "igareck": 12,
+    "0xRadikal": 276,
+    "aetris": 1,
+    "airlink": 1,
+    "akres": 5,
+    "igareck": 11,
     "kizyak": 4,
-    "matryoshka": 17,
-    "rjsxrd": 111,
-    "rkp": 38,
-    "vovaplusexp": 154,
-    "zieng2": 2
+    "matryoshka": 15,
+    "rjsxrd": 75,
+    "rkp": 29,
+    "vovaplusexp": 83,
+    "zieng2": 1
   },
   "tagline": "Filter the garbage. Keep what works.",
-  "tested": 1238,
-  "unique": 5271,
-  "updated_at": "2026-08-30T15:37:03Z",
+  "tested": 650,
+  "unique": 5181,
+  "updated_at": "2026-08-30T16:02:48Z",
   "white": 0,
   "white_evidence": {
     "cidr_source": "hxehex-white-cidr",
     "domain_source": "hxehex-white-domains",
-    "eligible": 1377,
+    "eligible": 1327,
     "published": {
-      "cidr": 2,
+      "cidr": 1,
       "sni": 1
     }
   }
