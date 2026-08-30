@@ -1,73 +1,72 @@
 {
   "control_ok": true,
   "failure_reasons": {
-    "CONNECT_FAILED": 9,
+    "CONNECT_FAILED": 8,
     "CONNECT_TIMEOUT": 27,
     "DNS_FAILED": 22,
-    "DUPLICATE": 943,
-    "MALFORMED_SECRET": 7,
-    "NETWORK_ERROR": 1,
-    "PROTOCOL_ERROR": 62,
-    "RESPONSE_TIMEOUT": 2,
-    "UNSTABLE": 13,
+    "DUPLICATE": 946,
+    "MALFORMED_SECRET": 6,
+    "PROTOCOL_ERROR": 67,
+    "RESPONSE_TIMEOUT": 4,
+    "UNSTABLE": 14,
     "UNSUPPORTED_SECRET": 8
   },
   "fastest": 20,
   "healthy_run": true,
-  "last_successful_set": "2026-08-30T10:58:37Z",
+  "last_successful_set": "2026-08-30T12:16:11Z",
   "production": {
     "fastest": 20,
     "stable": 50,
-    "working": 274
+    "working": 268
   },
   "project": "Swift",
   "selected": {
     "backup": {
-      "median_rtt_ms": 437.53,
-      "score": 97.04,
-      "url": "https://t.me/proxy?server=api.server2-5mk.info&port=443&secret=ee1603010200010001fc030386e24c3add6d656469612e737465616d706f77657265642e636f6d"
+      "median_rtt_ms": 356.63,
+      "score": 97.82,
+      "url": "https://t.me/proxy?server=manifold.server-space52.info&port=443&secret=ee1603010200010001fc030386e24c3add6d656469612e737465616d706f77657265642e636f6d"
     },
     "fastest": {
-      "median_rtt_ms": 351.23,
-      "score": 96.84,
-      "url": "https://t.me/proxy?server=fast.finecooking.info&port=443&secret=ddf0eeb0bd9adc4fd4a93994ee3b2a216b"
+      "median_rtt_ms": 307.65,
+      "score": 92.31,
+      "url": "https://t.me/proxy?server=mproxy.vechnostnet.study&port=443&secret=dd667e3e75e43a37365faca2d6e8381c00"
     },
     "stable": {
-      "median_rtt_ms": 426.29,
-      "score": 97.16,
-      "url": "https://t.me/proxy?server=forward-gree.server-space52.info&port=443&secret=ee1603010200010001fc030386e24c3add6d656469612e737465616d706f77657265642e636f6d"
+      "median_rtt_ms": 365.32,
+      "score": 97.74,
+      "url": "https://t.me/proxy?server=dark-brown.server-space52.info&port=443&secret=ee1603010200010001fc030386e24c3add6d656469612e737465616d706f77657265642e636f6d"
     }
   },
   "sources": {
     "argh94": {
-      "fetched": 238,
+      "fetched": 228,
       "status": "OK",
-      "unique": 223,
-      "working": 198
+      "unique": 216,
+      "working": 192
     },
     "klondike": {
       "fetched": 233,
       "status": "OK",
       "unique": 229,
-      "working": 177
+      "working": 176
     },
     "shablin": {
-      "fetched": 299,
+      "fetched": 306,
       "status": "OK",
-      "unique": 291,
-      "working": 211
+      "unique": 301,
+      "working": 216
     },
     "solispirit": {
       "fetched": 250,
       "status": "OK",
       "unique": 245,
-      "working": 190
+      "working": 184
     }
   },
   "stable": 50,
   "suspicious_streak": 0,
   "tagline": "Filter the garbage. Keep what works.",
-  "tested": 398,
-  "updated_at": "2026-08-30T10:58:37Z",
-  "working": 274
+  "tested": 401,
+  "updated_at": "2026-08-30T12:16:11Z",
+  "working": 268
 }
