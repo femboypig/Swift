@@ -1,36 +1,40 @@
 {
-  "alive": 250,
-  "collected": 7851,
+  "alive": 364,
+  "collected": 7667,
   "countries": {
-    "AL": 1,
-    "AR": 3,
-    "AU": 2,
+    "AR": 5,
+    "AT": 1,
+    "AU": 5,
     "BR": 2,
-    "CA": 3,
+    "CA": 10,
     "CO": 2,
-    "DE": 24,
+    "CZ": 1,
+    "DE": 28,
     "EE": 1,
-    "FI": 9,
-    "FR": 8,
-    "GB": 14,
-    "IN": 2,
+    "ES": 1,
+    "FI": 11,
+    "FR": 9,
+    "GB": 28,
+    "HK": 1,
+    "IN": 3,
     "IT": 2,
-    "JP": 33,
+    "JP": 37,
     "KR": 1,
-    "KZ": 2,
+    "KZ": 1,
     "LT": 2,
-    "LV": 2,
+    "LV": 4,
     "MD": 1,
     "MY": 1,
-    "NL": 41,
-    "NO": 1,
+    "NL": 65,
+    "NO": 2,
     "PE": 1,
-    "PL": 4,
+    "PL": 10,
     "RO": 4,
-    "RU": 9,
-    "SG": 16,
+    "RU": 11,
+    "SG": 14,
     "TR": 1,
-    "US": 58
+    "US": 98,
+    "ZA": 1
   },
   "diagnostics": {
     "hysteria_v1": {
@@ -55,45 +59,72 @@
     }
   },
   "discovery": {
-    "average_never_tested_age_hours": 0.0,
-    "backlog_change_this_run": -337,
-    "estimated_hours_to_clear": 5.5,
-    "estimated_runs_to_clear": 11,
-    "new_discovered_this_run": 5381,
-    "oldest_never_tested_age_hours": 0.0,
-    "tested_first_time_this_run": 337,
-    "total_never_tested": 3692
+    "average_never_tested_age_hours": 0.58,
+    "backlog_change_this_run": -593,
+    "estimated_hours_to_clear": 3.0,
+    "estimated_runs_to_clear": 6,
+    "new_discovered_this_run": 183,
+    "oldest_never_tested_age_hours": 0.61,
+    "tested_first_time_this_run": 593,
+    "total_never_tested": 3096
   },
   "failure_reasons": {
-    "CONNECT_TIMEOUT": 118,
-    "DNS_FAILED": 3,
-    "DUPLICATE": 1600,
-    "HTTP_FAILED": 19,
-    "NOT_WHITELISTED": 1998,
-    "PARSE_ERROR": 67,
-    "PROXY_FAILED": 186,
+    "CONNECT_TIMEOUT": 195,
+    "CORE_START_FAILED": 4,
+    "DNS_FAILED": 11,
+    "DUPLICATE": 1427,
+    "HTTP_FAILED": 23,
+    "NOT_WHITELISTED": 2006,
+    "PARSE_ERROR": 63,
+    "PROXY_FAILED": 343,
     "SOURCE_EMPTY": 1,
-    "TOO_SLOW": 44,
-    "UNSTABLE": 30,
-    "UNSUPPORTED": 835,
+    "TOO_SLOW": 57,
+    "UNSTABLE": 53,
+    "UNSUPPORTED": 823,
     "WHITE_DNS_FAILED": 74
   },
-  "main": 18,
-  "median_latency_ms": 401.57,
-  "parsed": 6981,
+  "mac_verification": {
+    "main": {
+      "before_mac": 183,
+      "failure_reasons": {
+        "DOWNLOAD_R1_FAILED": 2,
+        "DOWNLOAD_R2_FAILED": 3,
+        "HTTPS_FAILED": 155,
+        "STALLED": 1,
+        "TOO_SLOW": 1
+      },
+      "final": 21,
+      "mac_fail": 162,
+      "mac_pass": 21,
+      "mac_tested": 183
+    },
+    "white": {
+      "before_mac": 2,
+      "failure_reasons": {
+        "HTTPS_FAILED": 2
+      },
+      "final": 2,
+      "mac_fail": 2,
+      "mac_pass": 0,
+      "mac_tested": 2
+    }
+  },
+  "main": 21,
+  "median_latency_ms": 387.24,
+  "parsed": 6802,
   "pipeline_version": 4,
   "production": {
-    "all": 250,
-    "main": 18,
-    "white": 3
+    "all": 364,
+    "main": 21,
+    "white": 2
   },
   "project": "Swift",
   "protocols": {
     "hysteria2": 19,
-    "ss": 22,
-    "trojan": 1,
-    "vless": 205,
-    "vmess": 3
+    "ss": 37,
+    "trojan": 2,
+    "vless": 302,
+    "vmess": 4
   },
   "published": true,
   "ru_service_diagnostics": {
@@ -136,31 +167,30 @@
     "zieng2-white": "OK"
   },
   "sources": {
-    "0xRadikal": 132,
-    "aetris": 4,
-    "airlink": 2,
-    "akres": 13,
+    "0xRadikal": 217,
+    "aetris": 3,
+    "airlink": 1,
+    "akres": 10,
     "igareck": 28,
-    "kizyak": 6,
-    "matryoshka": 7,
-    "pyps": 1,
-    "rjsxrd": 80,
-    "rkp": 55,
-    "vovaplusexp": 70,
-    "zieng2": 2
+    "kizyak": 5,
+    "matryoshka": 16,
+    "pyps": 2,
+    "rjsxrd": 100,
+    "rkp": 52,
+    "vovaplusexp": 96,
+    "zieng2": 1
   },
   "tagline": "Filter the garbage. Keep what works.",
-  "tested": 647,
-  "unique": 5381,
-  "updated_at": "2026-08-30T12:14:50Z",
-  "white": 3,
+  "tested": 1039,
+  "unique": 5375,
+  "updated_at": "2026-08-30T12:51:32Z",
+  "white": 2,
   "white_evidence": {
     "cidr_source": "hxehex-white-cidr",
     "domain_source": "hxehex-white-domains",
-    "eligible": 1370,
+    "eligible": 1400,
     "published": {
-      "cidr": 2,
-      "sni": 1
+      "cidr": 2
     }
   }
 }
