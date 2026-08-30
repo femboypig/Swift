@@ -423,8 +423,99 @@ async def run(root: Path, config_path: Path, core_override: str | None = None) -
         for item in white
         if item.config.fingerprint in white_signals
     )
+
+    # Discovery Queue Observability & Age Tracking
+    now_iso = utc_now()
+    now_dt = datetime.fromisoformat(now_iso.replace("Z", "+00:00"))
+    discovery_seen = temp_history.setdefault("discovery_seen", {})
+    new_discovered_this_run = 0
+    for cfg in unique:
+        if cfg.fingerprint not in discovery_seen:
+            discovery_seen[cfg.fingerprint] = now_iso
+            new_discovered_this_run += 1
+
+    before_configs = history.get("configs", {})
+    never_tested_before = [
+        cfg for cfg in unique
+        if cfg.fingerprint not in before_configs
+        or not any(l.get("observations") for l in before_configs[cfg.fingerprint].get("lanes", {}).values())
+    ]
+
+    tested_fps = {result.fingerprint for result in results_list}
+    tested_first_time = [cfg for cfg in never_tested_before if cfg.fingerprint in tested_fps]
+
+    after_configs = temp_history.get("configs", {})
+    never_tested_after = [
+        cfg for cfg in unique
+        if cfg.fingerprint not in after_configs
+        or not any(l.get("observations") for l in after_configs[cfg.fingerprint].get("lanes", {}).values())
+    ]
+
+    ages_hours = []
+    for cfg in never_tested_after:
+        seen_str = discovery_seen.get(cfg.fingerprint, now_iso)
+        try:
+            seen_dt = datetime.fromisoformat(seen_str.replace("Z", "+00:00"))
+            ages_hours.append(max(0.0, (now_dt - seen_dt).total_seconds() / 3600.0))
+        except Exception:
+            ages_hours.append(0.0)
+
+    oldest_never_tested_age_hours = round(max(ages_hours), 2) if ages_hours else 0.0
+    average_never_tested_age_hours = round(sum(ages_hours) / len(ages_hours), 2) if ages_hours else 0.0
+    backlog_change = len(never_tested_after) - len(never_tested_before)
+    first_tested_count = len(tested_first_time)
+    estimated_runs_to_clear = (len(never_tested_after) + max(1, first_tested_count) - 1) // max(1, first_tested_count) if never_tested_after else 0
+    estimated_hours_to_clear = round(estimated_runs_to_clear * 0.5, 1)
+
+    discovery_stats = {
+        "total_never_tested": len(never_tested_after),
+        "tested_first_time_this_run": first_tested_count,
+        "oldest_never_tested_age_hours": oldest_never_tested_age_hours,
+        "average_never_tested_age_hours": average_never_tested_age_hours,
+        "new_discovered_this_run": new_discovered_this_run,
+        "backlog_change_this_run": backlog_change,
+        "estimated_runs_to_clear": estimated_runs_to_clear,
+        "estimated_hours_to_clear": estimated_hours_to_clear,
+    }
+
+    def _is_ru_target(cfg: ProxyConfig) -> bool:
+        rec = after_configs.get(cfg.fingerprint, {})
+        geo = None
+        for l in rec.get("lanes", {}).values():
+            for o in reversed(l.get("observations", [])):
+                if o.get("country"):
+                    geo = o.get("country")
+                    break
+        return geo == "RU" or cfg.host.endswith(".ru") or "RU" in cfg.remark.upper()
+
+    ru_hy2_pool = [c for c in unique if c.protocol == "hysteria2" and _is_ru_target(c)]
+    hy1_pool = [c for c in unique if c.protocol == "hysteria"]
+
+    diagnostics_stats = {
+        "ru_hysteria2": {
+            "discovered_total": len(ru_hy2_pool),
+            "never_tested": sum(1 for c in ru_hy2_pool if c in never_tested_after),
+            "first_tested_this_run": sum(1 for c in ru_hy2_pool if c in tested_first_time),
+            "global_pass": sum(1 for c in ru_hy2_pool if (c.fingerprint, "main") in results and results[(c.fingerprint, "main")].success),
+            "history_eligible": sum(1 for item in ranked_main if item.config.protocol == "hysteria2" and _is_ru_target(item.config)),
+            "reached_mac": sum(1 for item in main if item.config.protocol == "hysteria2" and _is_ru_target(item.config)),
+            "mac_pass": sum(1 for item in main if item.config.protocol == "hysteria2" and _is_ru_target(item.config)),
+            "published": sum(1 for item in main if item.config.protocol == "hysteria2" and _is_ru_target(item.config)),
+        },
+        "hysteria_v1": {
+            "discovered_total": len(hy1_pool),
+            "never_tested": sum(1 for c in hy1_pool if c in never_tested_after),
+            "first_tested_this_run": sum(1 for c in hy1_pool if c in tested_first_time),
+            "global_pass": sum(1 for c in hy1_pool if (c.fingerprint, "main") in results and results[(c.fingerprint, "main")].success),
+            "history_eligible": sum(1 for item in ranked_main if item.config.protocol == "hysteria"),
+            "reached_mac": sum(1 for item in main if item.config.protocol == "hysteria"),
+            "mac_pass": sum(1 for item in main if item.config.protocol == "hysteria"),
+            "published": sum(1 for item in main if item.config.protocol == "hysteria"),
+        },
+    }
+
     stats = build_stats(
-        updated_at=utc_now(),
+        updated_at=now_iso,
         collected=collected,
         parsed=len(parsed),
         unique=len(unique),
@@ -443,6 +534,8 @@ async def run(root: Path, config_path: Path, core_override: str | None = None) -
         published=reason is None,
         previous=previous_stats,
         reason=reason,
+        discovery=discovery_stats,
+        diagnostics=diagnostics_stats,
     )
     if reason:
         write_json(root / "data/run-diagnostics.json", stats)

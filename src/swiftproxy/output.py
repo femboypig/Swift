@@ -111,12 +111,16 @@ def build_stats(
     white_evidence: dict[str, Any] | None = None,
     previous: dict[str, Any] | None = None,
     reason: str | None = None,
+    discovery: dict[str, Any] | None = None,
+    diagnostics: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     protocols = Counter(item.config.protocol for item in alive)
-    countries = Counter(item.result.country or "??" for item in alive)
-    sources: Counter[str] = Counter()
-    for item in alive:
-        sources.update(item.config.sources)
+    sources = Counter(
+        source for item in alive for source in item.config.sources
+    )
+    countries = Counter(
+        item.result.country for item in alive if item.result.country
+    )
     latencies = sorted(
         item.result.median_latency_ms
         for item in alive
@@ -166,6 +170,10 @@ def build_stats(
         "white_evidence": white_evidence or {},
         "failure_reasons": dict(sorted(failures.items())),
     }
+    if discovery:
+        value["discovery"] = discovery
+    if diagnostics:
+        value["diagnostics"] = diagnostics
     if reason:
         value["hold_reason"] = reason
     return value
