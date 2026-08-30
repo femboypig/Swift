@@ -180,73 +180,73 @@ lanes = ["main"]
 id = "akres-white-bwl"
 name = "akres"
 url = "https://gitverse.ru/api/repos/Akres/VPN/raw/branch/master/bwl"
-lanes = ["white"]
+lanes = ["main", "white"]
 
 [[sources]]
 id = "prihs-white-cache"
 name = "akres"
 url = "https://raw.githubusercontent.com/vpnsvpns/Prihs/main/white.json"
-lanes = ["white"]
+lanes = ["main", "white"]
 
 [[sources]]
 id = "igareck-white-mobile"
 name = "igareck"
 url = "https://raw.githubusercontent.com/igareck/vpn-configs-for-russia/main/Vless-Reality-White-Lists-Rus-Mobile.txt"
-lanes = ["white"]
+lanes = ["main", "white"]
 
 [[sources]]
 id = "igareck-white-cidr"
 name = "igareck"
 url = "https://raw.githubusercontent.com/igareck/vpn-configs-for-russia/main/WHITE-CIDR-RU-all.txt"
-lanes = ["white"]
+lanes = ["main", "white"]
 
 [[sources]]
 id = "zieng2-white"
 name = "zieng2"
 url = "https://raw.githubusercontent.com/zieng2/wl/main/vless_universal.txt"
-lanes = ["white"]
+lanes = ["main", "white"]
 
 [[sources]]
 id = "rkp-white"
 name = "rkp"
 url = "https://raw.githubusercontent.com/RKPchannel/RKP_bypass_configs/main/whitelist.txt"
-lanes = ["white"]
+lanes = ["main", "white"]
 
 [[sources]]
 id = "airlink-white"
 name = "airlink"
 url = "https://raw.githubusercontent.com/AirLinkVPN1/AirLinkVPN/main/rkn_white_list"
-lanes = ["white"]
+lanes = ["main", "white"]
 
 [[sources]]
 id = "bywarm-white-selected"
 name = "bywarm"
 url = "https://gitverse.ru/api/repos/bywarm/rser/raw/branch/master/selected.txt"
-lanes = ["white"]
+lanes = ["main", "white"]
 
 [[sources]]
 id = "aetris-white-lite"
 name = "aetris"
 url = "https://raw.githubusercontent.com/flaafix/AetrisVPN-white-list-lite/main/AetrisVPN.txt"
-lanes = ["white"]
+lanes = ["main", "white"]
 
 [[sources]]
 id = "kizyak-white-v7"
 name = "kizyak"
 url = "https://raw.githubusercontent.com/Maskkost93/kizyak-vpn-4.0/main/kizyakbeta7.txt"
-lanes = ["white"]
+lanes = ["main", "white"]
 
 [[sources]]
 id = "pyps-white-lite-checked"
 name = "pyps"
 url = "https://raw.githubusercontent.com/heops6767/PypsCFG/main/output/LiteWhiteListChecked.txt"
-lanes = ["white"]
+lanes = ["main", "white"]
 
 [[sources]]
 id = "rjsxrd-white-tested"
 name = "rjsxrd"
 url = "https://raw.githubusercontent.com/whoahaow/rjsxrd/main/githubmirror/bypass/bypass-all.txt"
-lanes = ["white"]
+lanes = ["main", "white"]
 
 [[sources]]
 id = "mifa-world"
