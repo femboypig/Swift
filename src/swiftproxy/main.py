@@ -344,7 +344,7 @@ async def run(root: Path, config_path: Path, core_override: str | None = None) -
         reverse=True,
     )
     if ranked_white and os.environ.get("SWIFT_RU_PROBE_URL"):
-        top_white = ranked_white[: min(len(ranked_white), 60)]
+        top_white = [item for item in ranked_white if item.config.protocol not in {"hysteria", "hysteria2", "tuic"}][:60]
         probe_targets = [
             {
                 "host": item.config.resolved_ip or item.config.host,
@@ -356,7 +356,7 @@ async def run(root: Path, config_path: Path, core_override: str | None = None) -
         ru_results = probe_ru_targets(probe_targets, check_type="tcp_tls")
         if ru_results:
             passed_count = sum(bool(r.get("ok")) for r in ru_results.values())
-            passed_ratio = passed_count / len(ru_results)
+            passed_ratio = passed_count / len(ru_results) if ru_results else 0.0
             if len(ru_results) >= 10 and passed_ratio < 0.10:
                 LOGGER.warning(
                     "RU_PROBE_OUTAGE_SUSPECTED white total=%d passed=%d ratio=%.2f -> preserving runner selection",
@@ -367,6 +367,9 @@ async def run(root: Path, config_path: Path, core_override: str | None = None) -
             else:
                 passed_white = []
                 for item in ranked_white:
+                    if item.config.protocol in {"hysteria", "hysteria2", "tuic"}:
+                        passed_white.append(item)
+                        continue
                     key_id = f"{item.config.resolved_ip or item.config.host}:{item.config.port}"
                     status_item = ru_results.get(key_id)
                     if status_item is not None:
