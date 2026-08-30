@@ -170,6 +170,8 @@ def sing_box_outbound(config: ProxyConfig) -> dict[str, Any]:
         "server": server,
         "server_port": config.port,
     }
+    if bind_iface := os.environ.get("SWIFT_BIND_INTERFACE"):
+        base["bind_interface"] = bind_iface
     options = config.options
     if config.protocol in {"vless", "vmess"} and options.get("packet_encoding"):
         base["packet_encoding"] = options["packet_encoding"]
@@ -236,6 +238,7 @@ def sing_box_outbound(config: ProxyConfig) -> dict[str, Any]:
 
 
 def sing_box_config(config: ProxyConfig, socks_port: int) -> dict[str, Any]:
+    auto_detect = not bool(os.environ.get("SWIFT_BIND_INTERFACE"))
     return {
         "log": {"level": "warn", "timestamp": False},
         "inbounds": [
@@ -247,7 +250,7 @@ def sing_box_config(config: ProxyConfig, socks_port: int) -> dict[str, Any]:
             }
         ],
         "outbounds": [sing_box_outbound(config)],
-        "route": {"final": "proxy", "auto_detect_interface": True},
+        "route": {"final": "proxy", "auto_detect_interface": auto_detect},
     }
 
 
