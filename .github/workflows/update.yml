@@ -23,12 +23,10 @@ env:
   SWIFT_RU_PROBE_KEY: ${{ secrets.SWIFT_RU_PROBE_KEY }}
 
 jobs:
-  update:
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
+  cloud-collect:
+    name: Cloud collect and test
     runs-on: ubuntu-24.04
-    timeout-minutes: 58
+    timeout-minutes: 40
 
     steps:
       - name: Check out repository
@@ -105,13 +103,77 @@ jobs:
             exit "$swift_exit"
           fi
 
+      - name: Upload cloud generated data
+        uses: actions/upload-artifact@4cec3d8aa04e39d1a68397de0c4cd6fb9dce8ec1 # v4.6.1
+        with:
+          name: swift-cloud-data
+          path: |
+            sub
+            Telegram
+            data
+            stats.json
+          retention-days: 1
+
+  ru-verify:
+    name: Russian live traffic verification
+    needs: cloud-collect
+    runs-on: [self-hosted, Linux]
+    timeout-minutes: 8
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    env:
+      SWIFT_BIND_INTERFACE: wlan0
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 1
+
+      - name: Download cloud generated data
+        uses: actions/download-artifact@cc203385981b70ca67e1cc392babf9cc229d5806 # v4.1.9
+        with:
+          name: swift-cloud-data
+
+      - name: Install dependencies (if needed)
+        shell: bash
+        run: |
+          python3 -m pip install --break-system-packages --disable-pip-version-check . || python3 -m pip install --disable-pip-version-check .
+
+      - name: Install sing-box
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ -x "$SWIFT_SING_BOX" ]] && "$SWIFT_SING_BOX" version | grep -q "sing-box version $SING_BOX_VERSION"; then
+            exit 0
+          fi
+
+          mkdir -p .cache/sing-box "$RUNNER_TEMP/swift-core"
+          swift_archive="sing-box-${SING_BOX_VERSION}-linux-amd64.tar.gz"
+          swift_release="https://github.com/SagerNet/sing-box/releases/download/v${SING_BOX_VERSION}"
+          curl --fail --location --retry 3 --silent --show-error \
+            --output "$RUNNER_TEMP/swift-core/$swift_archive" \
+            "$swift_release/$swift_archive"
+          echo "$SING_BOX_SHA256  $RUNNER_TEMP/swift-core/$swift_archive" | sha256sum --check --status
+          tar -xzf "$RUNNER_TEMP/swift-core/$swift_archive" \
+            -C "$RUNNER_TEMP/swift-core" \
+            "sing-box-${SING_BOX_VERSION}-linux-amd64/sing-box"
+          install -m 0755 \
+            "$RUNNER_TEMP/swift-core/sing-box-${SING_BOX_VERSION}-linux-amd64/sing-box" \
+            "$SWIFT_SING_BOX"
+          "$SWIFT_SING_BOX" version
+
+      - name: Run Russian actual traffic verification (wlan0)
+        shell: bash
+        run: |
+          python3 -m swiftproxy.ru_verify --concurrency 6
+
       - name: Check generated subscriptions
-        if: steps.pipeline.outputs.exit_code == '0'
-        run: python -m swiftproxy.main --check-output
+        run: python3 -m swiftproxy.main --check-output
 
       - name: Check generated Telegram proxies
-        if: steps.telegram.outputs.exit_code == '0'
-        run: python -m swiftproxy.telegram_main --check-output
+        run: python3 -m swiftproxy.telegram_main --check-output
 
       - name: Commit changed data
         shell: bash
@@ -152,16 +214,4 @@ jobs:
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
           TELEGRAM_MESSAGE_ID: ${{ secrets.TELEGRAM_MESSAGE_ID }}
-        run: python -m swiftproxy.telegram_publish
-
-      - name: Report held publish
-        if: always() && steps.pipeline.outputs.exit_code == '2'
-        run: |
-          echo "Swift kept the previous subscriptions because this run looked unhealthy." >&2
-          exit 1
-
-      - name: Report held Telegram publish
-        if: always() && steps.telegram.outputs.exit_code == '2'
-        run: |
-          echo "Swift kept the previous Telegram proxies because this run looked unhealthy." >&2
-          exit 1
+        run: python3 -m swiftproxy.telegram_publish
