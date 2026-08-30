@@ -146,6 +146,7 @@ class ParsingTests(unittest.TestCase):
         uris = [
             f"trojan://test-password@{PUBLIC_V4}:443?security=tls&sni=example.com&type=tcp#t",
             f"ss://{method}@{PUBLIC_V4}:8388#s",
+            f"hysteria://{PUBLIC_V4}:443?auth=test-password&sni=example.com&insecure=1&upmbps=100&downmbps=100#h1",
             f"hysteria2://test-password@{PUBLIC_V4}:443?sni=example.com&insecure=1#h",
             f"tuic://{UUID_A}:test-password@{PUBLIC_V4}:443?sni=example.com&congestion_control=bbr#u",
         ]
@@ -226,12 +227,15 @@ class TestingConfigTests(unittest.TestCase):
         method = base64.urlsafe_b64encode(b"aes-128-gcm:test-password").decode().rstrip("=")
         configs = [
             parse_uri(f"ss://{method}@{PUBLIC_V4}:8388"),
+            parse_uri(f"hysteria://{PUBLIC_V4}:443?auth=test-password&sni=example.com"),
             parse_uri(f"hysteria2://test-password@{PUBLIC_V4}:443?sni=example.com"),
             parse_uri(f"tuic://{UUID_A}:test-password@{PUBLIC_V4}:443?sni=example.com"),
         ]
         self.assertEqual(sing_box_outbound(configs[0])["type"], "shadowsocks")
         self.assertTrue(sing_box_outbound(configs[1])["tls"]["enabled"])
-        self.assertEqual(sing_box_outbound(configs[2])["uuid"], UUID_A)
+        self.assertEqual(sing_box_outbound(configs[1])["type"], "hysteria")
+        self.assertTrue(sing_box_outbound(configs[2])["tls"]["enabled"])
+        self.assertEqual(sing_box_outbound(configs[3])["uuid"], UUID_A)
 
 
 class EndpointResolutionTests(unittest.IsolatedAsyncioTestCase):
