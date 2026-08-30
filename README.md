@@ -114,10 +114,11 @@ The Actions job runs this pipeline every 30 minutes:
 9. Start an isolated sing-box process with a local SOCKS inbound.
 10. Make five HTTPS requests through that SOCKS proxy, rotating across several targets, then
    download 256 KiB.
-11. Stop the core and repeat the proxy test with a fresh process and local port.
-12. For Main and White candidates, perform a secondary live verification via the Russian network probe
-    (Yandex Cloud Serverless in Moscow) to ensure physical reachability under Russian ISP and TSPU conditions.
-13. Update history, score, select, and publish only configs that passed both rounds.
+12. For Main candidates, perform a secondary live verification stage directly inside Russia (via
+    a dedicated self-hosted runner with socket interface binding to bypass local VPNs) to test actual
+    payload transmission through Russian ISP and TSPU filters.
+13. For White candidates, verify TLS reachability against the Russian whitelist via the Moscow serverless probe.
+14. Update history, score, select, and publish only configs that passed all verification rounds.
 
 Twenty configs are tested concurrently. Each process has its own temporary JSON file and local
 port. Commands use argument arrays, not a shell, and process groups are terminated in `finally`
@@ -237,11 +238,15 @@ PYTHONPATH=src python -m swiftproxy.telegram_main
 PYTHONPATH=src python -m swiftproxy.telegram_main --check-output
 ```
 
-To enable live probing from inside Russia during the run, configure `SWIFT_RU_PROBE_URL` and
-`SWIFT_RU_PROBE_KEY` (pointing to the Yandex Cloud Function probe). Both White (whitelist TLS reachability)
-and Telegram (MTProto handshake and latency) pipelines will automatically verify candidates from Moscow
-before final selection. If the probe is absent or experiences an outage, Swift gracefully preserves verified
-runner results without wiping.
+To enable Russian network validation during the pipeline:
+- **Main live verification**: A dedicated GitHub Actions Self-Hosted runner located inside Russia executes
+  `python -m swiftproxy.ru_verify` with `SWIFT_BIND_INTERFACE` set to the physical network interface (e.g. `wlan0`),
+  verifying actual payload download against active TSPU DPI filters.
+- **White and Telegram live probing**: Configured via `SWIFT_RU_PROBE_URL` and `SWIFT_RU_PROBE_KEY` (pointing
+  to the Yandex Cloud Function probe in Moscow), validating TLS SNI reachability against the Russian whitelist
+  and authentic MTProto `resPQ` handshake completion.
+
+If a probe or runner experiences an outage, Swift gracefully preserves verified runner results without wiping.
 
 The normal place to run the full network job is GitHub Actions. The workflow downloads the pinned
 sing-box release, verifies its published SHA-256 checksum, caches the binary, tests, performs
