@@ -8,6 +8,7 @@ import os
 import sys
 import tempfile
 import time
+from collections import Counter
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
@@ -351,13 +352,21 @@ async def run_ru_verify(
     concurrency: int = 6,
 ) -> int:
     main_file = root / "sub/main.txt"
-    if not main_file.exists():
-        LOGGER.warning("sub/main.txt not found; nothing to verify")
-        return 0
+    white_file = root / "sub/white.txt"
 
-    lines = [l.strip() for l in main_file.read_text().splitlines() if l.strip() and not l.startswith("#")]
-    if not lines:
-        LOGGER.info("sub/main.txt is empty")
+    main_lines = (
+        [l.strip() for l in main_file.read_text().splitlines() if l.strip() and not l.startswith("#")]
+        if main_file.exists()
+        else []
+    )
+    white_lines = (
+        [l.strip() for l in white_file.read_text().splitlines() if l.strip() and not l.startswith("#")]
+        if white_file.exists()
+        else []
+    )
+
+    if not main_lines and not white_lines:
+        LOGGER.info("sub/main.txt and sub/white.txt are empty or missing; nothing to verify")
         return 0
 
     history_file = root / "data/history.json"
@@ -368,42 +377,80 @@ async def run_ru_verify(
         except Exception:
             pass
 
-    configs: list[tuple[ProxyConfig, str | None]] = []
-    for line in lines:
+    # Track membership and parsed configs
+    # mapping: fingerprint -> (ProxyConfig, country, is_main, is_white, main_line, white_line)
+    unique_candidates: dict[str, tuple[ProxyConfig, str | None, bool, bool, str | None, str | None]] = {}
+
+    for line in main_lines:
         try:
             cfg = parse_uri(line)
             h_cfg = history_data.get(cfg.fingerprint, {})
-            obs = h_cfg.get("lanes", {}).get("main", {}).get("observations", [])
+            obs = (
+                h_cfg.get("lanes", {}).get("main", {}).get("observations", [])
+                or h_cfg.get("lanes", {}).get("white", {}).get("observations", [])
+            )
             country = obs[-1].get("country") if obs else None
-            configs.append((cfg, country))
+            unique_candidates[cfg.fingerprint] = (cfg, country, True, False, line, None)
+        except Exception:
+            continue
+
+    for line in white_lines:
+        try:
+            cfg = parse_uri(line)
+            h_cfg = history_data.get(cfg.fingerprint, {})
+            obs = (
+                h_cfg.get("lanes", {}).get("white", {}).get("observations", [])
+                or h_cfg.get("lanes", {}).get("main", {}).get("observations", [])
+            )
+            country = obs[-1].get("country") if obs else None
+            if cfg.fingerprint in unique_candidates:
+                existing = unique_candidates[cfg.fingerprint]
+                unique_candidates[cfg.fingerprint] = (
+                    existing[0],
+                    existing[1] or country,
+                    existing[2],
+                    True,
+                    existing[4],
+                    line,
+                )
+            else:
+                unique_candidates[cfg.fingerprint] = (cfg, country, False, True, None, line)
         except Exception:
             continue
 
     LOGGER.info(
-        "Starting RU sustained-traffic verification for %d candidates (concurrency=%d, bind_interface=%s)",
-        len(configs),
+        "Starting unified RU sustained-traffic verification for %d candidates (main=%d, white=%d, shared=%d, concurrency=%d, bind_interface=%s)",
+        len(unique_candidates),
+        len(main_lines),
+        len(white_lines),
+        sum(1 for c in unique_candidates.values() if c[2] and c[3]),
         concurrency,
         os.environ.get("SWIFT_BIND_INTERFACE", "default"),
     )
 
     semaphore = asyncio.Semaphore(concurrency)
-    tasks = [_verify_single(cfg, sing_box_path, semaphore, country) for cfg, country in configs]
+    tasks = [
+        _verify_single(item[0], sing_box_path, semaphore, item[1])
+        for item in unique_candidates.values()
+    ]
     results = await asyncio.gather(*tasks)
-
     results_map: dict[str, RuVerifyResult] = {r.fingerprint: r for r in results}
 
     # Safe Logging of candidates
-    for cfg, country in configs:
+    for item in unique_candidates.values():
+        cfg, country, is_main, is_white, _, _ = item
         r = results_map.get(cfg.fingerprint)
         if not r:
             continue
         svc_str = " ".join(f"{k[0].upper()}:{v[:2]}" for k, v in r.services.items()) if r.services else "none"
         ru_tag = f" RU_SVC:{'OK' if r.ru_service_ok else 'FAIL'}" if r.ru_service_ok is not None else ""
+        lane_tag = "MAIN+WHITE" if (is_main and is_white) else ("MAIN" if is_main else "WHITE")
         LOGGER.info(
-            "[%s] %-10s %s | R1: %5.1f KB/s | R2: %5.1f KB/s | Min: %5.1f KB/s | HTTPS: %d/%d | Svc: %s%s | %s (%s)",
+            "[%s] %-10s %s | %-10s | R1: %5.1f KB/s | R2: %5.1f KB/s | Min: %5.1f KB/s | HTTPS: %d/%d | Svc: %s%s | %s (%s)",
             cfg.fingerprint[:12],
             cfg.protocol,
             country or "??",
+            lane_tag,
             r.r1_kbps,
             r.r2_kbps,
             r.min_kbps,
@@ -417,55 +464,125 @@ async def run_ru_verify(
 
     passed_count = sum(1 for r in results_map.values() if r.passed)
     passed_ratio = passed_count / len(results_map) if results_map else 0.0
-
-    LOGGER.info("RU verification complete: %d/%d passed (%.1f%%)", passed_count, len(results_map), passed_ratio * 100)
-
-    # Outage Guard: If network is broken or infrastructure failed, preserve previous selection
     infra_failures = sum(1 for r in results_map.values() if r.is_infrastructure_failure)
+
+    LOGGER.info(
+        "RU verification complete: %d/%d passed (%.1f%%, infra_failures=%d)",
+        passed_count,
+        len(results_map),
+        passed_ratio * 100,
+        infra_failures,
+    )
+
+    # Outage / LKG Guard: If network is broken or infrastructure failed, preserve previous selection
     if (len(results_map) >= 10 and passed_ratio < 0.10) or (infra_failures >= len(results_map) * 0.5):
         LOGGER.warning(
-            "RU_LOCAL_OUTAGE_SUSPECTED passed=%d/%d infra_failures=%d -> preserving all configs",
+            "RU_LOCAL_OUTAGE_SUSPECTED passed=%d/%d infra_failures=%d -> preserving all LKG configs for Main and White",
             passed_count,
             len(results_map),
             infra_failures,
         )
         return 0
 
-    # Filter main.txt
-    verified_lines: list[str] = []
-    for line in lines:
-        try:
-            cfg = parse_uri(line)
-            r = results_map.get(cfg.fingerprint)
-            if r and r.passed:
-                verified_lines.append(line)
-        except Exception:
-            continue
+    # Filter Main
+    verified_main_lines: list[str] = []
+    if main_lines:
+        for line in main_lines:
+            try:
+                cfg = parse_uri(line)
+                r = results_map.get(cfg.fingerprint)
+                if r and r.passed:
+                    verified_main_lines.append(line)
+            except Exception:
+                continue
 
-    if not verified_lines:
-        LOGGER.warning("No configs passed RU verification; keeping previous selection")
-        return 0
+        if verified_main_lines:
+            main_file.write_text("\n".join(verified_main_lines) + "\n")
+            happ_main = root / "sub/happ/main.txt"
+            if happ_main.exists() or (root / "sub/happ").exists():
+                happ_lines = [
+                    line for line in verified_main_lines
+                    if parse_uri(line).protocol in HAPP_PROTOCOLS
+                ]
+                happ_content = happ_subscription(happ_lines, "Swift Main", "https://github.com/femboypig/Swift")
+                happ_main.write_text(happ_content)
+        else:
+            LOGGER.warning("No configs passed RU verification for Main; keeping previous selection")
 
-    main_file.write_text("\n".join(verified_lines) + "\n")
-    happ_main = root / "sub/happ/main.txt"
-    if happ_main.exists():
-        happ_lines = [
-            line for line in verified_lines
-            if parse_uri(line).protocol in HAPP_PROTOCOLS
-        ]
-        happ_content = happ_subscription(happ_lines, "Swift Main", "https://github.com/femboypig/Swift")
-        happ_main.write_text(happ_content)
+    # Filter White
+    verified_white_lines: list[str] = []
+    if white_lines:
+        for line in white_lines:
+            try:
+                cfg = parse_uri(line)
+                r = results_map.get(cfg.fingerprint)
+                if r and r.passed:
+                    verified_white_lines.append(line)
+            except Exception:
+                continue
 
+        if verified_white_lines:
+            white_file.write_text("\n".join(verified_white_lines) + "\n")
+            happ_white = root / "sub/happ/white.txt"
+            if happ_white.exists() or (root / "sub/happ").exists():
+                happ_lines = [
+                    line for line in verified_white_lines
+                    if parse_uri(line).protocol in HAPP_PROTOCOLS
+                ]
+                happ_content = happ_subscription(happ_lines, "Swift White", "https://github.com/femboypig/Swift")
+                happ_white.write_text(happ_content)
+        else:
+            LOGGER.warning("No configs passed RU verification for White; keeping previous selection")
+
+    # Stats Update
     stats_file = root / "stats.json"
     if stats_file.exists():
         try:
             stats = json.loads(stats_file.read_text())
-            stats.setdefault("production", {})["main"] = len(verified_lines)
-            stats["main"] = len(verified_lines)
-            
+            final_main_count = len(verified_main_lines) if verified_main_lines else len(main_lines)
+            final_white_count = len(verified_white_lines) if verified_white_lines else len(white_lines)
+
+            stats.setdefault("production", {})["main"] = final_main_count
+            stats["main"] = final_main_count
+            stats.setdefault("production", {})["white"] = final_white_count
+            stats["white"] = final_white_count
+
+            # Detailed Mac verification stats
+            mac_fail_reasons: Counter[str] = Counter()
+            white_mac_fail_reasons: Counter[str] = Counter()
+            for item in unique_candidates.values():
+                cfg, _, is_m, is_w, _, _ = item
+                r = results_map.get(cfg.fingerprint)
+                if r and not r.passed:
+                    reason = r.reason or "UNKNOWN"
+                    if is_m:
+                        mac_fail_reasons[reason] += 1
+                    if is_w:
+                        white_mac_fail_reasons[reason] += 1
+
+            stats["mac_verification"] = {
+                "main": {
+                    "before_mac": len(main_lines),
+                    "mac_tested": sum(1 for item in unique_candidates.values() if item[2]),
+                    "mac_pass": len(verified_main_lines),
+                    "mac_fail": len(main_lines) - len(verified_main_lines),
+                    "final": final_main_count,
+                    "failure_reasons": dict(sorted(mac_fail_reasons.items())),
+                },
+                "white": {
+                    "before_mac": len(white_lines),
+                    "mac_tested": sum(1 for item in unique_candidates.values() if item[3]),
+                    "mac_pass": len(verified_white_lines),
+                    "mac_fail": len(white_lines) - len(verified_white_lines),
+                    "final": final_white_count,
+                    "failure_reasons": dict(sorted(white_mac_fail_reasons.items())),
+                },
+            }
+
             # Record RU service reachability diagnostics in stats
             ru_diag = {}
-            for cfg, _ in configs:
+            for item in unique_candidates.values():
+                cfg = item[0]
                 r = results_map.get(cfg.fingerprint)
                 if r and r.passed and r.ru_service_ok is not None:
                     ru_diag[cfg.fingerprint[:12]] = {
@@ -478,9 +595,11 @@ async def run_ru_verify(
             pass
 
     LOGGER.info(
-        "Published RU-verified main.txt with %d configs (dropped %d blocked/slow nodes)",
-        len(verified_lines),
-        len(lines) - len(verified_lines),
+        "Published RU-verified subscriptions: Main=%d (dropped %d), White=%d (dropped %d)",
+        len(verified_main_lines) if verified_main_lines else len(main_lines),
+        len(main_lines) - len(verified_main_lines) if verified_main_lines else 0,
+        len(verified_white_lines) if verified_white_lines else len(white_lines),
+        len(white_lines) - len(verified_white_lines) if verified_white_lines else 0,
     )
     return 0
 
