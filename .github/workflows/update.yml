@@ -118,7 +118,7 @@ jobs:
     name: Russian live traffic verification
     needs: cloud-collect
     runs-on: [self-hosted, Linux]
-    timeout-minutes: 8
+    timeout-minutes: 12
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
