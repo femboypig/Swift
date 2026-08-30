@@ -44,7 +44,7 @@ main = 200
 white = 200
 
 [selection]
-main_candidates = 1000
+main_candidates = 400
 white_candidates = 250
 
 [testing]

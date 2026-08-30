@@ -108,7 +108,7 @@ The Actions job runs this pipeline every 30 minutes:
 3. Merge duplicates while keeping source provenance.
 4. For White, resolve every endpoint address and compare both the IP and visible TLS SNI with the
    current community lists. Prefer combined IP+SNI evidence, then IP-only, then SNI-only.
-5. Pick a bounded candidate set (up to 1000 for Main, 250 for White). Active and previously good configs
+5. Pick a bounded candidate set (up to 400 for Main, 250 for White). Active and previously good configs
    come first; new and older configs get a rotating discovery sample.
 6. Resolve endpoints and reject local, private, link-local, reserved, and metadata addresses.
 7. Use a cheap TCP connection only as a prefilter for TCP protocols. UDP protocols skip it.
