@@ -1,41 +1,41 @@
 {
   "control_ok": true,
   "failure_reasons": {
-    "CONNECT_FAILED": 10,
-    "CONNECT_TIMEOUT": 29,
+    "CONNECT_FAILED": 9,
+    "CONNECT_TIMEOUT": 27,
     "DNS_FAILED": 22,
-    "DUPLICATE": 939,
+    "DUPLICATE": 943,
     "MALFORMED_SECRET": 7,
-    "NETWORK_ERROR": 2,
-    "PROTOCOL_ERROR": 64,
+    "NETWORK_ERROR": 1,
+    "PROTOCOL_ERROR": 62,
     "RESPONSE_TIMEOUT": 2,
-    "UNSTABLE": 14,
+    "UNSTABLE": 13,
     "UNSUPPORTED_SECRET": 8
   },
   "fastest": 20,
   "healthy_run": true,
-  "last_successful_set": "2026-08-30T10:20:34Z",
+  "last_successful_set": "2026-08-30T10:58:37Z",
   "production": {
     "fastest": 20,
     "stable": 50,
-    "working": 266
+    "working": 274
   },
   "project": "Swift",
   "selected": {
     "backup": {
-      "median_rtt_ms": 619.27,
-      "score": 95.29,
-      "url": "https://t.me/proxy?server=forward-gree.server-space52.info&port=443&secret=ee1603010200010001fc030386e24c3add6d656469612e737465616d706f77657265642e636f6d"
+      "median_rtt_ms": 437.53,
+      "score": 97.04,
+      "url": "https://t.me/proxy?server=api.server2-5mk.info&port=443&secret=ee1603010200010001fc030386e24c3add6d656469612e737465616d706f77657265642e636f6d"
     },
     "fastest": {
-      "median_rtt_ms": 358.55,
-      "score": 95.29,
-      "url": "https://t.me/proxy?server=172.65.113.134&port=22&secret=00000000000000000000000000000000"
+      "median_rtt_ms": 351.23,
+      "score": 96.84,
+      "url": "https://t.me/proxy?server=fast.finecooking.info&port=443&secret=ddf0eeb0bd9adc4fd4a93994ee3b2a216b"
     },
     "stable": {
-      "median_rtt_ms": 640.18,
-      "score": 95.1,
-      "url": "https://t.me/proxy?server=72.56.25.212&port=443&secret=ee7d026761b388c46302df84b4b812aef0706574726f766963682e7275"
+      "median_rtt_ms": 426.29,
+      "score": 97.16,
+      "url": "https://t.me/proxy?server=forward-gree.server-space52.info&port=443&secret=ee1603010200010001fc030386e24c3add6d656469612e737465616d706f77657265642e636f6d"
     }
   },
   "sources": {
@@ -43,31 +43,31 @@
       "fetched": 238,
       "status": "OK",
       "unique": 223,
-      "working": 190
+      "working": 198
     },
     "klondike": {
       "fetched": 233,
       "status": "OK",
       "unique": 229,
-      "working": 171
+      "working": 177
     },
     "shablin": {
       "fetched": 299,
       "status": "OK",
       "unique": 291,
-      "working": 203
+      "working": 211
     },
     "solispirit": {
       "fetched": 250,
       "status": "OK",
       "unique": 245,
-      "working": 182
+      "working": 190
     }
   },
   "stable": 50,
   "suspicious_streak": 0,
   "tagline": "Filter the garbage. Keep what works.",
-  "tested": 399,
-  "updated_at": "2026-08-30T10:20:34Z",
-  "working": 266
+  "tested": 398,
+  "updated_at": "2026-08-30T10:58:37Z",
+  "working": 274
 }
