@@ -13,8 +13,8 @@ from urllib.parse import parse_qs, quote, unquote, urlencode, urlsplit
 from .models import ProxyConfig, SourceResult
 
 
-SCHEMES = ("vless", "vmess", "trojan", "ss", "hysteria2", "hy2", "tuic")
-URI_RE = re.compile(r"(?i)(?:vless|vmess|trojan|ss|hysteria2|hy2|tuic)://[^\s<>\"']+")
+SCHEMES = ("vless", "vmess", "trojan", "ss", "hysteria", "hysteria2", "hy2", "tuic")
+URI_RE = re.compile(r"(?i)(?:vless|vmess|trojan|ss|hysteria|hysteria2|hy2|tuic)://[^\s<>\"']+")
 CONTROL_RE = re.compile(r"[\x00-\x1f\x7f]")
 SAFE_TOKEN_RE = re.compile(r"^[^\x00-\x20\x7f]{1,1024}$")
 DOMAIN_RE = re.compile(
@@ -281,6 +281,56 @@ def parse_shadowsocks(uri: str) -> ProxyConfig:
     )
 
 
+def parse_hysteria(uri: str) -> ProxyConfig:
+    parts = urlsplit(uri)
+    query = parse_qs(parts.query, keep_blank_values=True)
+    auth = _clean_text(unquote(parts.username or "")) or _one(query, "auth", "auth_str")
+    auth = _clean_text(auth) if auth else ""
+    options = _tls_options(query, "tls")
+    peer = _one(query, "peer", "sni")
+    if peer:
+        options["sni"] = peer
+    alpn = _one(query, "alpn")
+    if alpn:
+        options["alpn"] = [part.strip() for part in alpn.split(",") if part.strip()]
+    if _flag(query, "insecure", "allowInsecure"):
+        options["insecure"] = True
+    obfs = _one(query, "obfs")
+    if obfs:
+        options["obfs"] = obfs
+    ports = _one(query, "mport", "ports")
+    if ports:
+        if not re.fullmatch(r"[0-9,:\-]+", ports):
+            raise ValueError("invalid port range")
+        options["server_ports"] = [part for part in ports.split(",") if part]
+    for query_name, option_name in (
+        ("upmbps", "up_mbps"),
+        ("downmbps", "down_mbps"),
+        ("up", "up_mbps"),
+        ("down", "down_mbps"),
+    ):
+        value = _one(query, query_name)
+        if value:
+            try:
+                bandwidth = int(value)
+                if 1 <= bandwidth <= 100000:
+                    options[option_name] = bandwidth
+            except ValueError:
+                pass
+    if "up_mbps" not in options:
+        options["up_mbps"] = 100
+    if "down_mbps" not in options:
+        options["down_mbps"] = 100
+    return ProxyConfig(
+        "hysteria",
+        _host(parts),
+        _port(parts.port),
+        {"auth": auth} if auth else {},
+        options,
+        _fragment(parts),
+    )
+
+
 def parse_hysteria2(uri: str) -> ProxyConfig:
     parts = urlsplit(uri)
     query = parse_qs(parts.query, keep_blank_values=True)
@@ -366,6 +416,7 @@ def parse_uri(uri: str) -> ProxyConfig:
         "vmess": parse_vmess,
         "trojan": parse_trojan,
         "ss": parse_shadowsocks,
+        "hysteria": parse_hysteria,
         "hysteria2": parse_hysteria2,
         "hy2": parse_hysteria2,
         "tuic": parse_tuic,
@@ -518,6 +569,20 @@ def serialize_uri(config: ProxyConfig, name: str | None = None) -> str:
         credentials = f"{config.options['method']}:{config.auth['password']}".encode()
         encoded = base64.urlsafe_b64encode(credentials).decode().rstrip("=")
         return f"ss://{encoded}@{endpoint}{suffix}"
+    if config.protocol == "hysteria":
+        query = [(key, value) for key, value in _common_query(config) if key not in {"security", "type"}]
+        if config.auth.get("auth"):
+            query.append(("auth", str(config.auth["auth"])))
+        if config.options.get("obfs"):
+            query.append(("obfs", str(config.options["obfs"])))
+        if config.options.get("server_ports"):
+            query.append(("mport", ",".join(config.options["server_ports"])))
+        if config.options.get("up_mbps"):
+            query.append(("upmbps", str(config.options["up_mbps"])))
+        if config.options.get("down_mbps"):
+            query.append(("downmbps", str(config.options["down_mbps"])))
+        mark = f"?{urlencode(query)}" if query else ""
+        return f"hysteria://{endpoint}{mark}{suffix}"
     if config.protocol == "hysteria2":
         query = [(key, value) for key, value in _common_query(config) if key not in {"security", "type"}]
         if config.options.get("obfs"):
