@@ -16,24 +16,25 @@ The normal list. It contains at most 200 configs.
 
 `https://sub.femboypig.ru/main.txt`
 
-There is no minimum. If 21 configs meet the verification criteria, the file contains exactly 21.
+There is no minimum. If 74 configs meet the threshold, the file contains 74.
 
 ### White
 
 Configs intended for the Russian whitelist/restricted-network case. Swift starts with configs
-associated with whitelisting and checks independent community evidence: the resolved endpoint IP
-(against published CIDR ranges) and the TLS SNI visible to the operator.
+that an upstream puts in that category and checks two independent pieces of community evidence:
+the resolved endpoint IP and the TLS SNI visible to the operator. Candidates matching both are
+preferred, followed by IP-only matches and then SNI-only matches. Every candidate still has to
+carry real proxy traffic twice and pass the Russian sustained actual-traffic verification;
+an upstream `white` label is not enough on its own.
 
 `https://sub.femboypig.ru/white.txt`
 
-White no longer relies only on cloud testing or TCP/TLS reachability before publication. Every
-candidate must pass the same sustained actual-traffic verification from the Russian network probe.
-This list is also capped at 200. A config passing the normal test does not make it eligible for White.
+This is also capped at 200. A config passing the normal test does not make it eligible for White.
 
 ### All
 
-Every unique candidate from the current run that passed both proxy test rounds and the throughput
-floor in cloud testing.
+Every unique candidate from the current run that passed both proxy test rounds and the small
+download floor. This can be larger than the recommended lists.
 
 `https://sub.femboypig.ru/all.txt`
 
@@ -65,9 +66,9 @@ any value is missing, this step is skipped. Swift never creates a new message on
 
 ## Karing and Happ
 
-The universal files are plain URI lists. Karing documents standard subscription formats and the
+The three normal files are plain URI lists. Karing documents V2Ray/Sub subscriptions and the
 protocols Swift emits. Happ documents standard URL subscriptions containing URI lines, but its
-public protocol list does not include TUIC.
+current public protocol list does not include TUIC.
 
 For Happ, use these versions. They omit TUIC and include Happ's profile metadata:
 
@@ -82,6 +83,7 @@ Compatibility was checked against the current [Karing documentation](https://git
 [Karing FAQ](https://github.com/KaringX/karing-docu/blob/main/docs/faq.md),
 [Happ subscription documentation](https://github.com/HappDev/happ_su/blob/main/faq/adding-configuration-subscription.md),
 and [Happ profile metadata documentation](https://github.com/HappDev/happ_su/blob/main/dev-docs/app-management.md).
+Actual import on every Karing/Happ platform still needs testing on real devices.
 
 Swift currently parses and tests:
 
@@ -99,49 +101,37 @@ config is worse than an honest rejection.
 
 ## What the test does
 
-The pipeline runs on a scheduled cadence (every 30 minutes):
+The Actions job runs this pipeline every 30 minutes:
 
-1. **Fetch & Normalize**: Fetch each source independently, extract supported URIs, validate parameters,
-   and calculate canonical fingerprints.
-2. **Deduplication**: Merge duplicates while preserving source provenance metadata. Source reputation
-   does not grant scoring bonuses; every candidate is evaluated strictly on measured performance.
-3. **White Evidence Check**: For White, compare the resolved endpoint IP against community CIDR whitelists
-   and verify operator-visible TLS SNI.
-4. **Candidate Selection**: Pick a bounded candidate budget (up to 800 for Main, 250 for White). Active
-   and strong veteran configs come first; unmeasured and older configs receive a rotating discovery quota.
-   Being untested in a given run simply means waiting in the queue, not that the node is dead.
-5. **DNS & Security Filtering**: Resolve endpoints and reject private, link-local, loopback, and cloud metadata IPs.
-6. **Cloud Traffic Testing**: Execute real traffic tests on GitHub Actions runners. Each config runs inside an
-   isolated sing-box core with a temporary local SOCKS inbound, performing multi-target HTTPS probes and payload
-   download testing.
-7. **History & Scoring**: Record latency, jitter, throughput, and availability into compact historical observation
-   windows. A newly discovered config requires at least two consecutive successful observations before promotion.
-8. **Shortlisting & Diversity**: Select the top-ranked candidates (up to 200 for Main and 200 for White) applying
-   soft diversity caps across endpoints, /24 IPv4 (or /48 IPv6) subnets, and ASNs.
-9. **Russian Sustained Live Verification**: Top Main and White candidates are verified directly from inside
-   Russia via a dedicated self-hosted Mac mini runner bound to the physical network interface (`wlan0`).
-   Each unique candidate is evaluated through a sustained traffic engine:
-   - At least 2 of 3 independent neutral HTTPS reachability probes must succeed;
-   - Two independent sequential rounds of 256 KiB real payload downloads;
-   - Both download rounds must complete successfully;
-   - Minimum throughput quality floor: $\min(R1, R2) \ge 64\text{ KiB/s}$;
-   - Continuous stall detection (`--speed-limit 16384 --speed-time 3`).
-   A simple TCP handshake or short burst is not enough; proxies that stall or degrade under sustained transfer are rejected.
-10. **Main + White Deduplication on Mac**: If a config belongs to both Main and White, the verification runner
-    tests it exactly once by fingerprint and applies the resulting pass/fail state to both subscription outputs.
-11. **Service Diagnostics**: Passing nodes undergo lightweight reachability checks against Yandex, VK, Ozon,
-    and the Telegram Bot API (`telegram_api`, testing HTTPS reachability to `api.telegram.org`, distinct from MTProto).
-    These checks are diagnostic metrics recorded in `stats.json` and are not hard blockers for generic Main publishing.
-12. **Synchronous Publishing**: Filter and write both plain and Happ outputs consistently, update `stats.json`,
-    and deploy subscriptions to GitHub Pages.
+1. Fetch each source independently.
+2. Extract supported URIs, validate them, and calculate canonical fingerprints.
+3. Merge duplicates while keeping source provenance.
+4. For White, resolve every endpoint address and compare both the IP and visible TLS SNI with the
+   current community lists. Prefer combined IP+SNI evidence, then IP-only, then SNI-only.
+5. Pick a bounded candidate set (up to 1000 for Main, 250 for White). Active and previously good configs
+   come first; new and older configs get a rotating discovery sample.
+6. Resolve endpoints and reject local, private, link-local, reserved, and metadata addresses.
+7. Use a cheap TCP connection only as a prefilter for TCP protocols. UDP protocols skip it.
+8. Serialize the config exactly as it will be published and parse it again.
+9. Start an isolated sing-box process with a local SOCKS inbound.
+10. Make five HTTPS requests through that SOCKS proxy, rotating across several targets, then
+    download 256 KiB.
+11. Perform a secondary live verification stage directly inside Russia via a dedicated self-hosted
+    runner with physical interface binding (e.g. `wlan0`) to test actual sustained traffic through
+    Russian ISP filters for both Main and White candidates (>=2/3 neutral HTTPS probes, 2x256 KiB downloads,
+    min throughput >= 64 KiB/s, stall detection). If a config belongs to both lists, it is tested once.
+12. Update history, score, select, and publish only configs that passed all verification rounds.
 
-## GeoIP and RU Classification
+Twenty configs are tested concurrently in Cloud. Each process has its own temporary JSON file and local
+port. Commands use argument arrays, not a shell, and process groups are terminated in `finally`
+blocks. Upstream remarks and credentials are never written to logs.
 
-Country labels in subscriptions (`🇫🇮 FI · 001`, `🇷🇺 RU · 001`) are determined strictly by the actual resolved
-endpoint GeoIP observed during traffic tests.
+Country data comes from Cloudflare's trace response during testing. Country labels reflect the actual
+resolved endpoint GeoIP, never `.ru` hostnames or upstream remarks.
 
-Swift does not infer Russian egress from `.ru` hostnames, source names, or upstream remarks. An entry labeled
-as `RU Hysteria2` strictly denotes a confirmed endpoint with GeoIP == `RU`.
+Names are intentionally plain: `🇫🇮 FI · 001` in Main and `🇫🇮 FI · W001` in White. All uses an
+`A` prefix. Swift doesn't put Actions latency in the name; that number says little about latency
+from another ISP.
 
 ## Scoring and history
 
@@ -167,69 +157,85 @@ and 10% freshness. GitHub latency is deliberately absent. A restricted-network c
 slow or inconsistent from an Actions runner and still be useful from the network it was built
 for.
 
-An active config gets one failed-run grace period if its history is strong. Two consecutive failed
-observations make it dead.
+A new config can become active in one run only after two independent core sessions. Each session
+must pass at least four of five requests and its lane's download floor: 128 KiB/s for Main and
+48 KiB/s for White. An active config gets one failed-run grace period if its history is strong.
+Two consecutive failed observations make it dead. This is deliberately small and boring; the
+states are just values in JSON.
 
-## Failure handling and Outage Protection
+Selection first applies soft caps per exact endpoint, /24 IPv4 or /48 IPv6 subnet, and ASN. If
+those caps would leave space unused, the best deferred configs fill it. Scores are sorted in
+one-point buckets, with the previous order used inside a bucket to avoid pointless reshuffling.
 
-Swift does not publish before the complete run has been assessed. It retains last-known-good (LKG)
-subscriptions when:
+## Failure handling
+
+Swift does not publish before the complete run has been assessed. It keeps the old subscription
+files when:
 
 - every source fails;
 - both the primary whitelist CIDR feed and its fallback fail validation or download;
 - the direct target preflight cannot reach at least two targets;
 - most sing-box processes fail to start;
-- the verification runner experiences an infrastructure-level failure (e.g. mass core timeouts or local network outage).
+- the global test deadline leaves too many jobs unfinished;
+- the Russian verification runner detects an infrastructure failure or network outage;
+- Main or White suddenly collapses compared with the last published counts.
 
-If an infrastructure failure occurs during Mac verification, the runner logs a warning and preserves
-the previous valid subscriptions rather than zeroing out outputs. Individual proxy failures (e.g. stalled
-or blocked nodes) under a healthy checker are dropped normally.
-
-*Note on runner availability*: If the self-hosted runner machine is completely offline at the GitHub Actions
-workflow level, the workflow job does not proceed to deployment, preserving the previously deployed GitHub Pages site.
+The failed run writes `data/run-diagnostics.json`, preserves the previous subscriptions and
+history, commits the diagnostic, and marks the Actions run failed. This makes the outage visible
+without replacing a useful list with an empty one.
 
 ## Sources
 
-The default config fetches candidates from multiple community repositories:
+The default config uses:
 
-- [Akres/VPN](https://gitverse.ru/Akres/VPN), using its bounded gRPC feed for Main and `bwl` feed for White;
-- [vpnsvpns/Prihs](https://github.com/vpnsvpns/Prihs) as an hourly GitHub-hosted fallback for the same Akres feeds;
-- [RKPchannel/RKP_bypass_configs](https://github.com/RKPchannel/RKP_bypass_configs), using its normal and whitelist feeds;
+- [Akres/VPN](https://gitverse.ru/Akres/VPN), using its bounded gRPC feed for Main and `bwl` feed
+  for White;
+- [vpnsvpns/Prihs](https://github.com/vpnsvpns/Prihs) as an hourly GitHub-hosted fallback for the
+  same Akres feeds. Prihs does not test configs itself, so duplicate provenance from these two URLs
+  is treated as one source;
+- [RKPchannel/RKP_bypass_configs](https://github.com/RKPchannel/RKP_bypass_configs), using its
+  independently maintained and core-tested normal and whitelist feeds;
 - [zieng2/wl](https://github.com/zieng2/wl), using its hourly `vless_universal.txt` feed for White;
-- [igareck/vpn-configs-for-russia](https://github.com/igareck/vpn-configs-for-russia), using its mobile and full CIDR lists for White, and its international/black feeds for Main;
-- [0xRadikal/configs-collector](https://github.com/0xRadikal/configs-collector), using verified configs for Main;
+- [igareck/vpn-configs-for-russia](https://github.com/igareck/vpn-configs-for-russia), using its
+  mobile and full CIDR lists for White, and its international feeds for Main;
+- [0xRadikal/configs-collector](https://github.com/0xRadikal/configs-collector), using verified
+  configs for Main;
 - [VovaplusEXP/Secure-configs](https://github.com/VovaplusEXP/Secure-configs), using secure VLESS feeds for Main;
 - [FLEXIY0/matryoshka](https://github.com/FLEXIY0/matryoshka), using whitelist configs for Main and White;
 - [AirLinkVPN](https://github.com/AirLinkVPN1/AirLinkVPN),
   [bywarm/rser](https://gitverse.ru/bywarm/rser),
   [AetrisVPN](https://github.com/flaafix/AetrisVPN-white-list-lite),
   [Kizyak](https://github.com/Maskkost93/kizyak-vpn-4.0), and
-  [PypsCFG](https://github.com/heops6767/PypsCFG) as additional discovery feeds;
-- [whoahaow/rjsxrd](https://github.com/whoahaow/rjsxrd), using its bypass feeds;
-- [mifa.world](https://mifa.world/), fetched independently.
+  [PypsCFG](https://github.com/heops6767/PypsCFG) as additional White discovery feeds;
+- [whoahaow/rjsxrd](https://github.com/whoahaow/rjsxrd), using its Xray-tested bypass output for
+  White. Swift still applies its own CIDR and traffic checks instead of trusting the upstream tag;
+- [mifa.world](https://mifa.world/), fetched independently as requested. Its anonymous homepage
+  currently exposes no config URIs, so Swift reports it as empty instead of scraping an
+  undocumented authenticated endpoint.
 
-Whitelist endpoint evidence is verified against:
-- [hxehex/russia-mobile-internet-whitelist](https://github.com/hxehex/russia-mobile-internet-whitelist) (primary CIDR and domain lists);
-- [artembsk mirror](https://github.com/artembsk/russia-mobile-internet-whitelist) (fallback CIDR and domain lists);
-- [escapingworm/russia-whitelist](https://github.com/escapingworm/russia-whitelist) (secondary CIDR evidence).
+The Telegram pipeline starts with the current feeds from
+[SoliSpirit/mtproto](https://github.com/SoliSpirit/mtproto),
+[Argh94/Proxy-List](https://github.com/Argh94/Proxy-List),
+[shablin/mtproto-proxy](https://github.com/shablin/mtproto-proxy), and
+[klondike0x/mtp4tg-proxies](https://github.com/klondike0x/mtp4tg-proxies). They overlap heavily;
+Swift normalizes and deduplicates them before testing and keeps their provenance as metadata.
+
+White endpoint evidence comes from
+[hxehex/russia-mobile-internet-whitelist](https://github.com/hxehex/russia-mobile-internet-whitelist).
+Its CIDR file is built from addresses observed as reachable during restrictions across different
+operators and regions. The actively maintained
+[artembsk mirror](https://github.com/artembsk/russia-mobile-internet-whitelist) and
+[escapingworm/russia-whitelist](https://github.com/escapingworm/russia-whitelist) are fetched as
+fallbacks. Swift uses the CIDR feed rather than treating each entry in `ipwhitelist.txt` as an
+exact `/32`: that file intentionally contains one sampled address per `/24`.
 
 Adding a plain/Base64 URI source is one `[[sources]]` entry in `config.toml`. A failed upstream
-does not stop the other sources.
-
-## Observability and Stats
-
-Every run emits structured telemetry in `stats.json`:
-
-- **Production counts**: Final verified node counts for `main`, `white`, and `all`.
-- **Mac verification**: Detailed candidate counts, passes, and failure breakdown (`HTTPS_FAILED`, `STALLED`, `TOO_SLOW`, `DOWNLOAD_R1_FAILED`, `DOWNLOAD_R2_FAILED`).
-- **Discovery queue**: Number of `total_never_tested` configs, `tested_first_time_this_run`, queue drain velocity, and estimated hours to clear.
-- **Service diagnostics**: Reachability status for Yandex, VK, Ozon, and Telegram Bot API.
-- **Protocol metrics**: Coverage and verification states for Hysteria 2 and other key protocols.
+does not stop the other sources. Source reputation does not give scoring bonuses.
 
 ## Running it
 
 Python 3.12 or newer, `curl`, and sing-box 1.13.x are required. Install the small pinned Python
-dependency set before running either pipeline:
+dependency set before running either pipeline.
 
 ```console
 python -m pip install .
@@ -241,6 +247,11 @@ PYTHONPATH=src python -m swiftproxy.telegram_main
 PYTHONPATH=src python -m swiftproxy.telegram_main --check-output
 ```
 
+The normal place to run the full network job is GitHub Actions. The workflow downloads the pinned
+sing-box release, verifies its published SHA-256 checksum, caches the binary, tests, performs
+output sanity checks, commits only when tracked data changed, and deploys the subscriptions to
+GitHub Pages.
+
 Tuning lives in `config.toml`. Candidate counts, concurrency, timeouts, probes, history window,
 quality thresholds, and list caps are there. Protocol details and parser behavior are code, not
 configuration knobs.
@@ -250,15 +261,24 @@ configuration knobs.
 These are free public proxies run by unknown people. Treat them as untrusted. Use end-to-end
 encryption for anything important.
 
-Primary latency and throughput are measured from GitHub Actions runners, with secondary sustained
+Primary latency and throughput are measured from a GitHub-hosted runner, with secondary sustained
 traffic verification conducted from a dedicated self-hosted Mac mini runner located inside Russia.
-While this eliminates servers completely blocked by TSPU or throttled by DPI, regional routing,
-carrier-specific filtering, and dynamic carrier whitelists can still vary across mobile operators.
-Passing Swift tests means a proxy was observed working under sustained traffic during verification,
-not a permanent or security guarantee.
+While this eliminates servers completely blocked at the Russian gateway level, local mobile ISP filters,
+regional DPI throttles, and dynamic carrier whitelists can still differ across operators. Swift selects
+what can be verified; it does not promise globally bulletproof bypass under every local carrier restriction.
+The same applies to MTProto RTT in `Telegram/fastest.txt`.
 
-White evidence relies on published community CIDRs and SNIs, which can evolve over time as carrier
-restrictions change.
+The White job is independent, but a GitHub runner cannot reproduce a Russian carrier's restricted
+or whitelist mode. Public lists combine observations from different operators, regions, towers,
+and dates. Some operators check only SNI, some check IP and SNI together, and a total shutdown may
+pass almost nothing. In Swift, White means the endpoint currently matches a published whitelist
+CIDR or uses an allowed visible SNI, and the config carried ordinary proxy traffic through
+sing-box and passed Russian live sustained verification. None of these checks proves that a config works
+during a shutdown for your SIM. That requires a probe from the affected carrier and region.
+
+An address or SNI missing from the community lists is not necessarily blocked; the data is
+incomplete. Swift still excludes candidates with neither kind of evidence instead of filling White
+with ordinary proxies carrying a speculative upstream label.
 
 ## License
 
