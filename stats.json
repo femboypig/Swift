@@ -1,45 +1,41 @@
 {
-  "alive": 582,
-  "collected": 7375,
+  "alive": 625,
+  "collected": 7388,
   "countries": {
-    "AL": 1,
-    "AR": 5,
-    "AT": 1,
-    "AU": 10,
-    "BR": 1,
+    "AR": 10,
+    "AT": 2,
+    "AU": 13,
     "CA": 12,
     "CH": 1,
     "CO": 1,
     "CZ": 3,
-    "DE": 37,
+    "DE": 33,
     "EE": 1,
     "ES": 3,
-    "FI": 17,
-    "FR": 22,
-    "GB": 39,
-    "HK": 1,
-    "IN": 3,
-    "IT": 5,
-    "JP": 55,
+    "FI": 16,
+    "FR": 17,
+    "GB": 44,
+    "GR": 1,
+    "HK": 3,
+    "IN": 1,
+    "IT": 6,
+    "JP": 61,
     "KR": 3,
-    "KZ": 3,
-    "LT": 2,
-    "LV": 4,
-    "MD": 1,
-    "MY": 1,
-    "NL": 113,
+    "KZ": 2,
+    "LT": 3,
+    "LV": 6,
+    "MY": 2,
+    "NL": 127,
     "NO": 2,
-    "PE": 2,
-    "PL": 11,
-    "RO": 4,
-    "RU": 5,
+    "PE": 1,
+    "PL": 8,
+    "RO": 3,
+    "RU": 3,
     "SE": 1,
-    "SG": 30,
-    "TR": 4,
-    "TW": 5,
-    "UA": 1,
-    "US": 171,
-    "ZA": 1
+    "SG": 36,
+    "TR": 5,
+    "TW": 7,
+    "US": 188
   },
   "diagnostics": {
     "hysteria_v1": {
@@ -64,47 +60,71 @@
     }
   },
   "discovery": {
-    "average_never_tested_age_hours": 2.31,
-    "backlog_change_this_run": -350,
-    "estimated_hours_to_clear": 3.5,
-    "estimated_runs_to_clear": 7,
+    "average_never_tested_age_hours": 3.17,
+    "backlog_change_this_run": -241,
+    "estimated_hours_to_clear": 4.5,
+    "estimated_runs_to_clear": 9,
     "new_discovered_this_run": 102,
-    "oldest_never_tested_age_hours": 2.43,
-    "tested_first_time_this_run": 350,
-    "total_never_tested": 2101
+    "oldest_never_tested_age_hours": 3.37,
+    "tested_first_time_this_run": 241,
+    "total_never_tested": 1963
   },
   "failure_reasons": {
-    "CONNECT_TIMEOUT": 192,
-    "DNS_FAILED": 10,
-    "DUPLICATE": 1578,
-    "HTTP_FAILED": 20,
-    "NOT_WHITELISTED": 1903,
-    "PARSE_ERROR": 65,
-    "PROXY_FAILED": 294,
+    "CONNECT_TIMEOUT": 167,
+    "DNS_FAILED": 12,
+    "DUPLICATE": 1553,
+    "HTTP_FAILED": 33,
+    "NOT_WHITELISTED": 1902,
+    "PARSE_ERROR": 63,
+    "PROXY_FAILED": 255,
     "SOURCE_EMPTY": 1,
-    "TOO_SLOW": 88,
-    "UNSTABLE": 61,
-    "UNSUPPORTED": 725,
-    "WHITE_DNS_FAILED": 75
+    "TOO_SLOW": 107,
+    "UNSTABLE": 50,
+    "UNSUPPORTED": 703,
+    "WHITE_DNS_FAILED": 74
   },
-  "main": 200,
-  "median_latency_ms": 459.89,
-  "parsed": 6787,
+  "mac_verification": {
+    "main": {
+      "before_mac": 200,
+      "failure_reasons": {
+        "DOWNLOAD_R2_FAILED": 4,
+        "HTTPS_FAILED": 190
+      },
+      "final": 6,
+      "mac_fail": 194,
+      "mac_pass": 6,
+      "mac_tested": 200
+    },
+    "white": {
+      "before_mac": 3,
+      "failure_reasons": {
+        "HTTPS_FAILED": 3
+      },
+      "final": 0,
+      "mac_fail": 3,
+      "mac_pass": 0,
+      "mac_tested": 3
+    }
+  },
+  "main": 6,
+  "median_latency_ms": 466.43,
+  "parsed": 6824,
   "pipeline_version": 4,
   "production": {
-    "all": 582,
-    "main": 200,
-    "white": 2
+    "all": 625,
+    "main": 6,
+    "white": 0
   },
   "project": "Swift",
   "protocols": {
-    "hysteria2": 19,
-    "ss": 73,
-    "trojan": 10,
-    "vless": 466,
-    "vmess": 14
+    "hysteria2": 17,
+    "ss": 77,
+    "trojan": 5,
+    "vless": 507,
+    "vmess": 19
   },
   "published": true,
+  "ru_service_diagnostics": {},
   "source_status": {
     "aetris-white-lite": "OK",
     "airlink-white": "OK",
@@ -134,29 +154,30 @@
     "zieng2-white": "OK"
   },
   "sources": {
-    "0xRadikal": 398,
-    "aetris": 6,
-    "airlink": 3,
-    "akres": 8,
-    "igareck": 18,
-    "kizyak": 6,
-    "matryoshka": 19,
-    "rjsxrd": 109,
-    "rkp": 42,
-    "vovaplusexp": 147,
-    "zieng2": 3
+    "0xRadikal": 450,
+    "aetris": 2,
+    "airlink": 2,
+    "akres": 9,
+    "igareck": 12,
+    "kizyak": 4,
+    "matryoshka": 17,
+    "rjsxrd": 111,
+    "rkp": 38,
+    "vovaplusexp": 154,
+    "zieng2": 2
   },
   "tagline": "Filter the garbage. Keep what works.",
-  "tested": 1240,
-  "unique": 5209,
-  "updated_at": "2026-08-30T14:40:37Z",
-  "white": 2,
+  "tested": 1238,
+  "unique": 5271,
+  "updated_at": "2026-08-30T15:37:03Z",
+  "white": 0,
   "white_evidence": {
     "cidr_source": "hxehex-white-cidr",
     "domain_source": "hxehex-white-domains",
-    "eligible": 1391,
+    "eligible": 1377,
     "published": {
-      "cidr": 2
+      "cidr": 2,
+      "sni": 1
     }
   }
 }
