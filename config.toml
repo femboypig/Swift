@@ -24,6 +24,11 @@ id = "artembsk-white-cidr"
 name = "artembsk"
 url = "https://raw.githubusercontent.com/artembsk/russia-mobile-internet-whitelist/main/cidrwhitelist.txt"
 
+[[white_evidence.cidr_sources]]
+id = "escapingworm-white-cidr"
+name = "escapingworm"
+url = "https://raw.githubusercontent.com/escapingworm/russia-whitelist/main/ru-whitelist-cidr.txt"
+
 [[white_evidence.domain_sources]]
 id = "hxehex-white-domains"
 name = "hxehex"
@@ -254,3 +259,33 @@ name = "mifa.world"
 url = "https://mifa.world/"
 lanes = ["main"]
 content_type = "html"
+
+[[sources]]
+id = "igareck-black-vless"
+name = "igareck"
+url = "https://raw.githubusercontent.com/igareck/vpn-configs-for-russia/main/BLACK_VLESS_RUS_mobile.txt"
+lanes = ["main"]
+
+[[sources]]
+id = "igareck-black-ss-all"
+name = "igareck"
+url = "https://raw.githubusercontent.com/igareck/vpn-configs-for-russia/main/BLACK_SS+All_RUS.txt"
+lanes = ["main"]
+
+[[sources]]
+id = "radikal-verified"
+name = "0xRadikal"
+url = "https://raw.githubusercontent.com/0xRadikal/Free-v2ray-Configs/main/verified/configs.txt"
+lanes = ["main"]
+
+[[sources]]
+id = "vovaplusexp-secure-vless"
+name = "vovaplusexp"
+url = "https://raw.githubusercontent.com/VovaplusEXP/p-configs/main/Splitted-By-Protocol-Secure/vless.txt"
+lanes = ["main"]
+
+[[sources]]
+id = "matryoshka-white"
+name = "matryoshka"
+url = "https://raw.githubusercontent.com/FLEXIY0/matryoshka-vpn/main/configs/russia_whitelist.txt"
+lanes = ["main", "white"]
