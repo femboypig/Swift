@@ -113,6 +113,7 @@ def build_stats(
     reason: str | None = None,
     discovery: dict[str, Any] | None = None,
     diagnostics: dict[str, Any] | None = None,
+    selection: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     protocols = Counter(item.config.protocol for item in alive)
     sources = Counter(
@@ -170,6 +171,8 @@ def build_stats(
         "white_evidence": white_evidence or {},
         "failure_reasons": dict(sorted(failures.items())),
     }
+    if selection:
+        value["selection"] = selection
     if discovery:
         value["discovery"] = discovery
     if diagnostics:
@@ -298,13 +301,19 @@ def check_outputs(root: Path, main_limit: int, white_limit: int) -> None:
     mac_stats = stats.get("mac_verification")
     if mac_stats:
         mac_main = mac_stats.get("main", {})
-        if mac_main.get("mac_pass") is not None and len(main_lines) != mac_main["mac_pass"]:
-            raise RuntimeError(f"sub/main.txt count ({len(main_lines)}) != stats.mac_verification.main.mac_pass ({mac_main['mac_pass']})")
         if mac_main.get("final") is not None and len(main_lines) != mac_main["final"]:
             raise RuntimeError(f"sub/main.txt count ({len(main_lines)}) != stats.mac_verification.main.final ({mac_main['final']})")
+        if mac_main.get("mac_pass") is not None:
+            if mac_main["mac_pass"] <= main_limit and len(main_lines) != mac_main["mac_pass"]:
+                raise RuntimeError(f"sub/main.txt count ({len(main_lines)}) != stats.mac_verification.main.mac_pass ({mac_main['mac_pass']})")
+            if mac_main["mac_pass"] > main_limit and len(main_lines) != main_limit:
+                raise RuntimeError(f"sub/main.txt count ({len(main_lines)}) != main_limit ({main_limit})")
 
         mac_white = mac_stats.get("white", {})
-        if mac_white.get("mac_pass") is not None and len(white_lines) != mac_white["mac_pass"]:
-            raise RuntimeError(f"sub/white.txt count ({len(white_lines)}) != stats.mac_verification.white.mac_pass ({mac_white['mac_pass']})")
         if mac_white.get("final") is not None and len(white_lines) != mac_white["final"]:
             raise RuntimeError(f"sub/white.txt count ({len(white_lines)}) != stats.mac_verification.white.final ({mac_white['final']})")
+        if mac_white.get("mac_pass") is not None:
+            if mac_white["mac_pass"] <= white_limit and len(white_lines) != mac_white["mac_pass"]:
+                raise RuntimeError(f"sub/white.txt count ({len(white_lines)}) != stats.mac_verification.white.mac_pass ({mac_white['mac_pass']})")
+            if mac_white["mac_pass"] > white_limit and len(white_lines) != white_limit:
+                raise RuntimeError(f"sub/white.txt count ({len(white_lines)}) != white_limit ({white_limit})")

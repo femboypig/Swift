@@ -33,6 +33,7 @@ from .scoring import (
     failure_reasons,
     prune_history,
     rank_configs,
+    select_pre_mac_candidates,
 )
 from .ru_probe import probe_ru_targets
 from .sources import fetch_sources, source_specs
@@ -385,13 +386,14 @@ async def run(root: Path, config_path: Path, core_override: str | None = None) -
                     )
                     ranked_white = passed_white
     diversity = settings["diversity"]
-    main = diverse_selection(
+    mac_capacity = int(selection.get("mac_candidates", 300))
+    pre_mac_main = select_pre_mac_candidates(
         ranked_main,
-        int(settings["limits"]["main"]),
-        int(diversity["endpoint"]),
-        int(diversity["subnet"]),
-        int(diversity["asn"]),
+        mac_capacity,
+        seed,
+        temp_history,
     )
+    main = pre_mac_main
     white = diverse_selection(
         ranked_white,
         int(settings["limits"]["white"]),
@@ -399,6 +401,34 @@ async def run(root: Path, config_path: Path, core_override: str | None = None) -
         int(diversity["subnet"]),
         int(diversity["asn"]),
     )
+
+    main_cloud_selected = len(candidates["main"])
+    main_cloud_pass = sum(
+        1 for c in candidates["main"]
+        if (c.fingerprint, "main") in results and results[(c.fingerprint, "main")].worked
+    )
+    main_eligible = len(ranked_main)
+    main_pre_mac_selected = len(pre_mac_main)
+    main_pre_mac_dropped_by_capacity = max(0, main_eligible - main_pre_mac_selected)
+    eligible_not_sent_to_mac = main_pre_mac_dropped_by_capacity
+
+    selection_stats = {
+        "main_cloud_selected": main_cloud_selected,
+        "main_cloud_pass": main_cloud_pass,
+        "main_eligible": main_eligible,
+        "main_pre_mac_selected": main_pre_mac_selected,
+        "main_pre_mac_dropped_by_capacity": main_pre_mac_dropped_by_capacity,
+        "eligible_not_sent_to_mac": eligible_not_sent_to_mac,
+    }
+    LOGGER.info(
+        "selection main_cloud_selected=%d main_cloud_pass=%d main_eligible=%d pre_mac_main=%d dropped_by_capacity=%d",
+        main_cloud_selected,
+        main_cloud_pass,
+        main_eligible,
+        main_pre_mac_selected,
+        main_pre_mac_dropped_by_capacity,
+    )
+
     alive = alive_for_all(
         resolved_configs,
         results,
@@ -536,6 +566,7 @@ async def run(root: Path, config_path: Path, core_override: str | None = None) -
         reason=reason,
         discovery=discovery_stats,
         diagnostics=diagnostics_stats,
+        selection=selection_stats,
     )
     if reason:
         write_json(root / "data/run-diagnostics.json", stats)

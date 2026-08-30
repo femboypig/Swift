@@ -4,18 +4,21 @@ import argparse
 import asyncio
 import json
 import logging
+import math
 import os
 import sys
 import tempfile
 import time
+import tomllib
 from collections import Counter
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
-from .models import ProxyConfig
+from .models import ProxyConfig, RankedConfig, TestResult
 from .output import HAPP_PROTOCOLS, happ_subscription, write_json
 from .parsing import parse_uri, serialize_uri
+from .scoring import diverse_selection
 from .testing import sing_box_config, _free_port, _wait_for_core, _stop_process
 
 LOGGER = logging.getLogger("swift.ru_verify")
@@ -484,17 +487,104 @@ async def run_ru_verify(
         )
         return 1
 
-    # Filter Main
+    # Load config settings for limits and diversity if available
+    config_file = root / "config.toml"
+    settings: dict[str, Any] = {}
+    if config_file.exists():
+        try:
+            settings = tomllib.loads(config_file.read_text())
+        except Exception:
+            settings = {}
+
+    main_limit = int(settings.get("limits", {}).get("main", 80))
+    white_limit = int(settings.get("limits", {}).get("white", 200))
+    diversity = settings.get("diversity", {})
+    endpoint_limit = int(diversity.get("endpoint", 3))
+    subnet_limit = int(diversity.get("subnet", 6))
+    asn_limit = int(diversity.get("asn", 12))
+
+    # Load history and previous published order
+    history_file = root / "data/history.json"
+    history: dict[str, Any] = {}
+    if history_file.exists():
+        try:
+            history = json.loads(history_file.read_text())
+        except Exception:
+            history = {}
+
+    order_file = root / "data/order.json"
+    order: dict[str, Any] = {}
+    if order_file.exists():
+        try:
+            order = json.loads(order_file.read_text())
+        except Exception:
+            order = {}
+
+    # 1. Filter, rank, and diverse select Main
     verified_main_lines: list[str] = []
+    final_main_ranked: list[RankedConfig] = []
     if main_lines:
+        passed_main_ranked: list[RankedConfig] = []
         for line in main_lines:
             try:
                 cfg = parse_uri(line)
                 r = results_map.get(cfg.fingerprint)
                 if r and r.passed:
-                    verified_main_lines.append(line)
+                    lane_rec = history.get("configs", {}).get(cfg.fingerprint, {}).get("lanes", {}).get("main", {})
+                    score = float(lane_rec.get("score", 70.0))
+                    state = lane_rec.get("state", "active")
+                    obs = lane_rec.get("observations", [])
+                    prev_succ = next((item for item in reversed(obs) if item.get("success")), {})
+                    country = unique_candidates.get(cfg.fingerprint, (None, None))[1] or prev_succ.get("country")
+                    asn = prev_succ.get("asn")
+                    provider = prev_succ.get("provider")
+                    t_result = TestResult(
+                        fingerprint=cfg.fingerprint,
+                        lane="main",
+                        timestamp="2026-08-31T00:00:00Z",
+                        success_count=1,
+                        rounds_attempted=1,
+                        rounds_succeeded=1,
+                        country=country,
+                        asn=asn,
+                        provider=provider,
+                    )
+                    passed_main_ranked.append(
+                        RankedConfig(
+                            config=cfg,
+                            lane="main",
+                            result=t_result,
+                            score=score,
+                            state=state,
+                            availability=1.0,
+                        )
+                    )
             except Exception:
                 continue
+
+        previous_index_main = {fp: i for i, fp in enumerate(order.get("main", []))}
+        passed_main_ranked.sort(
+            key=lambda item: (
+                -math.floor(item.score),
+                previous_index_main.get(item.config.fingerprint, 1_000_000),
+                item.config.fingerprint,
+            )
+        )
+
+        main_line_map = {}
+        for line in main_lines:
+            try:
+                main_line_map[parse_uri(line).fingerprint] = line
+            except Exception:
+                pass
+        final_main_ranked = diverse_selection(
+            passed_main_ranked,
+            main_limit,
+            endpoint_limit,
+            subnet_limit,
+            asn_limit,
+        )
+        verified_main_lines = [main_line_map[item.config.fingerprint] for item in final_main_ranked if item.config.fingerprint in main_line_map]
 
         main_file.write_text("\n".join(verified_main_lines) + ("\n" if verified_main_lines else ""))
         happ_main = root / "sub/happ/main.txt"
@@ -506,17 +596,71 @@ async def run_ru_verify(
             happ_content = happ_subscription(happ_lines, "Swift Main", "https://github.com/femboypig/Swift")
             happ_main.write_text(happ_content)
 
-    # Filter White
+    # 2. Filter, rank, and diverse select White
     verified_white_lines: list[str] = []
+    final_white_ranked: list[RankedConfig] = []
     if white_lines:
+        passed_white_ranked: list[RankedConfig] = []
         for line in white_lines:
             try:
                 cfg = parse_uri(line)
                 r = results_map.get(cfg.fingerprint)
                 if r and r.passed:
-                    verified_white_lines.append(line)
+                    lane_rec = history.get("configs", {}).get(cfg.fingerprint, {}).get("lanes", {}).get("white", {})
+                    score = float(lane_rec.get("score", 70.0))
+                    state = lane_rec.get("state", "active")
+                    obs = lane_rec.get("observations", [])
+                    prev_succ = next((item for item in reversed(obs) if item.get("success")), {})
+                    country = unique_candidates.get(cfg.fingerprint, (None, None))[1] or prev_succ.get("country")
+                    asn = prev_succ.get("asn")
+                    provider = prev_succ.get("provider")
+                    t_result = TestResult(
+                        fingerprint=cfg.fingerprint,
+                        lane="white",
+                        timestamp="2026-08-31T00:00:00Z",
+                        success_count=1,
+                        rounds_attempted=1,
+                        rounds_succeeded=1,
+                        country=country,
+                        asn=asn,
+                        provider=provider,
+                    )
+                    passed_white_ranked.append(
+                        RankedConfig(
+                            config=cfg,
+                            lane="white",
+                            result=t_result,
+                            score=score,
+                            state=state,
+                            availability=1.0,
+                        )
+                    )
             except Exception:
                 continue
+
+        previous_index_white = {fp: i for i, fp in enumerate(order.get("white", []))}
+        passed_white_ranked.sort(
+            key=lambda item: (
+                -math.floor(item.score),
+                previous_index_white.get(item.config.fingerprint, 1_000_000),
+                item.config.fingerprint,
+            )
+        )
+
+        white_line_map = {}
+        for line in white_lines:
+            try:
+                white_line_map[parse_uri(line).fingerprint] = line
+            except Exception:
+                pass
+        final_white_ranked = diverse_selection(
+            passed_white_ranked,
+            white_limit,
+            endpoint_limit,
+            subnet_limit,
+            asn_limit,
+        )
+        verified_white_lines = [white_line_map[item.config.fingerprint] for item in final_white_ranked if item.config.fingerprint in white_line_map]
 
         white_file.write_text("\n".join(verified_white_lines) + ("\n" if verified_white_lines else ""))
         happ_white = root / "sub/happ/white.txt"
@@ -528,7 +672,13 @@ async def run_ru_verify(
             happ_content = happ_subscription(happ_lines, "Swift White", "https://github.com/femboypig/Swift")
             happ_white.write_text(happ_content)
 
-    # Invariant enforcement: file line count must strictly equal Mac pass count
+    # 3. Update order.json with final published order
+    order["main"] = [item.config.fingerprint for item in final_main_ranked]
+    order["white"] = [item.config.fingerprint for item in final_white_ranked]
+    if order_file.parent.exists():
+        write_json(order_file, order, compact=True)
+
+    # 4. Invariant enforcement
     mac_main_pass_count = sum(
         1 for item in unique_candidates.values()
         if item[2] and results_map.get(item[0].fingerprint) and results_map[item[0].fingerprint].passed
@@ -538,27 +688,30 @@ async def run_ru_verify(
         if item[3] and results_map.get(item[0].fingerprint) and results_map[item[0].fingerprint].passed
     )
 
-    if len(verified_main_lines) != mac_main_pass_count:
+    expected_main_count = min(mac_main_pass_count, main_limit)
+    expected_white_count = min(mac_white_pass_count, white_limit)
+
+    if len(verified_main_lines) != expected_main_count:
         raise RuntimeError(
-            f"Invariant violation: verified_main_lines count ({len(verified_main_lines)}) != Mac pass count ({mac_main_pass_count})"
+            f"Invariant violation: verified_main_lines count ({len(verified_main_lines)}) != expected ({expected_main_count})"
         )
-    if len(verified_white_lines) != mac_white_pass_count:
+    if len(verified_white_lines) != expected_white_count:
         raise RuntimeError(
-            f"Invariant violation: verified_white_lines count ({len(verified_white_lines)}) != Mac pass count ({mac_white_pass_count})"
+            f"Invariant violation: verified_white_lines count ({len(verified_white_lines)}) != expected ({expected_white_count})"
         )
 
     if main_lines:
         disk_main = [l for l in main_file.read_text().splitlines() if l.strip() and not l.startswith("#")]
-        if len(disk_main) != mac_main_pass_count:
+        if len(disk_main) != expected_main_count:
             raise RuntimeError(
-                f"Invariant violation: sub/main.txt on disk ({len(disk_main)}) != Mac pass count ({mac_main_pass_count})"
+                f"Invariant violation: sub/main.txt on disk ({len(disk_main)}) != expected ({expected_main_count})"
             )
 
     if white_lines:
         disk_white = [l for l in white_file.read_text().splitlines() if l.strip() and not l.startswith("#")]
-        if len(disk_white) != mac_white_pass_count:
+        if len(disk_white) != expected_white_count:
             raise RuntimeError(
-                f"Invariant violation: sub/white.txt on disk ({len(disk_white)}) != Mac pass count ({mac_white_pass_count})"
+                f"Invariant violation: sub/white.txt on disk ({len(disk_white)}) != expected ({expected_white_count})"
             )
 
     # Stats Update

@@ -311,6 +311,33 @@ def diverse_selection(
     return selected
 
 
+def select_pre_mac_candidates(
+    eligible: list[RankedConfig],
+    limit: int,
+    seed: str,
+    history: dict[str, Any],
+) -> list[RankedConfig]:
+    if len(eligible) <= limit:
+        return list(eligible)
+
+    def pre_mac_sort_key(item: RankedConfig) -> tuple[int, float, str]:
+        rec = _lane_record(history, item.config.fingerprint, item.lane)
+        state = item.state or rec.get("state", "new")
+        if state == "active":
+            tier = 0
+        elif item.score >= 75.0:
+            tier = 1
+        elif state == "degraded":
+            tier = 2
+        else:
+            tier = 3
+        lottery = hashlib.sha256(f"{seed}:mac:{item.config.fingerprint}".encode()).hexdigest()
+        return tier, -item.score, lottery
+
+    sorted_eligible = sorted(eligible, key=pre_mac_sort_key)
+    return sorted_eligible[:limit]
+
+
 def failure_reasons(results: list[TestResult]) -> Counter[str]:
     return Counter(result.reason for result in results if result.reason)
 

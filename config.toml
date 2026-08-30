@@ -40,11 +40,12 @@ name = "artembsk"
 url = "https://raw.githubusercontent.com/artembsk/russia-mobile-internet-whitelist/main/whitelist.txt"
 
 [limits]
-main = 200
+main = 80
 white = 200
 
 [selection]
-main_candidates = 400
+main_candidates = 1000
+mac_candidates = 300
 white_candidates = 250
 
 [testing]
