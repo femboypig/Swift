@@ -1,7 +1,10 @@
 #profile-title: Swift Main
 #profile-update-interval: 1
 #profile-web-page-url: https://github.com/femboypig/Swift
-hysteria2://gf1%3Agfhysteria2024@185.156.44.99:443?sni=google.com&insecure=1&upmbps=10&downmbps=50#%F0%9F%87%B7%F0%9F%87%B4%20RO%20%C2%B7%20066
-hysteria2://gf1%3Agfhysteria2024@185.156.44.99:443?sni=vk.com&insecure=1&upmbps=10&downmbps=50#%F0%9F%87%B7%F0%9F%87%B4%20RO%20%C2%B7%20089
-vless://11af1c47-865a-47c6-92ff-118013655d78@51.158.238.49:8080?encryption=none&type=ws&security=none&sni=51.158.238.49#%F0%9F%87%B3%F0%9F%87%B1%20NL%20%C2%B7%20090
-vless://1206bad5-dcc9-410e-9595-d9fe9ee54085@31.77.220.152:5015?encryption=none&type=tcp&security=reality&flow=xtls-rprx-vision&sni=special.aeternavpn.space&fp=firefox&pbk=-6SjfnZXAYm69euKQ3XNhq0nC7No7YE4qfdc2qx0Xwo&sid=a1b2c3d4#%F0%9F%87%A9%F0%9F%87%AA%20DE%20%C2%B7%20144
+hysteria2://gf1%3Agfhysteria2024@185.156.44.99:443?sni=google.com&insecure=1&upmbps=10&downmbps=50#%F0%9F%87%B7%F0%9F%87%B4%20RO%20%C2%B7%20012
+hysteria2://gf1%3Agfhysteria2024@185.156.44.99:443?sni=vk.com&insecure=1&upmbps=10&downmbps=50#%F0%9F%87%B7%F0%9F%87%B4%20RO%20%C2%B7%20039
+vless://845a492d-21e6-4cc0-abbb-b66813a163c0@65.109.215.50:39633?encryption=none&type=tcp&security=none#%F0%9F%87%AB%F0%9F%87%AE%20FI%20%C2%B7%20081
+vless://423b1d79-08c4-403f-9d5e-c541f791b55f@31.76.34.121:443?encryption=none&type=tcp&security=reality&flow=xtls-rprx-vision&sni=russia.cendora.ru&fp=edge&pbk=uo-U-FDlo7Cqldg7JKUe8jHvYnwP08NanGX0tUFrqEc&sid=bef240e96a8474a3#%F0%9F%87%B7%F0%9F%87%BA%20RU%20%C2%B7%20127
+hysteria2://gf1%3Agfhysteria2024@185.156.44.99:443?sni=css.rbxcdn.com&insecure=1&upmbps=10&downmbps=50#%F0%9F%87%B7%F0%9F%87%B4%20RO%20%C2%B7%20230
+vless://c8c06f90-c267-47a6-a91a-967e58e61db0@204.44.127.222:37262?encryption=none&type=tcp&security=none#%F0%9F%87%BA%F0%9F%87%B8%20US%20%C2%B7%20240
+vless://1206bad5-dcc9-410e-9595-d9fe9ee54085@31.77.220.152:5015?encryption=none&type=tcp&security=reality&flow=xtls-rprx-vision&sni=special.aeternavpn.space&fp=firefox&pbk=-6SjfnZXAYm69euKQ3XNhq0nC7No7YE4qfdc2qx0Xwo&sid=a1b2c3d4#%F0%9F%87%A9%F0%9F%87%AA%20DE%20%C2%B7%20296
