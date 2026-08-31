@@ -58,7 +58,7 @@ class DownloadAttempt:
 class RuVerifyResult:
     fingerprint: str
     passed: bool
-    reason: str | None
+    reason: str | None = None
     r1_kbps: float = 0.0
     r2_kbps: float = 0.0
     min_kbps: float = 0.0
@@ -744,20 +744,125 @@ async def run_ru_verify(
                 "main": {
                     "before_mac": len(main_lines),
                     "mac_tested": sum(1 for item in unique_candidates.values() if item[2]),
-                    "mac_pass": len(verified_main_lines),
-                    "mac_fail": len(main_lines) - len(verified_main_lines),
+                    "mac_pass": mac_main_pass_count,
+                    "mac_fail": len(main_lines) - mac_main_pass_count,
                     "final": final_main_count,
                     "failure_reasons": dict(sorted(mac_fail_reasons.items())),
                 },
                 "white": {
                     "before_mac": len(white_lines),
                     "mac_tested": sum(1 for item in unique_candidates.values() if item[3]),
-                    "mac_pass": len(verified_white_lines),
-                    "mac_fail": len(white_lines) - len(verified_white_lines),
+                    "mac_pass": mac_white_pass_count,
+                    "mac_fail": len(white_lines) - mac_white_pass_count,
                     "final": final_white_count,
                     "failure_reasons": dict(sorted(white_mac_fail_reasons.items())),
                 },
             }
+
+            # Load White tcp_tls telemetry from cloud stage
+            probe_white_file = root / "data/ru_probe_white.json"
+            white_tcp_tls_results: dict[str, str] = {}
+            if probe_white_file.exists():
+                try:
+                    white_tcp_tls_results = json.loads(probe_white_file.read_text())
+                except Exception:
+                    white_tcp_tls_results = {}
+
+            tcp_tls_matrix = {
+                "tcp_tls_pass__mac_pass": 0,
+                "tcp_tls_pass__mac_fail": 0,
+                "tcp_tls_fail__mac_pass": 0,
+                "tcp_tls_fail__mac_fail": 0,
+                "tcp_tls_unknown__mac_pass": 0,
+                "tcp_tls_unknown__mac_fail": 0,
+            }
+            for item in unique_candidates.values():
+                cfg = item[0]
+                is_w = item[3]
+                if not is_w:
+                    continue
+                r = results_map.get(cfg.fingerprint)
+                mac_is_pass = bool(r and r.passed)
+                tcp_status = white_tcp_tls_results.get(cfg.fingerprint, "unknown")
+                if tcp_status == "pass":
+                    if mac_is_pass:
+                        tcp_tls_matrix["tcp_tls_pass__mac_pass"] += 1
+                    else:
+                        tcp_tls_matrix["tcp_tls_pass__mac_fail"] += 1
+                elif tcp_status == "fail":
+                    if mac_is_pass:
+                        tcp_tls_matrix["tcp_tls_fail__mac_pass"] += 1
+                    else:
+                        tcp_tls_matrix["tcp_tls_fail__mac_fail"] += 1
+                else:
+                    if mac_is_pass:
+                        tcp_tls_matrix["tcp_tls_unknown__mac_pass"] += 1
+                    else:
+                        tcp_tls_matrix["tcp_tls_unknown__mac_fail"] += 1
+
+            white_tcp_tested = sum(1 for item in unique_candidates.values() if item[3] and white_tcp_tls_results.get(item[0].fingerprint) in {"pass", "fail"})
+            white_tcp_pass = tcp_tls_matrix["tcp_tls_pass__mac_pass"] + tcp_tls_matrix["tcp_tls_pass__mac_fail"]
+            white_tcp_fail = tcp_tls_matrix["tcp_tls_fail__mac_pass"] + tcp_tls_matrix["tcp_tls_fail__mac_fail"]
+            white_tcp_unknown = tcp_tls_matrix["tcp_tls_unknown__mac_pass"] + tcp_tls_matrix["tcp_tls_unknown__mac_fail"]
+
+            telemetry_stats = {
+                **tcp_tls_matrix,
+                "white_tcp_tls_tested": white_tcp_tested,
+                "white_tcp_tls_pass": white_tcp_pass,
+                "white_tcp_tls_fail": white_tcp_fail,
+                "white_tcp_tls_unknown": white_tcp_unknown,
+            }
+            stats.setdefault("telemetry", {})["white_tcp_tls_matrix"] = telemetry_stats
+
+            # Full Funnel Telemetry
+            main_mac_https_pass = sum(
+                1 for item in unique_candidates.values()
+                if item[2] and results_map.get(item[0].fingerprint) and results_map[item[0].fingerprint].https_passed >= 2
+            )
+            main_mac_r1_pass = sum(
+                1 for item in unique_candidates.values()
+                if item[2] and results_map.get(item[0].fingerprint) and results_map[item[0].fingerprint].r1_kbps >= 64.0
+            )
+            main_mac_r2_pass = sum(
+                1 for item in unique_candidates.values()
+                if item[2] and results_map.get(item[0].fingerprint) and results_map[item[0].fingerprint].r2_kbps >= 64.0
+            )
+
+            stats.setdefault("funnel", {})
+            funnel_main = stats["funnel"].setdefault("main", {})
+            funnel_main["main_mac_tested"] = sum(1 for item in unique_candidates.values() if item[2])
+            funnel_main["main_mac_untested"] = max(0, funnel_main.get("main_mac_expected", len(main_lines)) - funnel_main["main_mac_tested"])
+            funnel_main["main_mac_https_pass"] = main_mac_https_pass
+            funnel_main["main_mac_r1_pass"] = main_mac_r1_pass
+            funnel_main["main_mac_r2_pass"] = main_mac_r2_pass
+            funnel_main["main_mac_sustained_pass"] = mac_main_pass_count
+            funnel_main["main_published"] = final_main_count
+            funnel_main["main_mac_completion_pct"] = round(
+                (funnel_main["main_mac_tested"] / funnel_main["main_mac_expected"] * 100), 2
+            ) if funnel_main.get("main_mac_expected") else 100.0
+
+            funnel_white = stats["funnel"].setdefault("white", {})
+            funnel_white["white_mac_tested"] = sum(1 for item in unique_candidates.values() if item[3])
+            funnel_white["white_mac_untested"] = max(0, funnel_white.get("white_mac_expected", len(white_lines)) - funnel_white["white_mac_tested"])
+            funnel_white["white_mac_sustained_pass"] = mac_white_pass_count
+            funnel_white["white_published"] = final_white_count
+            funnel_white["white_mac_completion_pct"] = round(
+                (funnel_white["white_mac_tested"] / funnel_white["white_mac_expected"] * 100), 2
+            ) if funnel_white.get("white_mac_expected") else 100.0
+            funnel_white.update(telemetry_stats)
+
+            # Incomplete Run Detection
+            is_incomplete = (
+                funnel_main.get("main_cloud_untested", 0) > 0
+                or funnel_main.get("main_mac_untested", 0) > 0
+                or funnel_white.get("white_cloud_untested", 0) > 0
+                or funnel_white.get("white_mac_untested", 0) > 0
+            )
+            if is_incomplete:
+                stats["incomplete"] = True
+                stats["incomplete_reason"] = "EXHAUSTIVE_VALIDATION_INCOMPLETE"
+            else:
+                stats["incomplete"] = False
 
             # Record RU service reachability diagnostics in stats
             ru_diag = {}
@@ -784,12 +889,12 @@ async def run_ru_verify(
     return 0
 
 
-def main() -> int:
+def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description="Verify top Swift candidates through local Russian ISP connection")
     parser.add_argument("--root", default=".")
     parser.add_argument("--core", default=os.environ.get("SWIFT_SING_BOX", ".cache/sing-box/sing-box"))
     parser.add_argument("--concurrency", type=int, default=6)
-    args = parser.parse_args()
+    args = parser.parse_args(argv)
 
     logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
     root = Path(args.root).resolve()

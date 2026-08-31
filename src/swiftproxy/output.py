@@ -173,6 +173,8 @@ def build_stats(
     }
     if selection:
         value["selection"] = selection
+        if "funnel" in selection:
+            value["funnel"] = selection["funnel"]
     if discovery:
         value["discovery"] = discovery
     if diagnostics:

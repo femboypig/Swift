@@ -279,15 +279,10 @@ async def run(root: Path, config_path: Path, core_override: str | None = None) -
         _hold(root, previous_stats, "TEST_TARGET_OUTAGE", {})
 
     core_path = find_core(core_override)
-    selection = settings["selection"]
     seed = datetime.now(UTC).strftime("%Y-%m-%dT%H")
     candidates = {
-        "main": choose_candidates(
-            unique, history, "main", int(selection["main_candidates"]), seed
-        ),
-        "white": choose_candidates(
-            unique, history, "white", int(selection["white_candidates"]), seed
-        ),
+        "main": [config for config in unique if "main" in config.lanes],
+        "white": [config for config in unique if "white" in config.lanes],
     }
     candidate_map = {
         config.fingerprint: config
@@ -302,7 +297,7 @@ async def run(root: Path, config_path: Path, core_override: str | None = None) -
     parse_failures.update(resolution_failures.values())
     jobs = _jobs(candidates, resolved)
     LOGGER.info(
-        "candidates main=%d white=%d jobs=%d resolution_failed=%d",
+        "candidates main=%d white=%d jobs=%d resolution_failed=%d (exhaustive)",
         len(candidates["main"]),
         len(candidates["white"]),
         len(jobs),
@@ -344,6 +339,14 @@ async def run(root: Path, config_path: Path, core_override: str | None = None) -
         key=lambda item: evidence_priority(white_signals.get(item.config.fingerprint, "")),
         reverse=True,
     )
+
+    white_tcp_tls_results: dict[str, str] = {}
+    white_tcp_tls_telemetry = {
+        "white_tcp_tls_tested": 0,
+        "white_tcp_tls_pass": 0,
+        "white_tcp_tls_fail": 0,
+        "white_tcp_tls_unknown": 0,
+    }
     if ranked_white and os.environ.get("SWIFT_RU_PROBE_URL"):
         top_white = [item for item in ranked_white if item.config.protocol not in {"hysteria", "hysteria2", "tuic"}][:60]
         probe_targets = [
@@ -354,79 +357,136 @@ async def run(root: Path, config_path: Path, core_override: str | None = None) -
             }
             for item in top_white
         ]
-        ru_results = probe_ru_targets(probe_targets, check_type="tcp_tls")
-        if ru_results:
-            passed_count = sum(bool(r.get("ok")) for r in ru_results.values())
-            passed_ratio = passed_count / len(ru_results) if ru_results else 0.0
-            if len(ru_results) >= 10 and passed_ratio < 0.10:
-                LOGGER.warning(
-                    "RU_PROBE_OUTAGE_SUSPECTED white total=%d passed=%d ratio=%.2f -> preserving runner selection",
-                    len(ru_results),
-                    passed_count,
-                    passed_ratio,
-                )
-            else:
-                passed_white = []
-                for item in ranked_white:
-                    if item.config.protocol in {"hysteria", "hysteria2", "tuic"}:
-                        passed_white.append(item)
-                        continue
-                    key_id = f"{item.config.resolved_ip or item.config.host}:{item.config.port}"
-                    status_item = ru_results.get(key_id)
-                    if status_item is not None:
-                        if status_item.get("ok"):
-                            passed_white.append(item)
-                    else:
-                        passed_white.append(item)
-                if passed_white:
-                    LOGGER.info(
-                        "white ru_probe filtered passed=%d dropped=%d",
-                        len(passed_white),
-                        len(ranked_white) - len(passed_white),
-                    )
-                    ranked_white = passed_white
-    diversity = settings["diversity"]
-    mac_capacity = int(selection.get("mac_candidates", 300))
-    pre_mac_main = select_pre_mac_candidates(
-        ranked_main,
-        mac_capacity,
-        seed,
-        temp_history,
-    )
-    main = pre_mac_main
-    white = diverse_selection(
-        ranked_white,
-        int(settings["limits"]["white"]),
-        int(diversity["endpoint"]),
-        int(diversity["subnet"]),
-        int(diversity["asn"]),
-    )
+        ru_results: dict[str, Any] = {}
+        try:
+            ru_results = probe_ru_targets(probe_targets, check_type="tcp_tls") or {}
+        except Exception as exc:
+            LOGGER.warning("RU_PROBE_FAILED error=%s (telemetry-only, continuing)", exc)
 
-    main_cloud_selected = len(candidates["main"])
+        for item in ranked_white:
+            key_id = f"{item.config.resolved_ip or item.config.host}:{item.config.port}"
+            if item.config.protocol in {"hysteria", "hysteria2", "tuic"}:
+                white_tcp_tls_results[item.config.fingerprint] = "unsupported"
+            elif key_id in ru_results:
+                status_item = ru_results[key_id]
+                white_tcp_tls_results[item.config.fingerprint] = "pass" if status_item.get("ok") else "fail"
+            else:
+                white_tcp_tls_results[item.config.fingerprint] = "unknown"
+
+        white_tcp_tls_telemetry["white_tcp_tls_tested"] = len(probe_targets)
+        white_tcp_tls_telemetry["white_tcp_tls_pass"] = sum(1 for r in ru_results.values() if r.get("ok"))
+        white_tcp_tls_telemetry["white_tcp_tls_fail"] = sum(1 for r in ru_results.values() if not r.get("ok"))
+        white_tcp_tls_telemetry["white_tcp_tls_unknown"] = max(
+            0,
+            len(probe_targets)
+            - (white_tcp_tls_telemetry["white_tcp_tls_pass"] + white_tcp_tls_telemetry["white_tcp_tls_fail"]),
+        )
+        LOGGER.info(
+            "white ru_probe telemetry tested=%d passed=%d failed=%d unknown=%d (telemetry-only, no gating)",
+            white_tcp_tls_telemetry["white_tcp_tls_tested"],
+            white_tcp_tls_telemetry["white_tcp_tls_pass"],
+            white_tcp_tls_telemetry["white_tcp_tls_fail"],
+            white_tcp_tls_telemetry["white_tcp_tls_unknown"],
+        )
+
+    # Save white tcp_tls telemetry for Mac cross-matrix
+    write_json(root / "data/ru_probe_white.json", white_tcp_tls_results, compact=True)
+
+    # Pre-Mac handoff: ALL eligible Main and White configs are sent to Mac without truncation
+    main = ranked_main
+    white = ranked_white
+
+    main_unique = len([c for c in unique if "main" in c.lanes])
+    main_cloud_expected = len(candidates["main"])
+    main_tested_fps = {r.fingerprint for r in results_list if r.lane == "main"}
+    main_cloud_tested = len(main_tested_fps)
+    main_cloud_untested = max(0, main_cloud_expected - main_cloud_tested)
     main_cloud_pass = sum(
         1 for c in candidates["main"]
         if (c.fingerprint, "main") in results and results[(c.fingerprint, "main")].worked
     )
-    main_eligible = len(ranked_main)
-    main_pre_mac_selected = len(pre_mac_main)
-    main_pre_mac_dropped_by_capacity = max(0, main_eligible - main_pre_mac_selected)
-    eligible_not_sent_to_mac = main_pre_mac_dropped_by_capacity
+    main_history_eligible = len(ranked_main)
+    main_mac_expected = len(main)
+    main_cloud_completion_pct = round((main_cloud_tested / main_cloud_expected * 100), 2) if main_cloud_expected else 100.0
+
+    white_pool_count = len(white_pool)
+    white_evidence_matched = len(white_signals)
+    white_cloud_expected = len(candidates["white"])
+    white_tested_fps = {r.fingerprint for r in results_list if r.lane == "white"}
+    white_cloud_tested = len(white_tested_fps)
+    white_cloud_untested = max(0, white_cloud_expected - white_cloud_tested)
+    white_cloud_pass = sum(
+        1 for c in candidates["white"]
+        if (c.fingerprint, "white") in results and results[(c.fingerprint, "white")].worked
+    )
+    white_history_eligible = len(ranked_white)
+    white_mac_expected = len(white)
+    white_cloud_completion_pct = round((white_cloud_tested / white_cloud_expected * 100), 2) if white_cloud_expected else 100.0
+
+    funnel = {
+        "main": {
+            "main_unique": main_unique,
+            "main_cloud_expected": main_cloud_expected,
+            "main_cloud_tested": main_cloud_tested,
+            "main_cloud_untested": main_cloud_untested,
+            "main_cloud_pass": main_cloud_pass,
+            "main_history_eligible": main_history_eligible,
+            "main_mac_expected": main_mac_expected,
+            "main_mac_tested": 0,
+            "main_mac_untested": main_mac_expected,
+            "main_mac_https_pass": 0,
+            "main_mac_r1_pass": 0,
+            "main_mac_r2_pass": 0,
+            "main_mac_sustained_pass": 0,
+            "main_published": 0,
+            "main_cloud_completion_pct": main_cloud_completion_pct,
+            "main_mac_completion_pct": 0.0,
+        },
+        "white": {
+            "white_pool": white_pool_count,
+            "white_evidence_matched": white_evidence_matched,
+            "white_cloud_expected": white_cloud_expected,
+            "white_cloud_tested": white_cloud_tested,
+            "white_cloud_untested": white_cloud_untested,
+            "white_cloud_pass": white_cloud_pass,
+            "white_history_eligible": white_history_eligible,
+            "white_mac_expected": white_mac_expected,
+            "white_mac_tested": 0,
+            "white_mac_untested": white_mac_expected,
+            "white_mac_sustained_pass": 0,
+            "white_published": 0,
+            "white_cloud_completion_pct": white_cloud_completion_pct,
+            "white_mac_completion_pct": 0.0,
+            **white_tcp_tls_telemetry,
+        },
+    }
 
     selection_stats = {
-        "main_cloud_selected": main_cloud_selected,
+        "main_unique": main_unique,
+        "main_cloud_selected": main_cloud_expected,
         "main_cloud_pass": main_cloud_pass,
-        "main_eligible": main_eligible,
-        "main_pre_mac_selected": main_pre_mac_selected,
-        "main_pre_mac_dropped_by_capacity": main_pre_mac_dropped_by_capacity,
-        "eligible_not_sent_to_mac": eligible_not_sent_to_mac,
+        "main_eligible": main_history_eligible,
+        "main_pre_mac_selected": main_mac_expected,
+        "main_pre_mac_dropped_by_capacity": 0,
+        "eligible_not_sent_to_mac": 0,
+        "funnel": funnel,
     }
     LOGGER.info(
-        "selection main_cloud_selected=%d main_cloud_pass=%d main_eligible=%d pre_mac_main=%d dropped_by_capacity=%d",
-        main_cloud_selected,
+        "exhaustive selection main: unique=%d cloud_tested=%d cloud_pass=%d eligible=%d -> mac_expected=%d",
+        main_unique,
+        main_cloud_tested,
         main_cloud_pass,
-        main_eligible,
-        main_pre_mac_selected,
-        main_pre_mac_dropped_by_capacity,
+        main_history_eligible,
+        main_mac_expected,
+    )
+    LOGGER.info(
+        "exhaustive selection white: pool=%d evidence=%d cloud_tested=%d cloud_pass=%d eligible=%d -> mac_expected=%d",
+        white_pool_count,
+        white_evidence_matched,
+        white_cloud_tested,
+        white_cloud_pass,
+        white_history_eligible,
+        white_mac_expected,
     )
 
     alive = alive_for_all(
