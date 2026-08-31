@@ -4,8 +4,15 @@ on:
   schedule:
     - cron: "17,47 * * * *"
   workflow_dispatch:
+    inputs:
+      cloud_run_id:
+        description: "Reuse swift-cloud-data from this run and execute only the Mac stage"
+        required: false
+        default: ""
+        type: string
 
 permissions:
+  actions: read
   contents: write
   pages: write
   id-token: write
@@ -25,6 +32,7 @@ env:
 jobs:
   cloud-collect:
     name: Cloud collect and test
+    if: ${{ github.event_name != 'workflow_dispatch' || inputs.cloud_run_id == '' }}
     runs-on: ubuntu-24.04
     timeout-minutes: 60
 
@@ -117,6 +125,7 @@ jobs:
   ru-verify:
     name: Russian live traffic verification
     needs: cloud-collect
+    if: ${{ always() && (needs.cloud-collect.result == 'success' || (github.event_name == 'workflow_dispatch' && inputs.cloud_run_id != '')) }}
     runs-on: [self-hosted, Linux]
     timeout-minutes: 60
     environment:
@@ -124,6 +133,7 @@ jobs:
       url: ${{ steps.deployment.outputs.page_url }}
     env:
       SWIFT_BIND_INTERFACE: wlan0
+      SWIFT_DIRECT_SOCKS: 127.0.0.1:3065
 
     steps:
       - name: Check out repository
@@ -135,6 +145,8 @@ jobs:
         uses: actions/download-artifact@cc203385981b70ca67e1cc392babf9cc229d5806 # v4.1.9
         with:
           name: swift-cloud-data
+          run-id: ${{ inputs.cloud_run_id || github.run_id }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Install dependencies (if needed)
         shell: bash
