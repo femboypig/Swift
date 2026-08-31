@@ -471,9 +471,31 @@ async def _test_round(
         targets = settings["white_probe_urls"] if lane == "white" else settings["probe_urls"]
         probes = int(settings["probes"])
         offset = (int(config.fingerprint[:8], 16) + round_index * probes) % len(targets)
+        ordered_targets = [
+            targets[(offset + index) % len(targets)] for index in range(len(targets))
+        ]
         round_successes = 0
-        for index in range(probes):
-            target = targets[(offset + index) % len(targets)]
+        successful_targets: list[str] = []
+
+        # Try distinct targets first. Repeating the raw target cycle made one target
+        # outage count once or twice depending on the config fingerprint.
+        initial_targets = ordered_targets[: min(probes, len(ordered_targets))]
+        for target in initial_targets:
+            measurement = await _probe(socks_port, target, settings)
+            if measurement is None:
+                result.failure_count += 1
+                continue
+            latency, connect, response = measurement
+            successful_targets.append(target)
+            round_successes += 1
+            result.success_count += 1
+            result.latencies_ms.append(latency)
+            result.connect_times_ms.append(connect)
+            result.response_times_ms.append(response)
+
+        retry_targets = successful_targets or ordered_targets
+        for index in range(probes - len(initial_targets)):
+            target = retry_targets[index % len(retry_targets)]
             measurement = await _probe(socks_port, target, settings)
             if measurement is None:
                 result.failure_count += 1
@@ -484,7 +506,11 @@ async def _test_round(
             result.latencies_ms.append(latency)
             result.connect_times_ms.append(connect)
             result.response_times_ms.append(response)
-        if round_successes / probes < float(settings["throughput_probe_ratio"]):
+
+        required_distinct = min(2, probes, len(ordered_targets))
+        if len(successful_targets) < required_distinct or round_successes / probes < float(
+            settings["throughput_probe_ratio"]
+        ):
             return None, None
         throughput = await _throughput(socks_port, settings)
         if throughput is not None and throughput >= _minimum_throughput(lane, settings):

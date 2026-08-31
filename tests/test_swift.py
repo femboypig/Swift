@@ -39,7 +39,7 @@ from swiftproxy.scoring import (
     rank_configs,
     score_lane,
 )
-from swiftproxy.testing import resolve_public_host, sing_box_config, sing_box_outbound
+from swiftproxy.testing import _test_round, resolve_public_host, sing_box_config, sing_box_outbound
 from swiftproxy.whitelist import build_evidence, evidence_for, evidence_priority
 
 
@@ -259,6 +259,90 @@ class TestingConfigTests(unittest.TestCase):
         self.assertEqual(sing_box_outbound(configs[1])["type"], "hysteria")
         self.assertTrue(sing_box_outbound(configs[2])["tls"]["enabled"])
         self.assertEqual(sing_box_outbound(configs[3])["uuid"], UUID_A)
+
+
+class TrafficTargetTests(unittest.IsolatedAsyncioTestCase):
+    def settings(self) -> dict[str, object]:
+        return {
+            "main_min_throughput_bps": 131072,
+            "white_min_throughput_bps": 49152,
+            "probe_urls": ["https://one.test", "https://two.test", "https://down.test"],
+            "white_probe_urls": ["https://one.test", "https://two.test", "https://down.test"],
+            "probes": 5,
+            "throughput_probe_ratio": 0.8,
+        }
+
+    @patch("swiftproxy.testing._stop_process", new_callable=AsyncMock)
+    @patch("swiftproxy.testing._wait_for_core", new_callable=AsyncMock, return_value=True)
+    @patch("swiftproxy.testing._throughput", new_callable=AsyncMock, return_value=200_000.0)
+    @patch("swiftproxy.testing._geo", new_callable=AsyncMock, return_value={})
+    @patch("swiftproxy.testing._probe", new_callable=AsyncMock)
+    @patch("swiftproxy.testing._free_port", return_value=23001)
+    @patch("asyncio.create_subprocess_exec", new_callable=AsyncMock)
+    async def test_one_target_outage_does_not_depend_on_fingerprint_offset(
+        self, mock_exec, mock_port, mock_probe, mock_geo, mock_throughput, mock_wait, mock_stop
+    ) -> None:
+        del mock_exec, mock_port, mock_geo, mock_wait, mock_stop
+        mock_probe.side_effect = lambda port, url, settings: (
+            None if url == "https://down.test" else (80.0, 20.0, 40.0)
+        )
+        config = parse_uri(vless_uri())
+        results = [TestResult(config.fingerprint, "main", "2026-08-31T00:00:00Z") for _ in range(2)]
+
+        with tempfile.TemporaryDirectory() as temp_dir:
+            outcomes = [
+                await _test_round(
+                    config,
+                    "main",
+                    "sing-box",
+                    self.settings(),
+                    results[round_index],
+                    Path(temp_dir),
+                    round_index,
+                )
+                for round_index in range(2)
+            ]
+
+        self.assertEqual(outcomes, [(None, 200_000.0), (None, 200_000.0)])
+        for result in results:
+            self.assertEqual(result.success_count, 4)
+            self.assertEqual(result.failure_count, 1)
+            self.assertEqual(result.rounds_succeeded, 1)
+        self.assertEqual(mock_probe.await_count, 10)
+        self.assertEqual(mock_throughput.await_count, 2)
+
+    @patch("swiftproxy.testing._stop_process", new_callable=AsyncMock)
+    @patch("swiftproxy.testing._wait_for_core", new_callable=AsyncMock, return_value=True)
+    @patch("swiftproxy.testing._throughput", new_callable=AsyncMock)
+    @patch("swiftproxy.testing._geo", new_callable=AsyncMock, return_value={})
+    @patch("swiftproxy.testing._probe", new_callable=AsyncMock)
+    @patch("swiftproxy.testing._free_port", return_value=23001)
+    @patch("asyncio.create_subprocess_exec", new_callable=AsyncMock)
+    async def test_one_reachable_target_is_not_enough(
+        self, mock_exec, mock_port, mock_probe, mock_geo, mock_throughput, mock_wait, mock_stop
+    ) -> None:
+        del mock_exec, mock_port, mock_geo, mock_wait, mock_stop
+        mock_probe.side_effect = lambda port, url, settings: (
+            (80.0, 20.0, 40.0) if url == "https://one.test" else None
+        )
+        config = parse_uri(vless_uri())
+        result = TestResult(config.fingerprint, "main", "2026-08-31T00:00:00Z")
+
+        with tempfile.TemporaryDirectory() as temp_dir:
+            error, throughput = await _test_round(
+                config,
+                "main",
+                "sing-box",
+                self.settings(),
+                result,
+                Path(temp_dir),
+                0,
+            )
+
+        self.assertIsNone(error)
+        self.assertIsNone(throughput)
+        self.assertEqual(result.rounds_succeeded, 0)
+        mock_throughput.assert_not_awaited()
 
 
 class EndpointResolutionTests(unittest.IsolatedAsyncioTestCase):
