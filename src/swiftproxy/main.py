@@ -404,9 +404,14 @@ async def run(root: Path, config_path: Path, core_override: str | None = None) -
     main_tested_fps = {r.fingerprint for r in results_list if r.lane == "main"}
     main_cloud_tested = len(main_tested_fps)
     main_cloud_untested = max(0, main_cloud_expected - main_cloud_tested)
-    main_cloud_pass = sum(
+    main_cloud_worked = sum(
         1 for c in candidates["main"]
         if (c.fingerprint, "main") in results and results[(c.fingerprint, "main")].worked
+    )
+    main_cloud_pass = sum(
+        1 for c in candidates["main"]
+        if (c.fingerprint, "main") in results
+        and results[(c.fingerprint, "main")].reason is None
     )
     main_history_eligible = len(ranked_main)
     main_mac_expected = len(main)
@@ -421,9 +426,14 @@ async def run(root: Path, config_path: Path, core_override: str | None = None) -
     white_tested_fps = {r.fingerprint for r in results_list if r.lane == "white"}
     white_cloud_tested = len(white_tested_fps)
     white_cloud_untested = max(0, white_cloud_expected - white_cloud_tested)
-    white_cloud_pass = sum(
+    white_cloud_worked = sum(
         1 for c in candidates["white"]
         if (c.fingerprint, "white") in results and results[(c.fingerprint, "white")].worked
+    )
+    white_cloud_pass = sum(
+        1 for c in candidates["white"]
+        if (c.fingerprint, "white") in results
+        and results[(c.fingerprint, "white")].reason is None
     )
     white_history_eligible = len(ranked_white)
     white_mac_expected = len(white)
@@ -436,6 +446,7 @@ async def run(root: Path, config_path: Path, core_override: str | None = None) -
             "main_cloud_expected": main_cloud_expected,
             "main_cloud_tested": main_cloud_tested,
             "main_cloud_untested": main_cloud_untested,
+            "main_cloud_worked": main_cloud_worked,
             "main_cloud_pass": main_cloud_pass,
             "main_history_eligible": main_history_eligible,
             "main_mac_expected": main_mac_expected,
@@ -456,6 +467,7 @@ async def run(root: Path, config_path: Path, core_override: str | None = None) -
             "white_cloud_expected": white_cloud_expected,
             "white_cloud_tested": white_cloud_tested,
             "white_cloud_untested": white_cloud_untested,
+            "white_cloud_worked": white_cloud_worked,
             "white_cloud_pass": white_cloud_pass,
             "white_history_eligible": white_history_eligible,
             "white_mac_expected": white_mac_expected,
