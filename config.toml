@@ -51,7 +51,7 @@ mac_candidates = 0
 white_candidates = 0
 
 [testing]
-concurrency = 100
+concurrency = 50
 probes = 5
 rounds = 2
 connect_timeout = 5
