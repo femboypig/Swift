@@ -1,46 +1,46 @@
 {
-  "alive": 703,
-  "collected": 8106,
+  "alive": 710,
+  "collected": 7778,
   "countries": {
-    "AL": 2,
-    "AR": 9,
+    "AE": 1,
+    "AL": 3,
+    "AR": 6,
     "AT": 2,
-    "AU": 10,
+    "AU": 11,
+    "BE": 1,
     "BG": 1,
     "BR": 1,
     "CA": 8,
-    "CO": 4,
+    "CO": 5,
     "CZ": 3,
-    "DE": 47,
-    "EE": 1,
-    "ES": 4,
-    "FI": 15,
-    "FR": 29,
-    "GB": 59,
+    "DE": 50,
+    "EE": 2,
+    "ES": 3,
+    "FI": 18,
+    "FR": 28,
+    "GB": 61,
     "HK": 2,
-    "IN": 3,
+    "IN": 2,
     "IR": 1,
     "IT": 7,
-    "JP": 50,
-    "KR": 5,
+    "JP": 53,
+    "KR": 3,
     "KZ": 1,
     "LT": 4,
     "LV": 7,
-    "MD": 1,
+    "MD": 2,
     "MY": 1,
-    "NL": 147,
-    "NO": 3,
+    "NL": 166,
+    "NO": 4,
     "PE": 2,
-    "PL": 14,
+    "PL": 16,
     "RO": 4,
-    "RU": 6,
+    "RU": 13,
     "SE": 1,
-    "SG": 25,
-    "TR": 5,
-    "TW": 6,
-    "UA": 1,
-    "US": 211,
-    "ZA": 1
+    "SG": 16,
+    "TR": 3,
+    "TW": 5,
+    "US": 193
   },
   "diagnostics": {
     "hysteria_v1": {
@@ -57,7 +57,7 @@
       "discovered_total": 9,
       "first_tested_this_run": 0,
       "global_pass": 2,
-      "history_eligible": 0,
+      "history_eligible": 1,
       "mac_pass": 0,
       "never_tested": 6,
       "published": 0,
@@ -65,69 +65,68 @@
     }
   },
   "discovery": {
-    "average_never_tested_age_hours": 8.64,
-    "backlog_change_this_run": -345,
+    "average_never_tested_age_hours": 8.78,
+    "backlog_change_this_run": -315,
     "estimated_hours_to_clear": 3.5,
     "estimated_runs_to_clear": 7,
-    "new_discovered_this_run": 453,
-    "oldest_never_tested_age_hours": 11.61,
-    "tested_first_time_this_run": 345,
-    "total_never_tested": 2371
+    "new_discovered_this_run": 431,
+    "oldest_never_tested_age_hours": 12.57,
+    "tested_first_time_this_run": 315,
+    "total_never_tested": 2155
   },
   "failure_reasons": {
-    "CONNECT_TIMEOUT": 120,
-    "CORE_START_FAILED": 1,
-    "DNS_FAILED": 8,
-    "DUPLICATE": 1709,
-    "HTTP_FAILED": 19,
-    "NOT_WHITELISTED": 2457,
+    "CONNECT_TIMEOUT": 95,
+    "CORE_START_FAILED": 7,
+    "DNS_FAILED": 10,
+    "DUPLICATE": 1465,
+    "HTTP_FAILED": 20,
+    "NOT_WHITELISTED": 1951,
     "PARSE_ERROR": 57,
-    "PROXY_FAILED": 308,
+    "PROXY_FAILED": 317,
     "SOURCE_EMPTY": 1,
-    "TOO_SLOW": 50,
-    "UNSTABLE": 38,
-    "UNSUPPORTED": 564,
+    "TOO_SLOW": 56,
+    "UNSTABLE": 32,
+    "UNSUPPORTED": 578,
     "WHITE_DNS_FAILED": 73
   },
   "mac_verification": {
     "main": {
       "before_mac": 300,
       "failure_reasons": {
-        "DOWNLOAD_R1_FAILED": 1,
-        "HTTPS_FAILED": 291,
-        "TOO_SLOW": 1
+        "HTTPS_FAILED": 293,
+        "STALLED": 1
       },
-      "final": 7,
-      "mac_fail": 293,
-      "mac_pass": 7,
+      "final": 6,
+      "mac_fail": 294,
+      "mac_pass": 6,
       "mac_tested": 300
     },
     "white": {
-      "before_mac": 2,
+      "before_mac": 3,
       "failure_reasons": {
-        "HTTPS_FAILED": 2
+        "HTTPS_FAILED": 3
       },
       "final": 0,
-      "mac_fail": 2,
+      "mac_fail": 3,
       "mac_pass": 0,
-      "mac_tested": 2
+      "mac_tested": 3
     }
   },
-  "main": 7,
-  "median_latency_ms": 450.67,
-  "parsed": 7491,
+  "main": 6,
+  "median_latency_ms": 417.99,
+  "parsed": 7150,
   "pipeline_version": 4,
   "production": {
-    "all": 703,
-    "main": 7,
+    "all": 710,
+    "main": 6,
     "white": 0
   },
   "project": "Swift",
   "protocols": {
-    "hysteria2": 15,
-    "ss": 87,
-    "trojan": 12,
-    "vless": 565,
+    "hysteria2": 17,
+    "ss": 95,
+    "trojan": 13,
+    "vless": 561,
     "vmess": 24
   },
   "published": true,
@@ -143,11 +142,11 @@
     }
   },
   "selection": {
-    "eligible_not_sent_to_mac": 147,
-    "main_cloud_pass": 783,
+    "eligible_not_sent_to_mac": 206,
+    "main_cloud_pass": 791,
     "main_cloud_selected": 1000,
-    "main_eligible": 447,
-    "main_pre_mac_dropped_by_capacity": 147,
+    "main_eligible": 506,
+    "main_pre_mac_dropped_by_capacity": 206,
     "main_pre_mac_selected": 300
   },
   "source_status": {
@@ -179,29 +178,31 @@
     "zieng2-white": "OK"
   },
   "sources": {
-    "0xRadikal": 507,
+    "0xRadikal": 524,
     "aetris": 6,
-    "akres": 11,
-    "igareck": 12,
+    "airlink": 3,
+    "akres": 13,
+    "igareck": 20,
     "kizyak": 12,
-    "matryoshka": 20,
-    "rjsxrd": 229,
-    "rkp": 39,
-    "vovaplusexp": 101,
-    "zieng2": 3
+    "matryoshka": 23,
+    "pyps": 1,
+    "rjsxrd": 128,
+    "rkp": 40,
+    "vovaplusexp": 105,
+    "zieng2": 4
   },
   "tagline": "Filter the garbage. Keep what works.",
-  "tested": 1242,
-  "unique": 5782,
-  "updated_at": "2026-08-30T23:51:15Z",
+  "tested": 1240,
+  "unique": 5685,
+  "updated_at": "2026-08-31T00:49:18Z",
   "white": 0,
   "white_evidence": {
     "cidr_source": "hxehex-white-cidr",
     "domain_source": "hxehex-white-domains",
-    "eligible": 1411,
+    "eligible": 1400,
     "published": {
       "cidr": 1,
-      "sni": 1
+      "sni": 2
     }
   }
 }
