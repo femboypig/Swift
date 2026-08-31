@@ -1,3 +1,4 @@
+import asyncio
 import unittest
 import json
 import tempfile
@@ -5,14 +6,23 @@ from pathlib import Path
 from unittest.mock import patch
 
 from swiftproxy.models import ProxyConfig, RankedConfig, TestResult
+from swiftproxy.main import _cloud_lane_counts, _tcp_tls_telemetry_counts
+from swiftproxy.output import write_final_subscriptions
+from swiftproxy.parsing import parse_uri, serialize_uri
+from swiftproxy.ru_verify import RuVerifyResult, run_ru_verify
 from swiftproxy.scoring import choose_candidates, select_pre_mac_candidates, diverse_selection
-from swiftproxy.ru_verify import RuVerifyResult
 
 
 import hashlib
 
 
-def _make_config(fp: str, lane: str | list[str] = "main", host: str = "1.1.1.1", port: int = 443, proto: str = "vless") -> ProxyConfig:
+def _make_config(
+    fp: str,
+    lane: str | list[str] = "main",
+    host: str = "1.1.1.1",
+    port: int = 443,
+    proto: str = "vless",
+) -> ProxyConfig:
     lanes_set = {lane} if isinstance(lane, str) else set(lane)
     h = hashlib.md5(fp.encode()).hexdigest()
     uuid_str = f"{h[:8]}-{h[8:12]}-{h[12:16]}-{h[16:20]}-{h[20:32]}"
@@ -21,7 +31,9 @@ def _make_config(fp: str, lane: str | list[str] = "main", host: str = "1.1.1.1",
         host=host,
         port=port,
         auth={"uuid": uuid_str},
-        options={"security": "reality", "sni": "example.com", "public_key": "abc", "short_id": ""} if proto == "vless" else {},
+        options={"security": "reality", "sni": "example.com", "public_key": "abc", "short_id": ""}
+        if proto == "vless"
+        else {},
         sources={"test"},
         lanes=lanes_set,
         remark=f"test_{fp}",
@@ -71,7 +83,12 @@ class TestExhaustiveValidationPipeline(unittest.TestCase):
             RankedConfig(
                 config=_make_config(str(i), lane="main"),
                 lane="main",
-                result=TestResult(_make_config(str(i)).fingerprint, "main", "2026-08-31T00:00:00Z", success_count=1),
+                result=TestResult(
+                    _make_config(str(i)).fingerprint,
+                    "main",
+                    "2026-08-31T00:00:00Z",
+                    success_count=1,
+                ),
                 score=80.0,
                 state="active",
                 availability=1.0,
@@ -87,7 +104,12 @@ class TestExhaustiveValidationPipeline(unittest.TestCase):
             RankedConfig(
                 config=_make_config(str(i), lane="main"),
                 lane="main",
-                result=TestResult(_make_config(str(i)).fingerprint, "main", "2026-08-31T00:00:00Z", success_count=1),
+                result=TestResult(
+                    _make_config(str(i)).fingerprint,
+                    "main",
+                    "2026-08-31T00:00:00Z",
+                    success_count=1,
+                ),
                 score=80.0,
                 state="active",
                 availability=1.0,
@@ -103,7 +125,12 @@ class TestExhaustiveValidationPipeline(unittest.TestCase):
             RankedConfig(
                 config=_make_config(str(i), lane="main"),
                 lane="main",
-                result=TestResult(_make_config(str(i)).fingerprint, "main", "2026-08-31T00:00:00Z", success_count=1),
+                result=TestResult(
+                    _make_config(str(i)).fingerprint,
+                    "main",
+                    "2026-08-31T00:00:00Z",
+                    success_count=1,
+                ),
                 score=80.0,
                 state="active",
                 availability=1.0,
@@ -119,7 +146,12 @@ class TestExhaustiveValidationPipeline(unittest.TestCase):
             RankedConfig(
                 config=_make_config(str(i), lane="main"),
                 lane="main",
-                result=TestResult(_make_config(str(i)).fingerprint, "main", "2026-08-31T00:00:00Z", success_count=1),
+                result=TestResult(
+                    _make_config(str(i)).fingerprint,
+                    "main",
+                    "2026-08-31T00:00:00Z",
+                    success_count=1,
+                ),
                 score=80.0,
                 state="active",
                 availability=1.0,
@@ -135,7 +167,12 @@ class TestExhaustiveValidationPipeline(unittest.TestCase):
             RankedConfig(
                 config=_make_config(str(i), lane="main"),
                 lane="main",
-                result=TestResult(_make_config(str(i)).fingerprint, "main", "2026-08-31T00:00:00Z", success_count=1),
+                result=TestResult(
+                    _make_config(str(i)).fingerprint,
+                    "main",
+                    "2026-08-31T00:00:00Z",
+                    success_count=1,
+                ),
                 score=80.0,
                 state="active",
                 availability=1.0,
@@ -153,7 +190,12 @@ class TestExhaustiveValidationPipeline(unittest.TestCase):
             RankedConfig(
                 config=_make_config(str(i), lane="main", host=f"10.0.{i}.1"),
                 lane="main",
-                result=TestResult(_make_config(str(i)).fingerprint, "main", "2026-08-31T00:00:00Z", success_count=1),
+                result=TestResult(
+                    _make_config(str(i)).fingerprint,
+                    "main",
+                    "2026-08-31T00:00:00Z",
+                    success_count=1,
+                ),
                 score=80.0 - i * 0.1,
                 state="active",
                 availability=1.0,
@@ -167,9 +209,14 @@ class TestExhaustiveValidationPipeline(unittest.TestCase):
     def test_11_80_mac_pass_publishes_80(self):
         passed = [
             RankedConfig(
-                config=_make_config(str(i), lane="main", host=f"10.{i//256}.{i%256}.1"),
+                config=_make_config(str(i), lane="main", host=f"10.{i // 256}.{i % 256}.1"),
                 lane="main",
-                result=TestResult(_make_config(str(i)).fingerprint, "main", "2026-08-31T00:00:00Z", success_count=1),
+                result=TestResult(
+                    _make_config(str(i)).fingerprint,
+                    "main",
+                    "2026-08-31T00:00:00Z",
+                    success_count=1,
+                ),
                 score=80.0 - i * 0.1,
                 state="active",
                 availability=1.0,
@@ -183,9 +230,14 @@ class TestExhaustiveValidationPipeline(unittest.TestCase):
     def test_12_81_mac_pass_publishes_best_80(self):
         passed = [
             RankedConfig(
-                config=_make_config(str(i), lane="main", host=f"10.{i//256}.{i%256}.1"),
+                config=_make_config(str(i), lane="main", host=f"10.{i // 256}.{i % 256}.1"),
                 lane="main",
-                result=TestResult(_make_config(str(i)).fingerprint, "main", "2026-08-31T00:00:00Z", success_count=1),
+                result=TestResult(
+                    _make_config(str(i)).fingerprint,
+                    "main",
+                    "2026-08-31T00:00:00Z",
+                    success_count=1,
+                ),
                 score=90.0 - i * 0.1,
                 state="active",
                 availability=1.0,
@@ -201,9 +253,14 @@ class TestExhaustiveValidationPipeline(unittest.TestCase):
     def test_13_200_mac_pass_publishes_best_80(self):
         passed = [
             RankedConfig(
-                config=_make_config(str(i), lane="main", host=f"10.{i//256}.{i%256}.1"),
+                config=_make_config(str(i), lane="main", host=f"10.{i // 256}.{i % 256}.1"),
                 lane="main",
-                result=TestResult(_make_config(str(i)).fingerprint, "main", "2026-08-31T00:00:00Z", success_count=1),
+                result=TestResult(
+                    _make_config(str(i)).fingerprint,
+                    "main",
+                    "2026-08-31T00:00:00Z",
+                    success_count=1,
+                ),
                 score=90.0 - i * 0.1,
                 state="active",
                 availability=1.0,
@@ -223,19 +280,25 @@ class TestExhaustiveValidationPipeline(unittest.TestCase):
             core.write_text("")
             main_cfg = _make_config("fail1", lane="main")
             from swiftproxy.parsing import serialize_uri
+
             (root / "sub/main.txt").write_text(serialize_uri(main_cfg) + "\n")
             (root / "data/order.json").write_text(json.dumps({"main": []}))
-            (root / "stats.json").write_text(json.dumps({
-                "project": "Swift",
-                "tagline": "Filter the garbage. Keep what works.",
-                "production": {"main": 0, "white": 0},
-            }))
+            (root / "stats.json").write_text(
+                json.dumps(
+                    {
+                        "project": "Swift",
+                        "tagline": "Filter the garbage. Keep what works.",
+                        "production": {"main": 0, "white": 0},
+                    }
+                )
+            )
 
             async def fake_verify_single(cfg, *args, **kwargs):
                 return RuVerifyResult(cfg.fingerprint, passed=False, reason="HTTPS_FAILED")
 
             with patch("swiftproxy.ru_verify._verify_single", side_effect=fake_verify_single):
                 from swiftproxy.ru_verify import main as ru_verify_main
+
                 ru_verify_main(["--root", str(root), "--core", str(core)])
 
             published = (root / "sub/main.txt").read_text().strip()
@@ -250,22 +313,32 @@ class TestExhaustiveValidationPipeline(unittest.TestCase):
             core = root / "sing-box"
             core.write_text("")
             from swiftproxy.parsing import serialize_uri, parse_uri
+
             white_cfg = _make_config("w_pass1", lane="white", proto="vless")
             parsed_cfg = parse_uri(serialize_uri(white_cfg))
             (root / "sub/white.txt").write_text(serialize_uri(white_cfg) + "\n")
             (root / "data/order.json").write_text(json.dumps({"white": []}))
-            (root / "data/ru_probe_white.json").write_text(json.dumps({parsed_cfg.fingerprint: "fail"}))
-            (root / "stats.json").write_text(json.dumps({
-                "project": "Swift",
-                "tagline": "Filter the garbage. Keep what works.",
-                "production": {"main": 0, "white": 0},
-            }))
+            (root / "data/ru_probe_white.json").write_text(
+                json.dumps({parsed_cfg.fingerprint: "fail"})
+            )
+            (root / "stats.json").write_text(
+                json.dumps(
+                    {
+                        "project": "Swift",
+                        "tagline": "Filter the garbage. Keep what works.",
+                        "production": {"main": 0, "white": 0},
+                    }
+                )
+            )
 
             async def fake_verify_single(cfg, *args, **kwargs):
-                return RuVerifyResult(cfg.fingerprint, passed=True, r1_kbps=150.0, r2_kbps=160.0, https_passed=3)
+                return RuVerifyResult(
+                    cfg.fingerprint, passed=True, r1_kbps=150.0, r2_kbps=160.0, https_passed=3
+                )
 
             with patch("swiftproxy.ru_verify._verify_single", side_effect=fake_verify_single):
                 from swiftproxy.ru_verify import main as ru_verify_main
+
                 ru_verify_main(["--root", str(root), "--core", str(core)])
 
             published = (root / "sub/white.txt").read_text().strip()
@@ -283,22 +356,30 @@ class TestExhaustiveValidationPipeline(unittest.TestCase):
             core = root / "sing-box"
             core.write_text("")
             from swiftproxy.parsing import serialize_uri, parse_uri
+
             white_cfg = _make_config("w_fail1", lane="white", proto="vless")
             parsed_cfg = parse_uri(serialize_uri(white_cfg))
             (root / "sub/white.txt").write_text(serialize_uri(white_cfg) + "\n")
             (root / "data/order.json").write_text(json.dumps({"white": []}))
-            (root / "data/ru_probe_white.json").write_text(json.dumps({parsed_cfg.fingerprint: "pass"}))
-            (root / "stats.json").write_text(json.dumps({
-                "project": "Swift",
-                "tagline": "Filter the garbage. Keep what works.",
-                "production": {"main": 0, "white": 0},
-            }))
+            (root / "data/ru_probe_white.json").write_text(
+                json.dumps({parsed_cfg.fingerprint: "pass"})
+            )
+            (root / "stats.json").write_text(
+                json.dumps(
+                    {
+                        "project": "Swift",
+                        "tagline": "Filter the garbage. Keep what works.",
+                        "production": {"main": 0, "white": 0},
+                    }
+                )
+            )
 
             async def fake_verify_single(cfg, *args, **kwargs):
                 return RuVerifyResult(cfg.fingerprint, passed=False, reason="HTTPS_FAILED")
 
             with patch("swiftproxy.ru_verify._verify_single", side_effect=fake_verify_single):
                 from swiftproxy.ru_verify import main as ru_verify_main
+
                 ru_verify_main(["--root", str(root), "--core", str(core)])
 
             published = (root / "sub/white.txt").read_text().strip()
@@ -316,22 +397,32 @@ class TestExhaustiveValidationPipeline(unittest.TestCase):
             core = root / "sing-box"
             core.write_text("")
             from swiftproxy.parsing import serialize_uri, parse_uri
+
             white_cfg = _make_config("w_infra1", lane="white", proto="vless")
             parsed_cfg = parse_uri(serialize_uri(white_cfg))
             (root / "sub/white.txt").write_text(serialize_uri(white_cfg) + "\n")
             (root / "data/order.json").write_text(json.dumps({"white": []}))
-            (root / "data/ru_probe_white.json").write_text(json.dumps({parsed_cfg.fingerprint: "unknown"}))
-            (root / "stats.json").write_text(json.dumps({
-                "project": "Swift",
-                "tagline": "Filter the garbage. Keep what works.",
-                "production": {"main": 0, "white": 0},
-            }))
+            (root / "data/ru_probe_white.json").write_text(
+                json.dumps({parsed_cfg.fingerprint: "unknown"})
+            )
+            (root / "stats.json").write_text(
+                json.dumps(
+                    {
+                        "project": "Swift",
+                        "tagline": "Filter the garbage. Keep what works.",
+                        "production": {"main": 0, "white": 0},
+                    }
+                )
+            )
 
             async def fake_verify_single(cfg, *args, **kwargs):
-                return RuVerifyResult(cfg.fingerprint, passed=True, r1_kbps=150.0, r2_kbps=160.0, https_passed=3)
+                return RuVerifyResult(
+                    cfg.fingerprint, passed=True, r1_kbps=150.0, r2_kbps=160.0, https_passed=3
+                )
 
             with patch("swiftproxy.ru_verify._verify_single", side_effect=fake_verify_single):
                 from swiftproxy.ru_verify import main as ru_verify_main
+
                 ru_verify_main(["--root", str(root), "--core", str(core)])
 
             published = (root / "sub/white.txt").read_text().strip()
@@ -349,25 +440,33 @@ class TestExhaustiveValidationPipeline(unittest.TestCase):
             core = root / "sing-box"
             core.write_text("")
             from swiftproxy.parsing import serialize_uri, parse_uri
+
             cfg = _make_config("shared1", lane=["main", "white"], proto="vless")
             parsed_cfg = parse_uri(serialize_uri(cfg))
             (root / "sub/main.txt").write_text(serialize_uri(cfg) + "\n")
             (root / "sub/white.txt").write_text(serialize_uri(cfg) + "\n")
             (root / "data/order.json").write_text(json.dumps({"main": [], "white": []}))
-            (root / "stats.json").write_text(json.dumps({
-                "project": "Swift",
-                "tagline": "Filter the garbage. Keep what works.",
-                "production": {"main": 0, "white": 0},
-            }))
+            (root / "stats.json").write_text(
+                json.dumps(
+                    {
+                        "project": "Swift",
+                        "tagline": "Filter the garbage. Keep what works.",
+                        "production": {"main": 0, "white": 0},
+                    }
+                )
+            )
 
             test_calls = []
 
             async def fake_verify_single(config, *args, **kwargs):
                 test_calls.append(config.fingerprint)
-                return RuVerifyResult(config.fingerprint, passed=True, r1_kbps=100.0, r2_kbps=100.0, https_passed=3)
+                return RuVerifyResult(
+                    config.fingerprint, passed=True, r1_kbps=100.0, r2_kbps=100.0, https_passed=3
+                )
 
             with patch("swiftproxy.ru_verify._verify_single", side_effect=fake_verify_single):
                 from swiftproxy.ru_verify import main as ru_verify_main
+
                 ru_verify_main(["--root", str(root), "--core", str(core)])
 
             self.assertEqual(test_calls, [parsed_cfg.fingerprint])
@@ -383,32 +482,44 @@ class TestExhaustiveValidationPipeline(unittest.TestCase):
             core = root / "sing-box"
             core.write_text("")
             from swiftproxy.parsing import serialize_uri, parse_uri
+
             cfg1 = _make_config("fp1", lane="main")
             cfg2 = _make_config("fp2", lane="main", host="1.0.0.1")
             parsed_1 = parse_uri(serialize_uri(cfg1))
             parsed_2 = parse_uri(serialize_uri(cfg2))
             (root / "sub/main.txt").write_text(f"{serialize_uri(cfg1)}\n{serialize_uri(cfg2)}\n")
             (root / "data/order.json").write_text(json.dumps({"main": []}))
-            (root / "stats.json").write_text(json.dumps({
-                "project": "Swift",
-                "tagline": "Filter the garbage. Keep what works.",
-                "production": {"main": 0, "white": 0},
-                "funnel": {
-                    "main": {
-                        "main_cloud_expected": 2000,
-                        "main_cloud_tested": 1500,
-                        "main_cloud_untested": 500,
+            (root / "stats.json").write_text(
+                json.dumps(
+                    {
+                        "project": "Swift",
+                        "tagline": "Filter the garbage. Keep what works.",
+                        "production": {"main": 0, "white": 0},
+                        "funnel": {
+                            "main": {
+                                "main_cloud_expected": 2000,
+                                "main_cloud_tested": 1500,
+                                "main_cloud_untested": 500,
+                            }
+                        },
                     }
-                }
-            }))
+                )
+            )
 
             async def fake_verify_single(cfg, *args, **kwargs):
                 if cfg.fingerprint == parsed_1.fingerprint:
-                    return RuVerifyResult(parsed_1.fingerprint, passed=True, r1_kbps=100.0, r2_kbps=100.0, https_passed=3)
+                    return RuVerifyResult(
+                        parsed_1.fingerprint,
+                        passed=True,
+                        r1_kbps=100.0,
+                        r2_kbps=100.0,
+                        https_passed=3,
+                    )
                 return RuVerifyResult(parsed_2.fingerprint, passed=False, reason="HTTPS_FAILED")
 
             with patch("swiftproxy.ru_verify._verify_single", side_effect=fake_verify_single):
                 from swiftproxy.ru_verify import main as ru_verify_main
+
                 ru_verify_main(["--root", str(root), "--core", str(core)])
 
             stats = json.loads((root / "stats.json").read_text())
@@ -423,21 +534,34 @@ class TestExhaustiveValidationPipeline(unittest.TestCase):
             (root / "data").mkdir(parents=True)
             core = root / "sing-box"
             core.write_text("")
-            configs = [_make_config(str(i), lane="main", host=f"140.82.112.{i+1}") for i in range(12)]
+            configs = [
+                _make_config(str(i), lane="main", host=f"140.82.112.{i + 1}") for i in range(12)
+            ]
             from swiftproxy.parsing import serialize_uri
+
             (root / "sub/main.txt").write_text("\n".join(serialize_uri(c) for c in configs) + "\n")
             (root / "data/order.json").write_text(json.dumps({"main": []}))
-            (root / "stats.json").write_text(json.dumps({
-                "project": "Swift",
-                "tagline": "Filter the garbage. Keep what works.",
-                "production": {"main": 0, "white": 0},
-            }))
+            (root / "stats.json").write_text(
+                json.dumps(
+                    {
+                        "project": "Swift",
+                        "tagline": "Filter the garbage. Keep what works.",
+                        "production": {"main": 0, "white": 0},
+                    }
+                )
+            )
 
             async def fake_verify_single(cfg, *args, **kwargs):
-                return RuVerifyResult(cfg.fingerprint, passed=False, reason="INFRA_FAIL", is_infrastructure_failure=True)
+                return RuVerifyResult(
+                    cfg.fingerprint,
+                    passed=False,
+                    reason="INFRA_FAIL",
+                    is_infrastructure_failure=True,
+                )
 
             with patch("swiftproxy.ru_verify._verify_single", side_effect=fake_verify_single):
                 from swiftproxy.ru_verify import main as ru_verify_main
+
                 exit_code = ru_verify_main(["--root", str(root), "--core", str(core)])
 
             self.assertEqual(exit_code, 1)
@@ -461,13 +585,17 @@ class TestExhaustiveValidationPipeline(unittest.TestCase):
             (root / "data/mac-candidates/main.txt").write_text(serialize_uri(candidate) + "\n")
             (root / "data/mac-candidates/white.txt").write_text("")
             (root / "data/order.json").write_text(json.dumps({"main": [], "white": []}))
-            (root / "stats.json").write_text(json.dumps({
-                "project": "Swift",
-                "tagline": "Filter the garbage. Keep what works.",
-                "published": False,
-                "stage": "cloud_prepared",
-                "production": {"main": 1, "white": 0},
-            }))
+            (root / "stats.json").write_text(
+                json.dumps(
+                    {
+                        "project": "Swift",
+                        "tagline": "Filter the garbage. Keep what works.",
+                        "published": False,
+                        "stage": "cloud_prepared",
+                        "production": {"main": 1, "white": 0},
+                    }
+                )
+            )
 
             tested = []
 
@@ -483,6 +611,7 @@ class TestExhaustiveValidationPipeline(unittest.TestCase):
 
             with patch("swiftproxy.ru_verify._verify_single", side_effect=fake_verify_single):
                 from swiftproxy.ru_verify import main as ru_verify_main
+
                 exit_code = ru_verify_main(["--root", str(root), "--core", str(core)])
 
             self.assertEqual(exit_code, 0)
@@ -493,6 +622,185 @@ class TestExhaustiveValidationPipeline(unittest.TestCase):
             stats = json.loads((root / "stats.json").read_text())
             self.assertTrue(stats["published"])
             self.assertEqual(stats["stage"], "production")
+
+    def test_exhaustive_counters_use_resolved_cloud_population(self):
+        configs = [_make_config(str(index), host=f"11.{index}.0.1") for index in range(100)]
+        resolved = {config.fingerprint for config in configs[:90]}
+        results = {}
+        for index, config in enumerate(configs[:90]):
+            result = TestResult(
+                config.fingerprint,
+                "main",
+                "2026-08-31T00:00:00Z",
+                success_count=1 if index < 40 else 0,
+                reason=None if index < 40 else "PROXY_FAILED",
+            )
+            results[(config.fingerprint, "main")] = result
+
+        counts = _cloud_lane_counts("main", configs, resolved, results, 20, 20)
+        self.assertEqual(
+            counts,
+            {
+                "main_resolution_failed": 10,
+                "main_cloud_expected": 90,
+                "main_cloud_tested": 90,
+                "main_cloud_untested": 0,
+                "main_cloud_worked": 40,
+                "main_cloud_pass": 40,
+                "main_history_eligible": 20,
+                "main_mac_expected": 20,
+                "main_cloud_completion_pct": 100.0,
+            },
+        )
+
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            root = Path(tmp_dir)
+            (root / "sub/happ").mkdir(parents=True)
+            (root / "data/mac-candidates").mkdir(parents=True)
+            candidates = configs[:20]
+            (root / "data/mac-candidates/main.txt").write_text(
+                "\n".join(serialize_uri(config) for config in candidates) + "\n"
+            )
+            (root / "data/mac-candidates/white.txt").write_text("")
+            funnel_main = {
+                "main_unique": 100,
+                **counts,
+                "main_mac_tested": 0,
+                "main_mac_untested": 20,
+                "main_mac_sustained_pass": 0,
+                "main_published": 0,
+            }
+            (root / "stats.json").write_text(
+                json.dumps(
+                    {
+                        "project": "Swift",
+                        "tagline": "Filter the garbage. Keep what works.",
+                        "funnel": {"main": funnel_main},
+                    }
+                )
+            )
+
+            passing = {parse_uri(serialize_uri(config)).fingerprint for config in candidates[:5]}
+
+            async def fake_verify(config, *args):
+                return RuVerifyResult(
+                    config.fingerprint,
+                    passed=config.fingerprint in passing,
+                    reason=None if config.fingerprint in passing else "HTTPS_FAILED",
+                    r1_kbps=100.0 if config.fingerprint in passing else 0.0,
+                    r2_kbps=100.0 if config.fingerprint in passing else 0.0,
+                    https_passed=3 if config.fingerprint in passing else 0,
+                )
+
+            with patch("swiftproxy.ru_verify._verify_single", side_effect=fake_verify):
+                self.assertEqual(asyncio.run(run_ru_verify(root, "sing-box")), 0)
+
+            funnel = json.loads((root / "stats.json").read_text())["funnel"]["main"]
+            expected = {
+                "main_unique": 100,
+                "main_resolution_failed": 10,
+                "main_cloud_expected": 90,
+                "main_cloud_tested": 90,
+                "main_cloud_untested": 0,
+                "main_cloud_pass": 40,
+                "main_history_eligible": 20,
+                "main_mac_expected": 20,
+                "main_mac_tested": 20,
+                "main_mac_untested": 0,
+                "main_mac_sustained_pass": 5,
+                "main_published": 5,
+            }
+            for key, value in expected.items():
+                self.assertEqual(funnel[key], value, key)
+
+    def test_mac_crash_preserves_production_and_handoff(self):
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            root = Path(tmp_dir)
+            (root / "sub/happ").mkdir(parents=True)
+            (root / "data/mac-candidates").mkdir(parents=True)
+            old = _make_config("old", host="12.1.0.1")
+            candidate = _make_config("candidate", host="12.2.0.1")
+            originals = {
+                root / "sub/main.txt": serialize_uri(old) + "\n",
+                root / "sub/white.txt": "",
+                root / "sub/happ/main.txt": "#profile-title: Swift Main\nold\n",
+                root / "sub/happ/white.txt": "#profile-title: Swift White\n",
+            }
+            for path, content in originals.items():
+                path.write_text(content)
+            (root / "data/mac-candidates/main.txt").write_text(serialize_uri(candidate) + "\n")
+            (root / "data/mac-candidates/white.txt").write_text("")
+
+            async def crash(*args):
+                raise RuntimeError("simulated Mac interruption")
+
+            with patch("swiftproxy.ru_verify._verify_single", side_effect=crash):
+                with self.assertRaisesRegex(RuntimeError, "simulated Mac interruption"):
+                    asyncio.run(run_ru_verify(root, "sing-box"))
+
+            for path, content in originals.items():
+                self.assertEqual(path.read_text(), content)
+            self.assertTrue((root / "data/mac-candidates/main.txt").exists())
+
+    def test_final_subscription_batch_rolls_back_on_write_error(self):
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            root = Path(tmp_dir)
+            (root / "sub/happ").mkdir(parents=True)
+            old = _make_config("old", host="13.1.0.1")
+            new = _make_config("new", host="13.2.0.1")
+            originals = {
+                root / "sub/main.txt": serialize_uri(old) + "\n",
+                root / "sub/white.txt": "",
+                root / "sub/happ/main.txt": "#profile-title: Swift Main\nold\n",
+                root / "sub/happ/white.txt": "#profile-title: Swift White\n",
+            }
+            for path, content in originals.items():
+                path.write_text(content)
+
+            from swiftproxy.output import atomic_write
+
+            calls = 0
+
+            def fail_once(path, content):
+                nonlocal calls
+                calls += 1
+                if calls == 2:
+                    raise OSError("simulated replace failure")
+                return atomic_write(path, content)
+
+            with patch("swiftproxy.output.atomic_write", side_effect=fail_once):
+                with self.assertRaisesRegex(OSError, "simulated replace failure"):
+                    write_final_subscriptions(
+                        root,
+                        [serialize_uri(new)],
+                        [],
+                        "https://github.com/femboypig/Swift",
+                    )
+
+            for path, content in originals.items():
+                self.assertEqual(path.read_text(), content)
+
+    def test_tcp_tls_telemetry_reports_sample_scope(self):
+        targets = [
+            {"host": "1.1.1.1", "port": 443, "sni": "one.example"},
+            {"host": "8.8.8.8", "port": 443, "sni": "two.example"},
+            {"host": "9.9.9.9", "port": 443, "sni": "three.example"},
+        ]
+        telemetry = _tcp_tls_telemetry_counts(
+            targets,
+            {
+                "1.1.1.1:443": {"ok": True},
+                "8.8.8.8:443": {"ok": False},
+            },
+            eligible_population=1435,
+        )
+        self.assertEqual(telemetry["tcp_tls_telemetry_population"], 1435)
+        self.assertEqual(telemetry["tcp_tls_telemetry_expected"], 3)
+        self.assertEqual(telemetry["tcp_tls_telemetry_tested"], 2)
+        self.assertEqual(telemetry["white_tcp_tls_pass"], 1)
+        self.assertEqual(telemetry["white_tcp_tls_fail"], 1)
+        self.assertEqual(telemetry["white_tcp_tls_unknown"], 1)
+        self.assertIn("max 60", telemetry["tcp_tls_telemetry_sampling_policy"])
 
 
 if __name__ == "__main__":
