@@ -136,14 +136,22 @@ def _source_status(results: list[Any]) -> dict[str, str]:
 def _jobs(
     candidates: dict[str, list[ProxyConfig]], resolved: set[str]
 ) -> list[tuple[ProxyConfig, str]]:
-    jobs = []
+    lane_jobs: dict[str, list[tuple[ProxyConfig, str]]] = {"main": [], "white": []}
     seen: set[tuple[str, str]] = set()
     for lane in ("main", "white"):
         for config in candidates[lane]:
             key = (config.fingerprint, lane)
             if config.fingerprint in resolved and key not in seen:
-                jobs.append((config, lane))
+                lane_jobs[lane].append((config, lane))
                 seen.add(key)
+
+    # A lane must not inherit the runner conditions at only one end of a long run.
+    # This still schedules every lane independently; it only interleaves their order.
+    jobs: list[tuple[ProxyConfig, str]] = []
+    for index in range(max(map(len, lane_jobs.values()), default=0)):
+        for lane in ("main", "white"):
+            if index < len(lane_jobs[lane]):
+                jobs.append(lane_jobs[lane][index])
     return jobs
 
 

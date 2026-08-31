@@ -6,7 +6,7 @@ from pathlib import Path
 from unittest.mock import AsyncMock, patch
 
 from swiftproxy.models import ProxyConfig, RankedConfig, TestResult
-from swiftproxy.main import _cloud_lane_counts, _tcp_tls_telemetry_counts
+from swiftproxy.main import _cloud_lane_counts, _jobs, _tcp_tls_telemetry_counts
 from swiftproxy.output import write_final_subscriptions
 from swiftproxy.parsing import parse_uri, serialize_uri
 from swiftproxy.ru_verify import MacPreflightResult, RuVerifyResult, run_ru_verify
@@ -56,6 +56,20 @@ class TestExhaustiveValidationPipeline(unittest.TestCase):
         configs = [_make_config(str(i), lane="main") for i in range(50)]
         scheduled = choose_candidates(configs, {}, "main", limit=None)
         self.assertEqual(len(scheduled), 50)
+
+    def test_cloud_jobs_interleave_lanes_without_dropping_work(self):
+        main = [_make_config(f"main-{index}", lane="main") for index in range(4)]
+        white = [_make_config(f"white-{index}", lane="white") for index in range(2)]
+        jobs = _jobs(
+            {"main": main, "white": white},
+            {config.fingerprint for config in [*main, *white]},
+        )
+
+        self.assertEqual(
+            [lane for _, lane in jobs], ["main", "white", "main", "white", "main", "main"]
+        )
+        self.assertEqual(len(jobs), 6)
+        self.assertEqual(len({(config.fingerprint, lane) for config, lane in jobs}), 6)
 
     # 2. 1000 unique Main -> all 1000 scheduled for Cloud
     def test_02_1000_unique_main_all_scheduled(self):
