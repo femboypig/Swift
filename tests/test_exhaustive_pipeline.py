@@ -780,6 +780,65 @@ class TestExhaustiveValidationPipeline(unittest.TestCase):
             self.assertEqual((root / "sub/main.txt").read_text(), old)
             self.assertEqual((root / "data/mac-candidates/main.txt").read_text(), candidate)
 
+    def test_unhealthy_collapse_postflight_preserves_last_known_good(self):
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            root = Path(tmp_dir)
+            (root / "sub").mkdir()
+            (root / "data/mac-candidates").mkdir(parents=True)
+            old = serialize_uri(_make_config("old-collapse", host="12.5.0.1")) + "\n"
+            candidate = serialize_uri(_make_config("candidate-collapse", host="12.6.0.1")) + "\n"
+            (root / "sub/main.txt").write_text(old)
+            (root / "sub/white.txt").write_text("")
+            (root / "data/mac-candidates/main.txt").write_text(candidate)
+            (root / "data/mac-candidates/white.txt").write_text("")
+            healthy = MacPreflightResult(True, "wlan0", True, 3, 3, True)
+            unhealthy = MacPreflightResult(False, "wlan0", True, 0, 3, False, {"CURL_28": 4})
+
+            async def proxy_failure(config, *args):
+                return RuVerifyResult(config.fingerprint, False, reason="HTTPS_FAILED")
+
+            with (
+                patch.dict("os.environ", {"SWIFT_BIND_INTERFACE": "wlan0"}),
+                patch(
+                    "swiftproxy.ru_verify._mac_preflight",
+                    new=AsyncMock(side_effect=[healthy, unhealthy]),
+                ),
+                patch("swiftproxy.ru_verify._verify_single", side_effect=proxy_failure),
+            ):
+                self.assertEqual(asyncio.run(run_ru_verify(root, "sing-box")), 1)
+
+            self.assertEqual((root / "sub/main.txt").read_text(), old)
+            self.assertEqual((root / "data/mac-candidates/main.txt").read_text(), candidate)
+
+    def test_healthy_postflight_allows_genuine_zero_proxy_result(self):
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            root = Path(tmp_dir)
+            (root / "sub").mkdir()
+            (root / "data/mac-candidates").mkdir(parents=True)
+            old = serialize_uri(_make_config("old-zero", host="12.7.0.1")) + "\n"
+            candidate = serialize_uri(_make_config("candidate-zero", host="12.8.0.1")) + "\n"
+            (root / "sub/main.txt").write_text(old)
+            (root / "sub/white.txt").write_text("")
+            (root / "data/mac-candidates/main.txt").write_text(candidate)
+            (root / "data/mac-candidates/white.txt").write_text("")
+            healthy = MacPreflightResult(True, "wlan0", True, 3, 3, True)
+
+            async def proxy_failure(config, *args):
+                return RuVerifyResult(config.fingerprint, False, reason="HTTPS_FAILED")
+
+            with (
+                patch.dict("os.environ", {"SWIFT_BIND_INTERFACE": "wlan0"}),
+                patch(
+                    "swiftproxy.ru_verify._mac_preflight",
+                    new=AsyncMock(side_effect=[healthy, healthy]),
+                ),
+                patch("swiftproxy.ru_verify._verify_single", side_effect=proxy_failure),
+            ):
+                self.assertEqual(asyncio.run(run_ru_verify(root, "sing-box")), 0)
+
+            self.assertEqual((root / "sub/main.txt").read_text(), "")
+            self.assertFalse((root / "data/mac-candidates").exists())
+
     def test_final_subscription_batch_rolls_back_on_write_error(self):
         with tempfile.TemporaryDirectory() as tmp_dir:
             root = Path(tmp_dir)

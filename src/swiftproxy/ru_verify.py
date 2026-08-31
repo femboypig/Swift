@@ -219,6 +219,18 @@ async def _mac_preflight(interface: str) -> MacPreflightResult:
     )
 
 
+def _published_count(path: Path) -> int:
+    if not path.exists():
+        return 0
+    return sum(
+        1 for line in path.read_text().splitlines() if line.strip() and not line.startswith("#")
+    )
+
+
+def _is_suspicious_collapse(previous: int, current: int) -> bool:
+    return previous > 0 and current <= previous * 0.1
+
+
 async def _curl_download(
     socks_port: int,
     url: str,
@@ -720,6 +732,50 @@ async def run_ru_verify(
             infra_failures,
         )
         return 1
+
+    current_main_pass = sum(
+        1
+        for item in unique_candidates.values()
+        if item[2]
+        and results_map.get(item[0].fingerprint)
+        and results_map[item[0].fingerprint].passed
+    )
+    current_white_pass = sum(
+        1
+        for item in unique_candidates.values()
+        if item[3]
+        and results_map.get(item[0].fingerprint)
+        and results_map[item[0].fingerprint].passed
+    )
+    collapsed_lanes = [
+        lane
+        for lane, previous, current in (
+            ("main", _published_count(main_file), current_main_pass),
+            ("white", _published_count(white_file), current_white_pass),
+        )
+        if _is_suspicious_collapse(previous, current)
+    ]
+    if handoff_present and collapsed_lanes:
+        postflight = await _mac_preflight(os.environ["SWIFT_BIND_INTERFACE"])
+        LOGGER.info(
+            "RU collapse postflight lanes=%s dns=%s https=%d/%d download=%s diagnostics=%s",
+            ",".join(collapsed_lanes),
+            "PASS" if postflight.dns_ok else "FAIL",
+            postflight.https_passed,
+            postflight.https_total,
+            "PASS" if postflight.download_ok else "FAIL",
+            postflight.diagnostics or {"OK": 1},
+        )
+        if not postflight.ok:
+            LOGGER.error(
+                "RU_INFRASTRUCTURE_COLLAPSE_DETECTED lanes=%s; preserving production and handoff",
+                ",".join(collapsed_lanes),
+            )
+            return 1
+        LOGGER.warning(
+            "RU proxy population collapsed in %s, but bound-interface postflight is healthy; accepting proxy-level result",
+            ",".join(collapsed_lanes),
+        )
 
     # Load config settings for limits and diversity if available
     config_file = root / "config.toml"
