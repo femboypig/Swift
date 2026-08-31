@@ -6,6 +6,7 @@ import json
 import logging
 import math
 import os
+import shutil
 import sys
 import tempfile
 import time
@@ -16,7 +17,7 @@ from pathlib import Path
 from typing import Any
 
 from .models import ProxyConfig, RankedConfig, TestResult
-from .output import HAPP_PROTOCOLS, happ_subscription, write_json
+from .output import HAPP_PROTOCOLS, happ_subscription, validated_proxy_lines, write_json
 from .parsing import parse_uri, serialize_uri
 from .scoring import diverse_selection
 from .testing import sing_box_config, _free_port, _wait_for_core, _stop_process
@@ -354,22 +355,30 @@ async def run_ru_verify(
     sing_box_path: str,
     concurrency: int = 6,
 ) -> int:
+    handoff_dir = root / "data/mac-candidates"
+    handoff_main = handoff_dir / "main.txt"
+    handoff_white = handoff_dir / "white.txt"
+    handoff_present = handoff_main.exists() or handoff_white.exists()
+    main_input = handoff_main if handoff_present else root / "sub/main.txt"
+    white_input = handoff_white if handoff_present else root / "sub/white.txt"
     main_file = root / "sub/main.txt"
     white_file = root / "sub/white.txt"
 
     main_lines = (
-        [l.strip() for l in main_file.read_text().splitlines() if l.strip() and not l.startswith("#")]
-        if main_file.exists()
+        [l.strip() for l in main_input.read_text().splitlines() if l.strip() and not l.startswith("#")]
+        if main_input.exists()
         else []
     )
     white_lines = (
-        [l.strip() for l in white_file.read_text().splitlines() if l.strip() and not l.startswith("#")]
-        if white_file.exists()
+        [l.strip() for l in white_input.read_text().splitlines() if l.strip() and not l.startswith("#")]
+        if white_input.exists()
         else []
     )
+    main_lines = validated_proxy_lines(main_lines, "Mac Main handoff")
+    white_lines = validated_proxy_lines(white_lines, "Mac White handoff")
 
     if not main_lines and not white_lines:
-        LOGGER.info("sub/main.txt and sub/white.txt are empty or missing; nothing to verify")
+        LOGGER.info("Mac candidate files are empty or missing; nothing to verify")
         return 0
 
     history_file = root / "data/history.json"
@@ -377,8 +386,8 @@ async def run_ru_verify(
     if history_file.exists():
         try:
             history_data = json.loads(history_file.read_text()).get("configs", {})
-        except Exception:
-            pass
+        except (OSError, json.JSONDecodeError) as exc:
+            raise RuntimeError("could not read data/history.json for Mac verification") from exc
 
     # Track membership and parsed configs
     # mapping: fingerprint -> (ProxyConfig, country, is_main, is_white, main_line, white_line)
@@ -422,12 +431,13 @@ async def run_ru_verify(
             continue
 
     LOGGER.info(
-        "Starting unified RU sustained-traffic verification for %d candidates (main=%d, white=%d, shared=%d, concurrency=%d, bind_interface=%s)",
+        "Starting unified RU sustained-traffic verification for %d candidates (main=%d, white=%d, shared=%d, concurrency=%d, input=%s, bind_interface=%s)",
         len(unique_candidates),
         len(main_lines),
         len(white_lines),
         sum(1 for c in unique_candidates.values() if c[2] and c[3]),
         concurrency,
+        "cloud-handoff" if handoff_present else "legacy-sub-files",
         os.environ.get("SWIFT_BIND_INTERFACE", "default"),
     )
 
@@ -726,6 +736,8 @@ async def run_ru_verify(
             stats["main"] = final_main_count
             stats.setdefault("production", {})["white"] = final_white_count
             stats["white"] = final_white_count
+            stats["published"] = True
+            stats["stage"] = "production"
 
             # Detailed Mac verification stats
             mac_fail_reasons: Counter[str] = Counter()
@@ -876,8 +888,11 @@ async def run_ru_verify(
                     }
             stats["ru_service_diagnostics"] = ru_diag
             write_json(stats_file, stats)
-        except Exception:
-            pass
+        except (OSError, json.JSONDecodeError) as exc:
+            raise RuntimeError("could not update stats.json after Mac verification") from exc
+
+    if handoff_present:
+        shutil.rmtree(handoff_dir)
 
     LOGGER.info(
         "Published RU-verified subscriptions: Main=%d (dropped %d), White=%d (dropped %d)",
