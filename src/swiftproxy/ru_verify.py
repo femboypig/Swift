@@ -7,6 +7,7 @@ import logging
 import math
 import os
 import shutil
+import socket
 import sys
 import tempfile
 import time
@@ -15,6 +16,7 @@ from collections import Counter
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
+from urllib.parse import urlsplit
 
 from .models import ProxyConfig, RankedConfig, TestResult
 from .output import validated_proxy_lines, write_final_subscriptions, write_json
@@ -56,6 +58,23 @@ class DownloadAttempt:
 
 
 @dataclass(slots=True)
+class HttpsAttempt:
+    ok: bool
+    diagnostic: str
+
+
+@dataclass(slots=True)
+class MacPreflightResult:
+    ok: bool
+    interface: str
+    dns_ok: bool
+    https_passed: int
+    https_total: int
+    download_ok: bool
+    diagnostics: dict[str, int] = field(default_factory=dict)
+
+
+@dataclass(slots=True)
 class RuVerifyResult:
     fingerprint: str
     passed: bool
@@ -66,6 +85,7 @@ class RuVerifyResult:
     https_passed: int = 0
     https_attempted: int = 0
     https_total: int = 3
+    https_diagnostics: dict[str, int] = field(default_factory=dict)
     services: dict[str, str] = field(default_factory=dict)
     ru_service_ok: bool | None = None
     is_infrastructure_failure: bool = False
@@ -75,7 +95,7 @@ async def _curl_probe(
     socks_port: int,
     url: str,
     timeout: float = 4.0,
-) -> bool:
+) -> HttpsAttempt:
     cmd = [
         "curl",
         "--silent",
@@ -98,9 +118,105 @@ async def _curl_probe(
             stderr=asyncio.subprocess.DEVNULL,
         )
         await proc.wait()
-        return proc.returncode == 0
+        if proc.returncode == 0:
+            return HttpsAttempt(True, "OK")
+        return HttpsAttempt(False, f"CURL_{proc.returncode}")
     except Exception:
-        return False
+        return HttpsAttempt(False, "CURL_EXEC_ERROR")
+
+
+async def _direct_preflight_probe(
+    interface: str,
+    url: str,
+    *,
+    timeout: float,
+    minimum_bytes: int = 0,
+) -> HttpsAttempt:
+    cmd = [
+        "curl",
+        "--silent",
+        "--show-error",
+        "--location",
+        "--interface",
+        interface,
+        "--connect-timeout",
+        str(min(4.0, timeout)),
+        "--max-time",
+        str(timeout),
+        "--write-out",
+        "%{http_code}:%{size_download}",
+        "--output",
+        os.devnull,
+        url,
+    ]
+    try:
+        proc = await asyncio.create_subprocess_exec(
+            *cmd,
+            stdout=asyncio.subprocess.PIPE,
+            stderr=asyncio.subprocess.DEVNULL,
+        )
+        stdout, _ = await proc.communicate()
+    except Exception:
+        return HttpsAttempt(False, "CURL_EXEC_ERROR")
+    if proc.returncode != 0:
+        return HttpsAttempt(False, f"CURL_{proc.returncode}")
+    try:
+        status_text, size_text = stdout.decode().strip().split(":", 1)
+        status = int(status_text)
+        size = int(size_text)
+    except (UnicodeDecodeError, ValueError):
+        return HttpsAttempt(False, "CURL_BAD_RESPONSE")
+    if not 200 <= status < 400:
+        return HttpsAttempt(False, f"HTTP_{status}")
+    if size < minimum_bytes:
+        return HttpsAttempt(False, "DOWNLOAD_SHORT")
+    return HttpsAttempt(True, "OK")
+
+
+async def _mac_preflight(interface: str) -> MacPreflightResult:
+    diagnostics: Counter[str] = Counter()
+    try:
+        socket.if_nametoindex(interface)
+    except OSError:
+        return MacPreflightResult(
+            False, interface, False, 0, len(PROBE_URLS), False, {"INTERFACE_MISSING": 1}
+        )
+
+    hosts = {urlsplit(url).hostname for url in [*PROBE_URLS, DOWNLOAD_URL_R1]}
+    hosts.discard(None)
+    loop = asyncio.get_running_loop()
+    dns_ok = True
+    for host in sorted(hosts):
+        try:
+            await loop.getaddrinfo(host, 443, type=socket.SOCK_STREAM)
+        except OSError:
+            diagnostics["DNS_FAILED"] += 1
+            dns_ok = False
+
+    https_results = await asyncio.gather(
+        *(_direct_preflight_probe(interface, url, timeout=8.0) for url in PROBE_URLS)
+    )
+    for result in https_results:
+        if not result.ok:
+            diagnostics[result.diagnostic] += 1
+    https_passed = sum(result.ok for result in https_results)
+    download = await _direct_preflight_probe(
+        interface,
+        DOWNLOAD_URL_R1,
+        timeout=12.0,
+        minimum_bytes=int(DOWNLOAD_BYTES * 0.9),
+    )
+    if not download.ok:
+        diagnostics[download.diagnostic] += 1
+    return MacPreflightResult(
+        dns_ok and https_passed >= 2 and download.ok,
+        interface,
+        dns_ok,
+        https_passed,
+        len(PROBE_URLS),
+        download.ok,
+        dict(sorted(diagnostics.items())),
+    )
 
 
 async def _curl_download(
@@ -273,11 +389,20 @@ async def _verify_single(
                 # 1. HTTPS Reachability (require >= 2 of 3)
                 https_passed = 0
                 https_attempted = 0
+                https_diagnostics: Counter[str] = Counter()
                 required_https = 2
                 for index, probe_url in enumerate(PROBE_URLS):
                     https_attempted += 1
-                    if await _curl_probe(socks_port, probe_url, timeout=4.0):
+                    attempt = await _curl_probe(socks_port, probe_url, timeout=4.0)
+                    if isinstance(attempt, bool):
+                        attempt = HttpsAttempt(attempt, "OK" if attempt else "CURL_UNKNOWN")
+                    if attempt.ok:
                         https_passed += 1
+                    else:
+                        diagnostic = attempt.diagnostic
+                        if isinstance(process.returncode, int):
+                            diagnostic = "CORE_EXITED"
+                        https_diagnostics[diagnostic] += 1
 
                     remaining = len(PROBE_URLS) - index - 1
                     if https_passed >= required_https:
@@ -293,6 +418,7 @@ async def _verify_single(
                         https_passed=https_passed,
                         https_attempted=https_attempted,
                         https_total=len(PROBE_URLS),
+                        https_diagnostics=dict(sorted(https_diagnostics.items())),
                     )
 
                 # 2. Download Round 1 (256 KB)
@@ -306,6 +432,7 @@ async def _verify_single(
                         https_passed=https_passed,
                         https_attempted=https_attempted,
                         https_total=len(PROBE_URLS),
+                        https_diagnostics=dict(sorted(https_diagnostics.items())),
                         r1_kbps=res1.speed_kbps,
                     )
 
@@ -320,6 +447,7 @@ async def _verify_single(
                         https_passed=https_passed,
                         https_attempted=https_attempted,
                         https_total=len(PROBE_URLS),
+                        https_diagnostics=dict(sorted(https_diagnostics.items())),
                         r1_kbps=res1.speed_kbps,
                         r2_kbps=res2.speed_kbps,
                         min_kbps=min(res1.speed_kbps, res2.speed_kbps),
@@ -334,6 +462,7 @@ async def _verify_single(
                         https_passed=https_passed,
                         https_attempted=https_attempted,
                         https_total=len(PROBE_URLS),
+                        https_diagnostics=dict(sorted(https_diagnostics.items())),
                         r1_kbps=res1.speed_kbps,
                         r2_kbps=res2.speed_kbps,
                         min_kbps=min_speed,
@@ -364,6 +493,7 @@ async def _verify_single(
                     https_passed=https_passed,
                     https_attempted=https_attempted,
                     https_total=len(PROBE_URLS),
+                    https_diagnostics=dict(sorted(https_diagnostics.items())),
                     services=services,
                     ru_service_ok=ru_service_ok,
                 )
@@ -471,6 +601,27 @@ async def run_ru_verify(
         os.environ.get("SWIFT_BIND_INTERFACE", "default"),
     )
 
+    if handoff_present:
+        bind_interface = os.environ.get("SWIFT_BIND_INTERFACE")
+        if not bind_interface:
+            LOGGER.error("RU_PREFLIGHT_FAILED bind_interface is not configured; preserving handoff")
+            return 1
+        preflight = await _mac_preflight(bind_interface)
+        LOGGER.info(
+            "RU preflight interface=%s dns=%s https=%d/%d download=%s diagnostics=%s",
+            preflight.interface,
+            "PASS" if preflight.dns_ok else "FAIL",
+            preflight.https_passed,
+            preflight.https_total,
+            "PASS" if preflight.download_ok else "FAIL",
+            preflight.diagnostics or {"OK": 1},
+        )
+        if not preflight.ok:
+            LOGGER.error(
+                "RU_PREFLIGHT_FAILED runner/network unhealthy; preserving production and handoff"
+            )
+            return 1
+
     semaphore = asyncio.Semaphore(concurrency)
     tasks = [
         asyncio.create_task(_verify_single(item[0], sing_box_path, semaphore, item[1]))
@@ -543,6 +694,10 @@ async def run_ru_verify(
     passed_count = sum(1 for r in results_map.values() if r.passed)
     passed_ratio = passed_count / len(results_map) if results_map else 0.0
     infra_failures = sum(1 for r in results_map.values() if r.is_infrastructure_failure)
+    https_failure_diagnostics: Counter[str] = Counter()
+    for result in results_map.values():
+        if result.reason == "HTTPS_FAILED":
+            https_failure_diagnostics.update(result.https_diagnostics)
 
     LOGGER.info(
         "RU verification complete: %d/%d passed (%.1f%%, infra_failures=%d)",
@@ -550,6 +705,10 @@ async def run_ru_verify(
         len(results_map),
         passed_ratio * 100,
         infra_failures,
+    )
+    LOGGER.info(
+        "RU HTTPS_FAILED diagnostics: %s",
+        dict(sorted(https_failure_diagnostics.items())) or {"NONE": 0},
     )
 
     # Outage / Infrastructure Guard: If verification infrastructure failed, block publishing
@@ -809,6 +968,7 @@ async def run_ru_verify(
                         white_mac_fail_reasons[reason] += 1
 
             stats["mac_verification"] = {
+                "https_failure_diagnostics": dict(sorted(https_failure_diagnostics.items())),
                 "main": {
                     "before_mac": len(main_lines),
                     "mac_tested": sum(1 for item in unique_candidates.values() if item[2]),

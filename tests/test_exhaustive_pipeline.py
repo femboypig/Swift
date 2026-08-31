@@ -3,13 +3,13 @@ import unittest
 import json
 import tempfile
 from pathlib import Path
-from unittest.mock import patch
+from unittest.mock import AsyncMock, patch
 
 from swiftproxy.models import ProxyConfig, RankedConfig, TestResult
 from swiftproxy.main import _cloud_lane_counts, _tcp_tls_telemetry_counts
 from swiftproxy.output import write_final_subscriptions
 from swiftproxy.parsing import parse_uri, serialize_uri
-from swiftproxy.ru_verify import RuVerifyResult, run_ru_verify
+from swiftproxy.ru_verify import MacPreflightResult, RuVerifyResult, run_ru_verify
 from swiftproxy.scoring import choose_candidates, select_pre_mac_candidates, diverse_selection
 
 
@@ -566,6 +566,11 @@ class TestExhaustiveValidationPipeline(unittest.TestCase):
 
             self.assertEqual(exit_code, 1)
 
+    @patch.dict("os.environ", {"SWIFT_BIND_INTERFACE": "wlan0"})
+    @patch(
+        "swiftproxy.ru_verify._mac_preflight",
+        new=AsyncMock(return_value=MacPreflightResult(True, "wlan0", True, 3, 3, True)),
+    )
     def test_cloud_handoff_is_distinct_from_final_publication(self):
         with tempfile.TemporaryDirectory() as tmp_dir:
             root = Path(tmp_dir)
@@ -623,6 +628,11 @@ class TestExhaustiveValidationPipeline(unittest.TestCase):
             self.assertTrue(stats["published"])
             self.assertEqual(stats["stage"], "production")
 
+    @patch.dict("os.environ", {"SWIFT_BIND_INTERFACE": "wlan0"})
+    @patch(
+        "swiftproxy.ru_verify._mac_preflight",
+        new=AsyncMock(return_value=MacPreflightResult(True, "wlan0", True, 3, 3, True)),
+    )
     def test_exhaustive_counters_use_resolved_cloud_population(self):
         configs = [_make_config(str(index), host=f"11.{index}.0.1") for index in range(100)]
         resolved = {config.fingerprint for config in configs[:90]}
@@ -713,6 +723,11 @@ class TestExhaustiveValidationPipeline(unittest.TestCase):
             for key, value in expected.items():
                 self.assertEqual(funnel[key], value, key)
 
+    @patch.dict("os.environ", {"SWIFT_BIND_INTERFACE": "wlan0"})
+    @patch(
+        "swiftproxy.ru_verify._mac_preflight",
+        new=AsyncMock(return_value=MacPreflightResult(True, "wlan0", True, 3, 3, True)),
+    )
     def test_mac_crash_preserves_production_and_handoff(self):
         with tempfile.TemporaryDirectory() as tmp_dir:
             root = Path(tmp_dir)
@@ -741,6 +756,29 @@ class TestExhaustiveValidationPipeline(unittest.TestCase):
             for path, content in originals.items():
                 self.assertEqual(path.read_text(), content)
             self.assertTrue((root / "data/mac-candidates/main.txt").exists())
+
+    @patch.dict("os.environ", {"SWIFT_BIND_INTERFACE": "wlan0"})
+    @patch(
+        "swiftproxy.ru_verify._mac_preflight",
+        new=AsyncMock(
+            return_value=MacPreflightResult(False, "wlan0", False, 1, 3, False, {"DNS_FAILED": 1})
+        ),
+    )
+    def test_failed_mac_preflight_preserves_production_and_handoff(self):
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            root = Path(tmp_dir)
+            (root / "sub").mkdir()
+            (root / "data/mac-candidates").mkdir(parents=True)
+            old = serialize_uri(_make_config("old-preflight", host="12.3.0.1")) + "\n"
+            candidate = serialize_uri(_make_config("candidate-preflight", host="12.4.0.1")) + "\n"
+            (root / "sub/main.txt").write_text(old)
+            (root / "sub/white.txt").write_text("")
+            (root / "data/mac-candidates/main.txt").write_text(candidate)
+            (root / "data/mac-candidates/white.txt").write_text("")
+
+            self.assertEqual(asyncio.run(run_ru_verify(root, "sing-box")), 1)
+            self.assertEqual((root / "sub/main.txt").read_text(), old)
+            self.assertEqual((root / "data/mac-candidates/main.txt").read_text(), candidate)
 
     def test_final_subscription_batch_rolls_back_on_write_error(self):
         with tempfile.TemporaryDirectory() as tmp_dir:
@@ -780,6 +818,11 @@ class TestExhaustiveValidationPipeline(unittest.TestCase):
             for path, content in originals.items():
                 self.assertEqual(path.read_text(), content)
 
+    @patch.dict("os.environ", {"SWIFT_BIND_INTERFACE": "wlan0"})
+    @patch(
+        "swiftproxy.ru_verify._mac_preflight",
+        new=AsyncMock(return_value=MacPreflightResult(True, "wlan0", True, 3, 3, True)),
+    )
     def test_mac_publication_failure_keeps_handoff_and_production(self):
         with tempfile.TemporaryDirectory() as tmp_dir:
             root = Path(tmp_dir)

@@ -10,7 +10,10 @@ from unittest.mock import AsyncMock, patch
 from swiftproxy.parsing import parse_uri
 from swiftproxy.ru_verify import (
     DownloadAttempt,
+    HttpsAttempt,
     RuVerifyResult,
+    _curl_probe,
+    _direct_preflight_probe,
     _verify_single,
     _probe_service_reachability,
     run_ru_verify,
@@ -18,6 +21,30 @@ from swiftproxy.ru_verify import (
 
 
 class TestRuVerify(unittest.TestCase):
+    @patch("asyncio.create_subprocess_exec")
+    def test_https_probe_records_curl_exit_code(self, mock_exec):
+        process = AsyncMock()
+        process.returncode = 28
+        mock_exec.return_value = process
+
+        result = asyncio.run(_curl_probe(1080, "https://example.com"))
+
+        self.assertEqual(result, HttpsAttempt(False, "CURL_28"))
+
+    @patch("asyncio.create_subprocess_exec")
+    def test_preflight_probe_is_bound_to_requested_interface(self, mock_exec):
+        process = AsyncMock()
+        process.returncode = 0
+        process.communicate.return_value = (b"204:0", b"")
+        mock_exec.return_value = process
+
+        result = asyncio.run(_direct_preflight_probe("wlan0", "https://example.com", timeout=4.0))
+
+        self.assertTrue(result.ok)
+        command = mock_exec.await_args.args
+        interface_index = command.index("--interface")
+        self.assertEqual(command[interface_index + 1], "wlan0")
+
     def test_ru_verify_empty(self):
         with tempfile.TemporaryDirectory() as temp_dir:
             root = Path(temp_dir)
@@ -583,6 +610,31 @@ class TestRuVerify(unittest.TestCase):
         self.assertEqual(result.https_attempted, 2)
         self.assertEqual(mock_probe.await_count, 2)
 
+    @patch("swiftproxy.ru_verify._stop_process", new_callable=AsyncMock)
+    @patch("swiftproxy.ru_verify._wait_for_core", new_callable=AsyncMock, return_value=True)
+    @patch("asyncio.create_subprocess_exec")
+    @patch(
+        "swiftproxy.ru_verify._curl_probe",
+        new_callable=AsyncMock,
+        return_value=HttpsAttempt(False, "CURL_28"),
+    )
+    @patch("swiftproxy.ru_verify._free_port", return_value=23001)
+    def test_https_failure_preserves_safe_diagnostic_histogram(
+        self, mock_port, mock_probe, mock_exec, mock_wait, mock_stop
+    ):
+        del mock_port, mock_probe, mock_wait, mock_stop
+        process = AsyncMock()
+        process.returncode = None
+        mock_exec.return_value = process
+        cfg = parse_uri(
+            "vless://a1111111-1111-1111-1111-111111111111@1.2.3.4:443?security=none#node"
+        )
+
+        result = asyncio.run(_verify_single(cfg, "sing-box", asyncio.Semaphore(1)))
+
+        self.assertEqual(result.reason, "HTTPS_FAILED")
+        self.assertEqual(result.https_diagnostics, {"CURL_28": 2})
+
     def test_cancellation_stops_sing_box_process(self):
         async def exercise():
             cfg = parse_uri(
@@ -617,9 +669,11 @@ class TestRuVerify(unittest.TestCase):
     @patch("swiftproxy.ru_verify._probe_service_reachability", new_callable=AsyncMock)
     @patch("swiftproxy.ru_verify._curl_download", new_callable=AsyncMock)
     @patch("swiftproxy.ru_verify._curl_probe", new_callable=AsyncMock)
+    @patch("swiftproxy.ru_verify._free_port", return_value=23001)
     def test_r1_fast_r2_stall_fails(
-        self, mock_probe, mock_dl, mock_svc, mock_exec, mock_wait, mock_stop
+        self, mock_port, mock_probe, mock_dl, mock_svc, mock_exec, mock_wait, mock_stop
     ):
+        del mock_port
         mock_wait.return_value = True
         mock_exec.return_value = AsyncMock()
         mock_probe.return_value = True
@@ -647,9 +701,11 @@ class TestRuVerify(unittest.TestCase):
     @patch("swiftproxy.ru_verify._probe_service_reachability", new_callable=AsyncMock)
     @patch("swiftproxy.ru_verify._curl_download", new_callable=AsyncMock)
     @patch("swiftproxy.ru_verify._curl_probe", new_callable=AsyncMock)
+    @patch("swiftproxy.ru_verify._free_port", return_value=23001)
     def test_ozon_timeout_does_not_drop_generic_main_node(
-        self, mock_probe, mock_dl, mock_svc, mock_exec, mock_wait, mock_stop
+        self, mock_port, mock_probe, mock_dl, mock_svc, mock_exec, mock_wait, mock_stop
     ):
+        del mock_port
         mock_wait.return_value = True
         mock_exec.return_value = AsyncMock()
         mock_probe.return_value = True
@@ -681,9 +737,11 @@ class TestRuVerify(unittest.TestCase):
     @patch("swiftproxy.ru_verify._probe_service_reachability", new_callable=AsyncMock)
     @patch("swiftproxy.ru_verify._curl_download", new_callable=AsyncMock)
     @patch("swiftproxy.ru_verify._curl_probe", new_callable=AsyncMock)
+    @patch("swiftproxy.ru_verify._free_port", return_value=23001)
     def test_ru_egress_service_classification(
-        self, mock_probe, mock_dl, mock_svc, mock_exec, mock_wait, mock_stop
+        self, mock_port, mock_probe, mock_dl, mock_svc, mock_exec, mock_wait, mock_stop
     ):
+        del mock_port
         mock_wait.return_value = True
         mock_exec.return_value = AsyncMock()
         mock_probe.return_value = True
@@ -735,7 +793,11 @@ class TestRuVerify(unittest.TestCase):
     @patch("swiftproxy.ru_verify._stop_process", new_callable=AsyncMock)
     @patch("swiftproxy.ru_verify._wait_for_core", new_callable=AsyncMock)
     @patch("asyncio.create_subprocess_exec")
-    def test_infrastructure_failure_marked_separately(self, mock_exec, mock_wait, mock_stop):
+    @patch("swiftproxy.ru_verify._free_port", return_value=23001)
+    def test_infrastructure_failure_marked_separately(
+        self, mock_port, mock_exec, mock_wait, mock_stop
+    ):
+        del mock_port
         mock_wait.return_value = False
         mock_exec.return_value = AsyncMock()
 
