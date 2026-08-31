@@ -16,10 +16,12 @@ from swiftproxy.output import (
     HAPP_PROTOCOLS,
     PIPELINE_VERSION,
     alive_for_all,
+    check_outputs,
     display_name,
     happ_subscription,
     plain_subscription,
     suspicious_run,
+    write_mac_handoff,
     write_subscriptions,
 )
 from swiftproxy.parsing import (
@@ -194,6 +196,27 @@ class ParsingTests(unittest.TestCase):
         self.assertEqual(len(extract_uris(encoded)), 1)
         html = f'<input value="{vless_uri()}">'
         self.assertEqual(len(extract_uris(html, "html")), 1)
+
+    def test_http_subscription_urls_are_not_proxy_candidates(self) -> None:
+        nested = """
+            # mirror: https://example.com/commented-sub.txt
+            https://example.com/subscription.txt
+              http://example.com/legacy-sub
+        """
+        self.assertEqual(extract_uris(nested), [])
+        for value in (
+            "https://example.com/subscription.txt",
+            "http://example.com/subscription.txt",
+            "  https://example.com/subscription.txt  ",
+        ):
+            with self.subTest(value=value), self.assertRaisesRegex(ValueError, "unsupported protocol"):
+                parse_uri(value)
+
+    def test_base64_subscription_still_extracts_supported_proxy_uri(self) -> None:
+        payload = base64.b64encode(
+            f"https://example.com/nested.txt\n{vless_uri()}\n".encode()
+        ).decode()
+        self.assertEqual(extract_uris(payload), [vless_uri()])
 
     def test_source_parsing_and_deduplication_merge_provenance_and_lanes(self) -> None:
         main = SourceSpec("main", "source-a", "https://example.com/a", {"main"})
@@ -608,6 +631,55 @@ class OutputTests(unittest.TestCase):
         self.assertNotIn("tuic://", happ)
         self.assertIn("vless://", happ)
         self.assertNotIn("tuic", HAPP_PROTOCOLS)
+
+    def test_cloud_handoff_does_not_overwrite_final_subscriptions(self) -> None:
+        old_config = parse_uri(vless_uri(uuid=UUID_A, remark="old"))
+        candidate = parse_uri(vless_uri(uuid=UUID_B, remark="candidate"))
+        result = successful_result(candidate)
+        ranked = RankedConfig(candidate, "main", result, 90, "active", 1.0)
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            (root / "sub").mkdir()
+            old_line = serialize_uri(old_config)
+            (root / "sub/main.txt").write_text(old_line + "\n")
+            write_mac_handoff(root, [ranked], [], [ranked])
+            self.assertEqual((root / "sub/main.txt").read_text().strip(), old_line)
+            handoff = (root / "data/mac-candidates/main.txt").read_text()
+            self.assertEqual(parse_uri(handoff.strip()).fingerprint, candidate.fingerprint)
+            self.assertEqual(
+                parse_uri((root / "sub/all.txt").read_text().strip()).fingerprint,
+                candidate.fingerprint,
+            )
+
+    def test_nested_subscription_urls_fail_output_validation(self) -> None:
+        valid = vless_uri()
+        cases = (
+            ("sub/main.txt", "https://example.com/nested.txt\n"),
+            ("sub/happ/main.txt", "#profile-title: Swift Main\nhttps://example.com/nested.txt\n"),
+            ("sub/white.txt", "http://example.com/nested.txt\n"),
+            ("sub/all.txt", "https://example.com/nested.txt\n"),
+        )
+        for relative, bad_content in cases:
+            with self.subTest(relative=relative), tempfile.TemporaryDirectory() as directory:
+                root = Path(directory)
+                (root / "sub/happ").mkdir(parents=True)
+                (root / "sub/main.txt").write_text(valid + "\n")
+                (root / "sub/white.txt").write_text("")
+                (root / "sub/all.txt").write_text(valid + "\n")
+                (root / "sub/happ/main.txt").write_text(
+                    happ_subscription([valid], "Swift Main", "https://example.com")
+                )
+                (root / "sub/happ/white.txt").write_text(
+                    happ_subscription([], "Swift White", "https://example.com")
+                )
+                (root / "stats.json").write_text(json.dumps({
+                    "project": "Swift",
+                    "tagline": "Filter the garbage. Keep what works.",
+                    "production": {"main": 1, "white": 0},
+                }))
+                (root / relative).write_text(bad_content)
+                with self.assertRaisesRegex(RuntimeError, "non-proxy URL"):
+                    check_outputs(root, 80, 200)
 
     def test_all_requires_current_proxy_traffic_and_minimum_throughput(self) -> None:
         config = parse_uri(vless_uri())
