@@ -1,3 +1,4 @@
-vless://11af1c47-865a-47c6-92ff-118013655d78@51.15.56.211:8080?encryption=none&type=ws&security=none&sni=51.15.56.211#%F0%9F%87%B3%F0%9F%87%B1%20NL%20%C2%B7%20282
-vless://5d8fae5f-0427-4da3-99ab-242905fa5c69@104.105.28.51:443?encryption=none&type=ws&security=tls&sni=fast.iqiraq.shop&fp=firefox#%F0%9F%87%A9%F0%9F%87%AA%20DE%20%C2%B7%20343
-hysteria2://gf1%3Agfhysteria2024@185.156.44.99:443?sni=google.com&insecure=1&upmbps=10&downmbps=50#%F0%9F%87%B7%F0%9F%87%B4%20RO%20%C2%B7%20492
+vless://11af1c47-865a-47c6-92ff-118013655d78@51.15.56.211:8080?encryption=none&type=ws&security=none&sni=51.15.56.211#%F0%9F%87%B3%F0%9F%87%B1%20NL%20%C2%B7%20308
+vless://d3815c21-ef06-43e2-82e1-ca313962b489@50.7.241.226:443?encryption=none&type=tcp&security=reality&flow=xtls-rprx-vision&sni=app27.jarvestip.ru&fp=firefox&pbk=OYvSeQqu0XhV12blOVAR2Cn_3m6HI95raTdlqnVobjk&sid=360de9e1#%F0%9F%87%B3%F0%9F%87%B1%20NL%20%C2%B7%20383
+hysteria2://gf1%3Agfhysteria2024@185.156.44.99:443?sni=google.com&insecure=1&upmbps=10&downmbps=50#%F0%9F%87%B7%F0%9F%87%B4%20RO%20%C2%B7%20474
+hysteria2://gf1%3Agfhysteria2024@185.156.44.99:443?sni=vk.com&insecure=1&upmbps=10&downmbps=50#%F0%9F%87%B7%F0%9F%87%B4%20RO%20%C2%B7%20481
