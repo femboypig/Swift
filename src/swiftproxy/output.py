@@ -8,7 +8,7 @@ from pathlib import Path
 from typing import Any, Iterable
 
 from .models import ProxyConfig, RankedConfig, TestResult
-from .parsing import serialize_uri
+from .parsing import SUPPORTED_PROXY_SCHEMES, parse_uri, serialize_uri
 
 
 HAPP_PROTOCOLS = {"vless", "vmess", "trojan", "ss", "hysteria2"}
@@ -46,6 +46,27 @@ def happ_subscription(lines: list[str], title: str, repository: str) -> str:
 
 def plain_subscription(lines: list[str]) -> str:
     return "\n".join(lines) + ("\n" if lines else "")
+
+
+def validated_proxy_lines(lines: Iterable[str], label: str) -> list[str]:
+    validated: list[str] = []
+    fingerprints: set[str] = set()
+    for raw_line in lines:
+        line = raw_line.strip()
+        if not line or line.startswith("#"):
+            continue
+        scheme = line.partition(":")[0].lower()
+        if scheme not in SUPPORTED_PROXY_SCHEMES:
+            raise RuntimeError(f"{label} contains a non-proxy URL")
+        try:
+            config = parse_uri(line)
+        except ValueError as exc:
+            raise RuntimeError(f"{label} contains an invalid proxy URI") from exc
+        if config.fingerprint in fingerprints:
+            raise RuntimeError(f"{label} contains duplicates")
+        fingerprints.add(config.fingerprint)
+        validated.append(line)
+    return validated
 
 
 def alive_for_all(
@@ -140,14 +161,18 @@ def build_stats(
         "white": len(white),
         "all": len(alive),
     }
-    if not published and previous:
-        production = previous.get(
-            "production",
-            {
-                "main": int(previous.get("main", 0)),
-                "white": int(previous.get("white", 0)),
-                "all": int(previous.get("alive", 0)),
-            },
+    if not published:
+        production = (
+            previous.get(
+                "production",
+                {
+                    "main": int(previous.get("main", 0)),
+                    "white": int(previous.get("white", 0)),
+                    "all": int(previous.get("alive", 0)),
+                },
+            )
+            if previous
+            else {"main": 0, "white": 0, "all": 0}
         )
     value: dict[str, Any] = {
         "project": "Swift",
@@ -264,29 +289,48 @@ def write_subscriptions(
     )
 
 
-def check_outputs(root: Path, main_limit: int, white_limit: int) -> None:
-    from .parsing import parse_uri
+def write_mac_handoff(
+    root: Path,
+    main: list[RankedConfig],
+    white: list[RankedConfig],
+    alive: list[RankedConfig],
+) -> None:
+    main_lines = validated_proxy_lines(subscription_lines(main, ""), "Mac Main handoff")
+    white_lines = validated_proxy_lines(subscription_lines(white, "W"), "Mac White handoff")
+    all_lines = validated_proxy_lines(subscription_lines(alive, "A"), "All subscription")
+    atomic_write(root / "data/mac-candidates/main.txt", plain_subscription(main_lines))
+    atomic_write(root / "data/mac-candidates/white.txt", plain_subscription(white_lines))
+    atomic_write(root / "sub/all.txt", plain_subscription(all_lines))
 
+
+def check_outputs(root: Path, main_limit: int, white_limit: int) -> None:
     for relative, limit in (("sub/main.txt", main_limit), ("sub/white.txt", white_limit)):
-        lines = [line.strip() for line in (root / relative).read_text().splitlines() if line.strip()]
+        lines = validated_proxy_lines((root / relative).read_text().splitlines(), relative)
         if len(lines) > limit:
             raise RuntimeError(f"{relative} exceeds its limit")
-        fingerprints = [parse_uri(line).fingerprint for line in lines]
-        if len(fingerprints) != len(set(fingerprints)):
-            raise RuntimeError(f"{relative} contains duplicates")
-    all_lines = [line.strip() for line in (root / "sub/all.txt").read_text().splitlines() if line.strip()]
-    all_fingerprints = [parse_uri(line).fingerprint for line in all_lines]
-    if len(all_fingerprints) != len(set(all_fingerprints)):
-        raise RuntimeError("sub/all.txt contains duplicates")
+    validated_proxy_lines((root / "sub/all.txt").read_text().splitlines(), "sub/all.txt")
     for relative in ("sub/happ/main.txt", "sub/happ/white.txt"):
         lines = [line.strip() for line in (root / relative).read_text().splitlines() if line.strip()]
         if not lines or not lines[0].startswith("#profile-title: Swift"):
             raise RuntimeError(f"{relative} has no Swift metadata")
-        for line in lines:
-            if line.startswith("#"):
-                continue
+        proxy_lines = validated_proxy_lines(lines, relative)
+        for line in proxy_lines:
             if parse_uri(line).protocol not in HAPP_PROTOCOLS:
                 raise RuntimeError(f"{relative} contains a protocol Happ does not document")
+
+        lane = "main" if relative.endswith("main.txt") else "white"
+        universal = validated_proxy_lines(
+            (root / f"sub/{lane}.txt").read_text().splitlines(),
+            f"sub/{lane}.txt",
+        )
+        expected = [
+            parse_uri(line).fingerprint
+            for line in universal
+            if parse_uri(line).protocol in HAPP_PROTOCOLS
+        ]
+        actual = [parse_uri(line).fingerprint for line in proxy_lines]
+        if actual != expected:
+            raise RuntimeError(f"{relative} does not match the compatible {lane} population")
     stats = json.loads((root / "stats.json").read_text())
     if stats.get("project") != "Swift" or stats.get("tagline") != "Filter the garbage. Keep what works.":
         raise RuntimeError("stats.json branding is invalid")
