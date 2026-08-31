@@ -269,7 +269,7 @@ def write_final_subscriptions(
     try:
         for path, content in outputs.items():
             atomic_write(path, content)
-    except Exception:
+    except BaseException:
         for path, content in previous.items():
             if content is None:
                 path.unlink(missing_ok=True)
