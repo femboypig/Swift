@@ -17,8 +17,8 @@ from pathlib import Path
 from typing import Any
 
 from .models import ProxyConfig, RankedConfig, TestResult
-from .output import HAPP_PROTOCOLS, happ_subscription, validated_proxy_lines, write_json
-from .parsing import parse_uri, serialize_uri
+from .output import validated_proxy_lines, write_final_subscriptions, write_json
+from .parsing import parse_uri
 from .scoring import diverse_selection
 from .testing import sing_box_config, _free_port, _wait_for_core, _stop_process
 
@@ -140,7 +140,9 @@ async def _curl_download(
         stdout_bytes, stderr_bytes = await proc.communicate()
         elapsed = time.monotonic() - t0
         stderr = stderr_bytes.decode().strip()
-        is_stall = proc.returncode == 28 and ("too slow" in stderr.lower() or "speed" in stderr.lower())
+        is_stall = proc.returncode == 28 and (
+            "too slow" in stderr.lower() or "speed" in stderr.lower()
+        )
 
         if proc.returncode == 0 and stdout_bytes:
             parts = stdout_bytes.decode().strip().split(":")
@@ -150,7 +152,11 @@ async def _curl_download(
                 time_total = float(t_tot_str) if t_tot_str else elapsed
                 size_download = int(size_str) if size_str.isdigit() else 0
                 speed_bps = float(speed_str) if speed_str else 0.0
-                speed_kbps = speed_bps / 1024.0 if speed_bps > 0 else (size_download / 1024.0) / max(0.001, time_total)
+                speed_kbps = (
+                    speed_bps / 1024.0
+                    if speed_bps > 0
+                    else (size_download / 1024.0) / max(0.001, time_total)
+                )
                 if code in (200, 204, 206) and size_download >= DOWNLOAD_BYTES * 0.9:
                     return DownloadAttempt(
                         ok=True,
@@ -322,15 +328,16 @@ async def _verify_single(
                 # Core test passed. Run service reachability diagnostics.
                 services: dict[str, str] = {}
                 for svc_name, svc_url in SERVICE_PROBES.items():
-                    services[svc_name] = await _probe_service_reachability(socks_port, svc_url, timeout=4.0)
+                    services[svc_name] = await _probe_service_reachability(
+                        socks_port, svc_url, timeout=4.0
+                    )
 
                 # RU Egress classification (strictly by resolved geo country == RU)
                 is_ru = country == "RU"
                 ru_service_ok = None
                 if is_ru:
-                    ru_service_ok = (
-                        services.get("yandex") == "reachable"
-                        and (services.get("vk") == "reachable" or services.get("ozon") == "reachable")
+                    ru_service_ok = services.get("yandex") == "reachable" and (
+                        services.get("vk") == "reachable" or services.get("ozon") == "reachable"
                     )
 
                 return RuVerifyResult(
@@ -365,12 +372,20 @@ async def run_ru_verify(
     white_file = root / "sub/white.txt"
 
     main_lines = (
-        [l.strip() for l in main_input.read_text().splitlines() if l.strip() and not l.startswith("#")]
+        [
+            line.strip()
+            for line in main_input.read_text().splitlines()
+            if line.strip() and not line.startswith("#")
+        ]
         if main_input.exists()
         else []
     )
     white_lines = (
-        [l.strip() for l in white_input.read_text().splitlines() if l.strip() and not l.startswith("#")]
+        [
+            line.strip()
+            for line in white_input.read_text().splitlines()
+            if line.strip() and not line.startswith("#")
+        ]
         if white_input.exists()
         else []
     )
@@ -391,16 +406,17 @@ async def run_ru_verify(
 
     # Track membership and parsed configs
     # mapping: fingerprint -> (ProxyConfig, country, is_main, is_white, main_line, white_line)
-    unique_candidates: dict[str, tuple[ProxyConfig, str | None, bool, bool, str | None, str | None]] = {}
+    unique_candidates: dict[
+        str, tuple[ProxyConfig, str | None, bool, bool, str | None, str | None]
+    ] = {}
 
     for line in main_lines:
         try:
             cfg = parse_uri(line)
             h_cfg = history_data.get(cfg.fingerprint, {})
-            obs = (
-                h_cfg.get("lanes", {}).get("main", {}).get("observations", [])
-                or h_cfg.get("lanes", {}).get("white", {}).get("observations", [])
-            )
+            obs = h_cfg.get("lanes", {}).get("main", {}).get("observations", []) or h_cfg.get(
+                "lanes", {}
+            ).get("white", {}).get("observations", [])
             country = obs[-1].get("country") if obs else None
             unique_candidates[cfg.fingerprint] = (cfg, country, True, False, line, None)
         except Exception:
@@ -410,10 +426,9 @@ async def run_ru_verify(
         try:
             cfg = parse_uri(line)
             h_cfg = history_data.get(cfg.fingerprint, {})
-            obs = (
-                h_cfg.get("lanes", {}).get("white", {}).get("observations", [])
-                or h_cfg.get("lanes", {}).get("main", {}).get("observations", [])
-            )
+            obs = h_cfg.get("lanes", {}).get("white", {}).get("observations", []) or h_cfg.get(
+                "lanes", {}
+            ).get("main", {}).get("observations", [])
             country = obs[-1].get("country") if obs else None
             if cfg.fingerprint in unique_candidates:
                 existing = unique_candidates[cfg.fingerprint]
@@ -455,8 +470,14 @@ async def run_ru_verify(
         r = results_map.get(cfg.fingerprint)
         if not r:
             continue
-        svc_str = " ".join(f"{k[0].upper()}:{v[:2]}" for k, v in r.services.items()) if r.services else "none"
-        ru_tag = f" RU_SVC:{'OK' if r.ru_service_ok else 'FAIL'}" if r.ru_service_ok is not None else ""
+        svc_str = (
+            " ".join(f"{k[0].upper()}:{v[:2]}" for k, v in r.services.items())
+            if r.services
+            else "none"
+        )
+        ru_tag = (
+            f" RU_SVC:{'OK' if r.ru_service_ok else 'FAIL'}" if r.ru_service_ok is not None else ""
+        )
         lane_tag = "MAIN+WHITE" if (is_main and is_white) else ("MAIN" if is_main else "WHITE")
         LOGGER.info(
             "[%s] %-10s %s | %-10s | R1: %5.1f KB/s | R2: %5.1f KB/s | Min: %5.1f KB/s | HTTPS: %d/%d | Svc: %s%s | %s (%s)",
@@ -540,12 +561,19 @@ async def run_ru_verify(
                 cfg = parse_uri(line)
                 r = results_map.get(cfg.fingerprint)
                 if r and r.passed:
-                    lane_rec = history.get("configs", {}).get(cfg.fingerprint, {}).get("lanes", {}).get("main", {})
+                    lane_rec = (
+                        history.get("configs", {})
+                        .get(cfg.fingerprint, {})
+                        .get("lanes", {})
+                        .get("main", {})
+                    )
                     score = float(lane_rec.get("score", 70.0))
                     state = lane_rec.get("state", "active")
                     obs = lane_rec.get("observations", [])
                     prev_succ = next((item for item in reversed(obs) if item.get("success")), {})
-                    country = unique_candidates.get(cfg.fingerprint, (None, None))[1] or prev_succ.get("country")
+                    country = unique_candidates.get(cfg.fingerprint, (None, None))[
+                        1
+                    ] or prev_succ.get("country")
                     asn = prev_succ.get("asn")
                     provider = prev_succ.get("provider")
                     t_result = TestResult(
@@ -594,17 +622,11 @@ async def run_ru_verify(
             subnet_limit,
             asn_limit,
         )
-        verified_main_lines = [main_line_map[item.config.fingerprint] for item in final_main_ranked if item.config.fingerprint in main_line_map]
-
-        main_file.write_text("\n".join(verified_main_lines) + ("\n" if verified_main_lines else ""))
-        happ_main = root / "sub/happ/main.txt"
-        if happ_main.exists() or (root / "sub/happ").exists():
-            happ_lines = [
-                line for line in verified_main_lines
-                if parse_uri(line).protocol in HAPP_PROTOCOLS
-            ]
-            happ_content = happ_subscription(happ_lines, "Swift Main", "https://github.com/femboypig/Swift")
-            happ_main.write_text(happ_content)
+        verified_main_lines = [
+            main_line_map[item.config.fingerprint]
+            for item in final_main_ranked
+            if item.config.fingerprint in main_line_map
+        ]
 
     # 2. Filter, rank, and diverse select White
     verified_white_lines: list[str] = []
@@ -616,12 +638,19 @@ async def run_ru_verify(
                 cfg = parse_uri(line)
                 r = results_map.get(cfg.fingerprint)
                 if r and r.passed:
-                    lane_rec = history.get("configs", {}).get(cfg.fingerprint, {}).get("lanes", {}).get("white", {})
+                    lane_rec = (
+                        history.get("configs", {})
+                        .get(cfg.fingerprint, {})
+                        .get("lanes", {})
+                        .get("white", {})
+                    )
                     score = float(lane_rec.get("score", 70.0))
                     state = lane_rec.get("state", "active")
                     obs = lane_rec.get("observations", [])
                     prev_succ = next((item for item in reversed(obs) if item.get("success")), {})
-                    country = unique_candidates.get(cfg.fingerprint, (None, None))[1] or prev_succ.get("country")
+                    country = unique_candidates.get(cfg.fingerprint, (None, None))[
+                        1
+                    ] or prev_succ.get("country")
                     asn = prev_succ.get("asn")
                     provider = prev_succ.get("provider")
                     t_result = TestResult(
@@ -670,32 +699,29 @@ async def run_ru_verify(
             subnet_limit,
             asn_limit,
         )
-        verified_white_lines = [white_line_map[item.config.fingerprint] for item in final_white_ranked if item.config.fingerprint in white_line_map]
+        verified_white_lines = [
+            white_line_map[item.config.fingerprint]
+            for item in final_white_ranked
+            if item.config.fingerprint in white_line_map
+        ]
 
-        white_file.write_text("\n".join(verified_white_lines) + ("\n" if verified_white_lines else ""))
-        happ_white = root / "sub/happ/white.txt"
-        if happ_white.exists() or (root / "sub/happ").exists():
-            happ_lines = [
-                line for line in verified_white_lines
-                if parse_uri(line).protocol in HAPP_PROTOCOLS
-            ]
-            happ_content = happ_subscription(happ_lines, "Swift White", "https://github.com/femboypig/Swift")
-            happ_white.write_text(happ_content)
-
-    # 3. Update order.json with final published order
+    # 3. Prepare order.json with final published order
     order["main"] = [item.config.fingerprint for item in final_main_ranked]
     order["white"] = [item.config.fingerprint for item in final_white_ranked]
-    if order_file.parent.exists():
-        write_json(order_file, order, compact=True)
-
-    # 4. Invariant enforcement
+    # 4. Invariant enforcement before any production filename is changed
     mac_main_pass_count = sum(
-        1 for item in unique_candidates.values()
-        if item[2] and results_map.get(item[0].fingerprint) and results_map[item[0].fingerprint].passed
+        1
+        for item in unique_candidates.values()
+        if item[2]
+        and results_map.get(item[0].fingerprint)
+        and results_map[item[0].fingerprint].passed
     )
     mac_white_pass_count = sum(
-        1 for item in unique_candidates.values()
-        if item[3] and results_map.get(item[0].fingerprint) and results_map[item[0].fingerprint].passed
+        1
+        for item in unique_candidates.values()
+        if item[3]
+        and results_map.get(item[0].fingerprint)
+        and results_map[item[0].fingerprint].passed
     )
 
     expected_main_count = min(mac_main_pass_count, main_limit)
@@ -709,20 +735,6 @@ async def run_ru_verify(
         raise RuntimeError(
             f"Invariant violation: verified_white_lines count ({len(verified_white_lines)}) != expected ({expected_white_count})"
         )
-
-    if main_lines:
-        disk_main = [l for l in main_file.read_text().splitlines() if l.strip() and not l.startswith("#")]
-        if len(disk_main) != expected_main_count:
-            raise RuntimeError(
-                f"Invariant violation: sub/main.txt on disk ({len(disk_main)}) != expected ({expected_main_count})"
-            )
-
-    if white_lines:
-        disk_white = [l for l in white_file.read_text().splitlines() if l.strip() and not l.startswith("#")]
-        if len(disk_white) != expected_white_count:
-            raise RuntimeError(
-                f"Invariant violation: sub/white.txt on disk ({len(disk_white)}) != expected ({expected_white_count})"
-            )
 
     # Stats Update
     stats_file = root / "stats.json"
@@ -812,10 +824,21 @@ async def run_ru_verify(
                     else:
                         tcp_tls_matrix["tcp_tls_unknown__mac_fail"] += 1
 
-            white_tcp_tested = sum(1 for item in unique_candidates.values() if item[3] and white_tcp_tls_results.get(item[0].fingerprint) in {"pass", "fail"})
-            white_tcp_pass = tcp_tls_matrix["tcp_tls_pass__mac_pass"] + tcp_tls_matrix["tcp_tls_pass__mac_fail"]
-            white_tcp_fail = tcp_tls_matrix["tcp_tls_fail__mac_pass"] + tcp_tls_matrix["tcp_tls_fail__mac_fail"]
-            white_tcp_unknown = tcp_tls_matrix["tcp_tls_unknown__mac_pass"] + tcp_tls_matrix["tcp_tls_unknown__mac_fail"]
+            white_tcp_tested = sum(
+                1
+                for item in unique_candidates.values()
+                if item[3] and white_tcp_tls_results.get(item[0].fingerprint) in {"pass", "fail"}
+            )
+            white_tcp_pass = (
+                tcp_tls_matrix["tcp_tls_pass__mac_pass"] + tcp_tls_matrix["tcp_tls_pass__mac_fail"]
+            )
+            white_tcp_fail = (
+                tcp_tls_matrix["tcp_tls_fail__mac_pass"] + tcp_tls_matrix["tcp_tls_fail__mac_fail"]
+            )
+            white_tcp_unknown = (
+                tcp_tls_matrix["tcp_tls_unknown__mac_pass"]
+                + tcp_tls_matrix["tcp_tls_unknown__mac_fail"]
+            )
 
             telemetry_stats = {
                 **tcp_tls_matrix,
@@ -828,39 +851,66 @@ async def run_ru_verify(
 
             # Full Funnel Telemetry
             main_mac_https_pass = sum(
-                1 for item in unique_candidates.values()
-                if item[2] and results_map.get(item[0].fingerprint) and results_map[item[0].fingerprint].https_passed >= 2
+                1
+                for item in unique_candidates.values()
+                if item[2]
+                and results_map.get(item[0].fingerprint)
+                and results_map[item[0].fingerprint].https_passed >= 2
             )
             main_mac_r1_pass = sum(
-                1 for item in unique_candidates.values()
-                if item[2] and results_map.get(item[0].fingerprint) and results_map[item[0].fingerprint].r1_kbps >= 64.0
+                1
+                for item in unique_candidates.values()
+                if item[2]
+                and results_map.get(item[0].fingerprint)
+                and results_map[item[0].fingerprint].r1_kbps >= 64.0
             )
             main_mac_r2_pass = sum(
-                1 for item in unique_candidates.values()
-                if item[2] and results_map.get(item[0].fingerprint) and results_map[item[0].fingerprint].r2_kbps >= 64.0
+                1
+                for item in unique_candidates.values()
+                if item[2]
+                and results_map.get(item[0].fingerprint)
+                and results_map[item[0].fingerprint].r2_kbps >= 64.0
             )
 
             stats.setdefault("funnel", {})
             funnel_main = stats["funnel"].setdefault("main", {})
-            funnel_main["main_mac_tested"] = sum(1 for item in unique_candidates.values() if item[2])
-            funnel_main["main_mac_untested"] = max(0, funnel_main.get("main_mac_expected", len(main_lines)) - funnel_main["main_mac_tested"])
+            funnel_main["main_mac_tested"] = sum(
+                1 for item in unique_candidates.values() if item[2]
+            )
+            funnel_main["main_mac_untested"] = max(
+                0,
+                funnel_main.get("main_mac_expected", len(main_lines))
+                - funnel_main["main_mac_tested"],
+            )
             funnel_main["main_mac_https_pass"] = main_mac_https_pass
             funnel_main["main_mac_r1_pass"] = main_mac_r1_pass
             funnel_main["main_mac_r2_pass"] = main_mac_r2_pass
             funnel_main["main_mac_sustained_pass"] = mac_main_pass_count
             funnel_main["main_published"] = final_main_count
-            funnel_main["main_mac_completion_pct"] = round(
-                (funnel_main["main_mac_tested"] / funnel_main["main_mac_expected"] * 100), 2
-            ) if funnel_main.get("main_mac_expected") else 100.0
+            funnel_main["main_mac_completion_pct"] = (
+                round((funnel_main["main_mac_tested"] / funnel_main["main_mac_expected"] * 100), 2)
+                if funnel_main.get("main_mac_expected")
+                else 100.0
+            )
 
             funnel_white = stats["funnel"].setdefault("white", {})
-            funnel_white["white_mac_tested"] = sum(1 for item in unique_candidates.values() if item[3])
-            funnel_white["white_mac_untested"] = max(0, funnel_white.get("white_mac_expected", len(white_lines)) - funnel_white["white_mac_tested"])
+            funnel_white["white_mac_tested"] = sum(
+                1 for item in unique_candidates.values() if item[3]
+            )
+            funnel_white["white_mac_untested"] = max(
+                0,
+                funnel_white.get("white_mac_expected", len(white_lines))
+                - funnel_white["white_mac_tested"],
+            )
             funnel_white["white_mac_sustained_pass"] = mac_white_pass_count
             funnel_white["white_published"] = final_white_count
-            funnel_white["white_mac_completion_pct"] = round(
-                (funnel_white["white_mac_tested"] / funnel_white["white_mac_expected"] * 100), 2
-            ) if funnel_white.get("white_mac_expected") else 100.0
+            funnel_white["white_mac_completion_pct"] = (
+                round(
+                    (funnel_white["white_mac_tested"] / funnel_white["white_mac_expected"] * 100), 2
+                )
+                if funnel_white.get("white_mac_expected")
+                else 100.0
+            )
             funnel_white.update(telemetry_stats)
 
             # Incomplete Run Detection
@@ -887,9 +937,38 @@ async def run_ru_verify(
                         "services": r.services,
                     }
             stats["ru_service_diagnostics"] = ru_diag
-            write_json(stats_file, stats)
         except (OSError, json.JSONDecodeError) as exc:
             raise RuntimeError("could not update stats.json after Mac verification") from exc
+
+    write_final_subscriptions(
+        root,
+        verified_main_lines,
+        verified_white_lines,
+        "https://github.com/femboypig/Swift",
+    )
+    if order_file.parent.exists():
+        write_json(order_file, order, compact=True)
+    if stats_file.exists():
+        write_json(stats_file, stats)
+
+    disk_main = [
+        line
+        for line in main_file.read_text().splitlines()
+        if line.strip() and not line.startswith("#")
+    ]
+    disk_white = [
+        line
+        for line in white_file.read_text().splitlines()
+        if line.strip() and not line.startswith("#")
+    ]
+    if len(disk_main) != expected_main_count:
+        raise RuntimeError(
+            f"Invariant violation: sub/main.txt on disk ({len(disk_main)}) != expected ({expected_main_count})"
+        )
+    if len(disk_white) != expected_white_count:
+        raise RuntimeError(
+            f"Invariant violation: sub/white.txt on disk ({len(disk_white)}) != expected ({expected_white_count})"
+        )
 
     if handoff_present:
         shutil.rmtree(handoff_dir)
@@ -905,9 +984,13 @@ async def run_ru_verify(
 
 
 def main(argv: list[str] | None = None) -> int:
-    parser = argparse.ArgumentParser(description="Verify top Swift candidates through local Russian ISP connection")
+    parser = argparse.ArgumentParser(
+        description="Verify top Swift candidates through local Russian ISP connection"
+    )
     parser.add_argument("--root", default=".")
-    parser.add_argument("--core", default=os.environ.get("SWIFT_SING_BOX", ".cache/sing-box/sing-box"))
+    parser.add_argument(
+        "--core", default=os.environ.get("SWIFT_SING_BOX", ".cache/sing-box/sing-box")
+    )
     parser.add_argument("--concurrency", type=int, default=6)
     args = parser.parse_args(argv)
 
