@@ -1,41 +1,41 @@
 {
   "control_ok": true,
   "failure_reasons": {
-    "CONNECT_FAILED": 1,
-    "CONNECT_TIMEOUT": 32,
-    "DNS_FAILED": 32,
-    "DUPLICATE": 925,
+    "CONNECT_FAILED": 3,
+    "CONNECT_TIMEOUT": 38,
+    "DNS_FAILED": 34,
+    "DUPLICATE": 906,
     "MALFORMED_SECRET": 6,
-    "NETWORK_ERROR": 3,
-    "PROTOCOL_ERROR": 75,
-    "RESPONSE_TIMEOUT": 2,
-    "UNSTABLE": 16,
+    "NETWORK_ERROR": 2,
+    "PROTOCOL_ERROR": 78,
+    "RESPONSE_TIMEOUT": 4,
+    "UNSTABLE": 20,
     "UNSUPPORTED_SECRET": 8
   },
   "fastest": 20,
   "healthy_run": true,
-  "last_successful_set": "2026-08-31T06:31:31Z",
+  "last_successful_set": "2026-08-31T08:45:52Z",
   "production": {
     "fastest": 20,
     "stable": 50,
-    "working": 277
+    "working": 267
   },
   "project": "Swift",
   "selected": {
     "backup": {
-      "median_rtt_ms": 621.39,
-      "score": 95.27,
-      "url": "https://t.me/proxy?server=blind.server-space52.info&port=443&secret=ee1603010200010001fc030386e24c3add6d656469612e737465616d706f77657265642e636f6d"
+      "median_rtt_ms": 365.63,
+      "score": 97.75,
+      "url": "https://t.me/proxy?server=server2.server2-5mk.info&port=443&secret=ee1603010200010001fc030386e24c3add6d656469612e737465616d706f77657265642e636f6d"
     },
     "fastest": {
-      "median_rtt_ms": 493.08,
-      "score": 91.39,
-      "url": "https://t.me/proxy?server=forever.startnetwork.shop&port=443&secret=dd0ef5f4a09c2e33527338e9184a9a6178"
+      "median_rtt_ms": 154.16,
+      "score": 99.72,
+      "url": "https://t.me/proxy?server=ping-pong.mangom-kangom.info&port=443&secret=ee1603010200010001fc030386e24c3add6d656469612e737465616d706f77657265642e636f6d"
     },
     "stable": {
-      "median_rtt_ms": 611.45,
-      "score": 95.38,
-      "url": "https://t.me/proxy?server=udymau.server-space52.info&port=443&secret=ee1603010200010001fc030386e24c3add6d656469612e737465616d706f77657265642e636f6d"
+      "median_rtt_ms": 359.15,
+      "score": 97.81,
+      "url": "https://t.me/proxy?server=forward-gree.server-space52.info&port=443&secret=ee1603010200010001fc030386e24c3add6d656469612e737465616d706f77657265642e636f6d"
     }
   },
   "sources": {
@@ -43,31 +43,31 @@
       "fetched": 243,
       "status": "OK",
       "unique": 233,
-      "working": 205
+      "working": 201
     },
     "klondike": {
       "fetched": 230,
       "status": "OK",
       "unique": 227,
-      "working": 167
+      "working": 159
     },
     "shablin": {
-      "fetched": 290,
+      "fetched": 285,
       "status": "OK",
-      "unique": 284,
-      "working": 198
+      "unique": 279,
+      "working": 181
     },
     "solispirit": {
       "fetched": 232,
       "status": "OK",
       "unique": 227,
-      "working": 167
+      "working": 159
     }
   },
   "stable": 50,
   "suspicious_streak": 0,
   "tagline": "Filter the garbage. Keep what works.",
-  "tested": 414,
-  "updated_at": "2026-08-31T06:31:31Z",
-  "working": 277
+  "tested": 417,
+  "updated_at": "2026-08-31T08:45:52Z",
+  "working": 267
 }
