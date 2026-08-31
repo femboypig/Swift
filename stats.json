@@ -1,44 +1,38 @@
 {
-  "alive": 717,
-  "collected": 8759,
+  "alive": 684,
+  "collected": 9203,
   "countries": {
-    "AR": 10,
+    "AL": 1,
+    "AR": 5,
     "AT": 1,
     "AU": 8,
-    "BE": 1,
-    "BG": 1,
-    "BR": 1,
+    "BG": 2,
     "CA": 9,
-    "CO": 3,
-    "CZ": 3,
-    "DE": 55,
-    "EE": 3,
-    "ES": 3,
-    "FI": 15,
-    "FR": 27,
+    "CZ": 2,
+    "DE": 38,
+    "EE": 2,
+    "ES": 4,
+    "FI": 13,
+    "FR": 24,
     "GB": 64,
+    "GR": 1,
     "HK": 2,
-    "IN": 1,
-    "IR": 1,
-    "IT": 9,
-    "JP": 54,
-    "KR": 5,
+    "IT": 7,
+    "JP": 58,
+    "KR": 4,
     "KZ": 1,
-    "LT": 4,
-    "LV": 7,
-    "NL": 168,
-    "NO": 3,
+    "LT": 5,
+    "LV": 6,
+    "NL": 174,
+    "NO": 1,
     "PE": 2,
-    "PL": 15,
-    "RO": 3,
-    "RU": 12,
-    "SE": 2,
-    "SG": 14,
-    "TR": 3,
+    "PL": 14,
+    "RO": 1,
+    "RU": 5,
+    "SE": 1,
+    "SG": 16,
     "TW": 8,
-    "UA": 1,
-    "US": 197,
-    "ZA": 1
+    "US": 203
   },
   "diagnostics": {
     "hysteria_v1": {
@@ -52,126 +46,88 @@
       "reached_mac": 0
     },
     "ru_hysteria2": {
-      "discovered_total": 9,
+      "discovered_total": 10,
       "first_tested_this_run": 0,
       "global_pass": 2,
       "history_eligible": 1,
       "mac_pass": 0,
-      "never_tested": 6,
+      "never_tested": 7,
       "published": 0,
       "reached_mac": 0
     }
   },
   "discovery": {
-    "average_never_tested_age_hours": 8.49,
-    "backlog_change_this_run": -452,
-    "estimated_hours_to_clear": 3.0,
-    "estimated_runs_to_clear": 6,
-    "new_discovered_this_run": 1139,
-    "oldest_never_tested_age_hours": 15.44,
-    "tested_first_time_this_run": 452,
-    "total_never_tested": 2681
+    "average_never_tested_age_hours": 9.74,
+    "backlog_change_this_run": -418,
+    "estimated_hours_to_clear": 3.5,
+    "estimated_runs_to_clear": 7,
+    "new_discovered_this_run": 940,
+    "oldest_never_tested_age_hours": 18.25,
+    "tested_first_time_this_run": 418,
+    "total_never_tested": 2777
   },
   "failure_reasons": {
-    "CONNECT_TIMEOUT": 39,
+    "CONNECT_TIMEOUT": 32,
     "CORE_START_FAILED": 2,
-    "DNS_FAILED": 9,
-    "DUPLICATE": 1631,
-    "HTTP_FAILED": 40,
-    "NOT_WHITELISTED": 2199,
-    "PARSE_ERROR": 53,
-    "PROXY_FAILED": 334,
+    "DNS_FAILED": 3,
+    "DUPLICATE": 1605,
+    "HTTP_FAILED": 50,
+    "NOT_WHITELISTED": 2170,
+    "PARSE_ERROR": 62,
+    "PROXY_FAILED": 323,
     "SOURCE_EMPTY": 1,
-    "TOO_SLOW": 59,
-    "UNSTABLE": 47,
-    "UNSUPPORTED": 631,
+    "TOO_SLOW": 90,
+    "UNSTABLE": 63,
+    "UNSUPPORTED": 581,
     "WHITE_DNS_FAILED": 73
   },
   "mac_verification": {
     "main": {
       "before_mac": 300,
       "failure_reasons": {
-        "HTTPS_FAILED": 297
+        "HTTPS_FAILED": 298
       },
-      "final": 3,
-      "mac_fail": 297,
-      "mac_pass": 3,
+      "final": 2,
+      "mac_fail": 298,
+      "mac_pass": 2,
       "mac_tested": 300
     },
     "white": {
-      "before_mac": 7,
+      "before_mac": 3,
       "failure_reasons": {
-        "DOWNLOAD_R2_FAILED": 1,
         "HTTPS_FAILED": 3
       },
-      "final": 3,
-      "mac_fail": 4,
-      "mac_pass": 3,
-      "mac_tested": 7
+      "final": 0,
+      "mac_fail": 3,
+      "mac_pass": 0,
+      "mac_tested": 3
     }
   },
-  "main": 3,
-  "median_latency_ms": 468.86,
-  "parsed": 8081,
+  "main": 2,
+  "median_latency_ms": 499.59,
+  "parsed": 8566,
   "pipeline_version": 4,
   "production": {
-    "all": 717,
-    "main": 3,
-    "white": 3
+    "all": 684,
+    "main": 2,
+    "white": 0
   },
   "project": "Swift",
   "protocols": {
-    "hysteria2": 17,
-    "ss": 98,
-    "trojan": 14,
-    "vless": 562,
+    "hysteria2": 8,
+    "ss": 100,
+    "trojan": 11,
+    "vless": 539,
     "vmess": 26
   },
   "published": true,
-  "ru_service_diagnostics": {
-    "56d4f54a1151": {
-      "ru_service_ok": true,
-      "services": {
-        "ozon": "unreachable",
-        "telegram_api": "unreachable",
-        "vk": "reachable",
-        "yandex": "reachable"
-      }
-    },
-    "70150eeecc08": {
-      "ru_service_ok": true,
-      "services": {
-        "ozon": "unreachable",
-        "telegram_api": "unreachable",
-        "vk": "reachable",
-        "yandex": "reachable"
-      }
-    },
-    "a9eca2e1b4d4": {
-      "ru_service_ok": true,
-      "services": {
-        "ozon": "unreachable",
-        "telegram_api": "unreachable",
-        "vk": "reachable",
-        "yandex": "reachable"
-      }
-    },
-    "bd86c0131614": {
-      "ru_service_ok": true,
-      "services": {
-        "ozon": "unreachable",
-        "telegram_api": "unreachable",
-        "vk": "reachable",
-        "yandex": "reachable"
-      }
-    }
-  },
+  "ru_service_diagnostics": {},
   "selection": {
-    "eligible_not_sent_to_mac": 233,
-    "main_cloud_pass": 837,
+    "eligible_not_sent_to_mac": 220,
+    "main_cloud_pass": 859,
     "main_cloud_selected": 1000,
-    "main_eligible": 533,
-    "main_pre_mac_dropped_by_capacity": 233,
+    "main_eligible": 520,
+    "main_pre_mac_dropped_by_capacity": 220,
     "main_pre_mac_selected": 300
   },
   "source_status": {
@@ -203,31 +159,31 @@
     "zieng2-white": "OK"
   },
   "sources": {
-    "0xRadikal": 541,
-    "aetris": 4,
-    "airlink": 3,
-    "akres": 13,
-    "igareck": 23,
-    "kizyak": 8,
-    "matryoshka": 23,
-    "pyps": 3,
-    "rjsxrd": 121,
-    "rkp": 44,
-    "vovaplusexp": 110,
+    "0xRadikal": 529,
+    "aetris": 2,
+    "airlink": 1,
+    "akres": 9,
+    "igareck": 10,
+    "kizyak": 5,
+    "matryoshka": 25,
+    "pyps": 1,
+    "rjsxrd": 115,
+    "rkp": 27,
+    "vovaplusexp": 114,
     "zieng2": 5
   },
   "tagline": "Filter the garbage. Keep what works.",
-  "tested": 1241,
-  "unique": 6450,
-  "updated_at": "2026-08-31T03:41:20Z",
-  "white": 3,
+  "tested": 1247,
+  "unique": 6961,
+  "updated_at": "2026-08-31T06:29:56Z",
+  "white": 0,
   "white_evidence": {
     "cidr_source": "hxehex-white-cidr",
     "domain_source": "hxehex-white-domains",
-    "eligible": 1522,
+    "eligible": 1653,
     "published": {
-      "cidr": 2,
-      "sni": 5
+      "cidr": 1,
+      "sni": 2
     }
   }
 }

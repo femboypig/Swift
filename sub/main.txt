@@ -1,3 +1,2 @@
-vless://11af1c47-865a-47c6-92ff-118013655d78@51.158.238.49:8080?encryption=none&type=ws&security=none&sni=51.158.238.49#%F0%9F%87%B3%F0%9F%87%B1%20NL%20%C2%B7%20206
-vless://423b1d79-08c4-403f-9d5e-c541f791b55f@31.76.34.121:443?encryption=none&type=tcp&security=reality&flow=xtls-rprx-vision&sni=russia.cendora.ru&fp=edge&pbk=uo-U-FDlo7Cqldg7JKUe8jHvYnwP08NanGX0tUFrqEc&sid=bef240e96a8474a3#%F0%9F%87%B7%F0%9F%87%BA%20RU%20%C2%B7%20231
-vless://423b1d79-08c4-403f-9d5e-c541f791b55f@87.58.206.98:8443?encryption=none&type=tcp&security=reality&flow=xtls-rprx-vision&sni=auto.cendora.ru&fp=qq&pbk=gc9oXe37KCCm3J1dJ03wdGsnxPBdeEkRPOvl_t-vfVM&sid=a7f3c91b2e6d84c0#%F0%9F%87%B3%F0%9F%87%B1%20NL%20%C2%B7%20272
+vless://c8c06f90-c267-47a6-a91a-967e58e61db0@204.44.127.222:37262?encryption=none&type=tcp&security=none#%F0%9F%87%BA%F0%9F%87%B8%20US%20%C2%B7%20221
+vless://11af1c47-865a-47c6-92ff-118013655d78@51.158.238.49:8080?encryption=none&type=ws&security=none&sni=51.158.238.49#%F0%9F%87%B3%F0%9F%87%B1%20NL%20%C2%B7%20230
