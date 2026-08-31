@@ -232,6 +232,35 @@ class ParsingTests(unittest.TestCase):
 
 
 class TestingConfigTests(unittest.TestCase):
+    @patch.dict(
+        "os.environ",
+        {"SWIFT_BIND_INTERFACE": "wlan0", "SWIFT_DIRECT_SOCKS": "127.0.0.1:3065"},
+    )
+    def test_local_direct_socks_is_used_as_proxy_dial_detour(self) -> None:
+        config = parse_uri(vless_uri())
+
+        generated = sing_box_config(config, 23001)
+
+        proxy, direct = generated["outbounds"]
+        self.assertEqual(proxy["detour"], "direct-socks")
+        self.assertNotIn("bind_interface", proxy)
+        self.assertEqual(
+            direct,
+            {
+                "type": "socks",
+                "tag": "direct-socks",
+                "server": "127.0.0.1",
+                "server_port": 3065,
+                "version": "5",
+            },
+        )
+        self.assertFalse(generated["route"]["auto_detect_interface"])
+
+    @patch.dict("os.environ", {"SWIFT_DIRECT_SOCKS": "192.168.2.1:1080"})
+    def test_direct_socks_must_be_loopback(self) -> None:
+        with self.assertRaisesRegex(ValueError, "loopback"):
+            sing_box_config(parse_uri(vless_uri()), 23001)
+
     def test_sing_box_reality_config_uses_resolved_ip_and_keeps_sni(self) -> None:
         config = parse_uri(vless_uri("edge.example.com"))
         config.resolved_ip = PUBLIC_V4

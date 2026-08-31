@@ -22,7 +22,13 @@ from .models import ProxyConfig, RankedConfig, TestResult
 from .output import validated_proxy_lines, write_final_subscriptions, write_json
 from .parsing import parse_uri
 from .scoring import diverse_selection
-from .testing import sing_box_config, _free_port, _wait_for_core, _stop_process
+from .testing import (
+    _direct_socks_address,
+    _free_port,
+    _stop_process,
+    _wait_for_core,
+    sing_box_config,
+)
 
 LOGGER = logging.getLogger("swift.ru_verify")
 
@@ -131,14 +137,13 @@ async def _direct_preflight_probe(
     *,
     timeout: float,
     minimum_bytes: int = 0,
+    direct_socks: tuple[str, int] | None = None,
 ) -> HttpsAttempt:
     cmd = [
         "curl",
         "--silent",
         "--show-error",
         "--location",
-        "--interface",
-        interface,
         "--connect-timeout",
         str(min(4.0, timeout)),
         "--max-time",
@@ -149,6 +154,11 @@ async def _direct_preflight_probe(
         os.devnull,
         url,
     ]
+    if direct_socks:
+        host, port = direct_socks
+        cmd[4:4] = ["--proxy", f"socks5h://{host}:{port}"]
+    else:
+        cmd[4:4] = ["--interface", interface]
     try:
         proc = await asyncio.create_subprocess_exec(
             *cmd,
@@ -193,8 +203,17 @@ async def _mac_preflight(interface: str) -> MacPreflightResult:
             diagnostics["DNS_FAILED"] += 1
             dns_ok = False
 
+    direct_socks = _direct_socks_address()
     https_results = await asyncio.gather(
-        *(_direct_preflight_probe(interface, url, timeout=8.0) for url in PROBE_URLS)
+        *(
+            _direct_preflight_probe(
+                interface,
+                url,
+                timeout=8.0,
+                direct_socks=direct_socks,
+            )
+            for url in PROBE_URLS
+        )
     )
     for result in https_results:
         if not result.ok:
@@ -205,6 +224,7 @@ async def _mac_preflight(interface: str) -> MacPreflightResult:
         DOWNLOAD_URL_R1,
         timeout=12.0,
         minimum_bytes=int(DOWNLOAD_BYTES * 0.9),
+        direct_socks=direct_socks,
     )
     if not download.ok:
         diagnostics[download.diagnostic] += 1
@@ -619,9 +639,11 @@ async def run_ru_verify(
             LOGGER.error("RU_PREFLIGHT_FAILED bind_interface is not configured; preserving handoff")
             return 1
         preflight = await _mac_preflight(bind_interface)
+        preflight_path = "direct-socks" if _direct_socks_address() else "bound-interface"
         LOGGER.info(
-            "RU preflight interface=%s dns=%s https=%d/%d download=%s diagnostics=%s",
+            "RU preflight interface=%s path=%s dns=%s https=%d/%d download=%s diagnostics=%s",
             preflight.interface,
+            preflight_path,
             "PASS" if preflight.dns_ok else "FAIL",
             preflight.https_passed,
             preflight.https_total,
@@ -758,8 +780,9 @@ async def run_ru_verify(
     if handoff_present and collapsed_lanes:
         postflight = await _mac_preflight(os.environ["SWIFT_BIND_INTERFACE"])
         LOGGER.info(
-            "RU collapse postflight lanes=%s dns=%s https=%d/%d download=%s diagnostics=%s",
+            "RU collapse postflight lanes=%s path=%s dns=%s https=%d/%d download=%s diagnostics=%s",
             ",".join(collapsed_lanes),
+            "direct-socks" if _direct_socks_address() else "bound-interface",
             "PASS" if postflight.dns_ok else "FAIL",
             postflight.https_passed,
             postflight.https_total,
