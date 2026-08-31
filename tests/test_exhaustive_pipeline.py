@@ -442,6 +442,58 @@ class TestExhaustiveValidationPipeline(unittest.TestCase):
 
             self.assertEqual(exit_code, 1)
 
+    def test_cloud_handoff_is_distinct_from_final_publication(self):
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            root = Path(tmp_dir)
+            (root / "sub/happ").mkdir(parents=True)
+            (root / "data/mac-candidates").mkdir(parents=True)
+            core = root / "sing-box"
+            core.write_text("")
+            from swiftproxy.parsing import parse_uri, serialize_uri
+
+            old_cfg = _make_config("old", lane="main")
+            candidate = _make_config("prepared", lane="main", host="1.0.0.1")
+            parsed_candidate = parse_uri(serialize_uri(candidate))
+            (root / "sub/main.txt").write_text(serialize_uri(old_cfg) + "\n")
+            (root / "sub/white.txt").write_text("")
+            (root / "sub/happ/main.txt").write_text("#profile-title: Swift Main\n")
+            (root / "sub/happ/white.txt").write_text("#profile-title: Swift White\n")
+            (root / "data/mac-candidates/main.txt").write_text(serialize_uri(candidate) + "\n")
+            (root / "data/mac-candidates/white.txt").write_text("")
+            (root / "data/order.json").write_text(json.dumps({"main": [], "white": []}))
+            (root / "stats.json").write_text(json.dumps({
+                "project": "Swift",
+                "tagline": "Filter the garbage. Keep what works.",
+                "published": False,
+                "stage": "cloud_prepared",
+                "production": {"main": 1, "white": 0},
+            }))
+
+            tested = []
+
+            async def fake_verify_single(cfg, *args, **kwargs):
+                tested.append(cfg.fingerprint)
+                return RuVerifyResult(
+                    cfg.fingerprint,
+                    passed=True,
+                    r1_kbps=100.0,
+                    r2_kbps=100.0,
+                    https_passed=3,
+                )
+
+            with patch("swiftproxy.ru_verify._verify_single", side_effect=fake_verify_single):
+                from swiftproxy.ru_verify import main as ru_verify_main
+                exit_code = ru_verify_main(["--root", str(root), "--core", str(core)])
+
+            self.assertEqual(exit_code, 0)
+            self.assertEqual(tested, [parsed_candidate.fingerprint])
+            published = parse_uri((root / "sub/main.txt").read_text().strip())
+            self.assertEqual(published.fingerprint, parsed_candidate.fingerprint)
+            self.assertFalse((root / "data/mac-candidates").exists())
+            stats = json.loads((root / "stats.json").read_text())
+            self.assertTrue(stats["published"])
+            self.assertEqual(stats["stage"], "production")
+
 
 if __name__ == "__main__":
     unittest.main()
