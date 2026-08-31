@@ -27,13 +27,10 @@ from .output import (
 from .parsing import deduplicate, parse_sources, parse_uri
 from .scoring import (
     add_observation,
-    choose_candidates,
-    diverse_selection,
     empty_history,
     failure_reasons,
     prune_history,
     rank_configs,
-    select_pre_mac_candidates,
 )
 from .ru_probe import probe_ru_targets
 from .sources import fetch_sources, source_specs
@@ -148,6 +145,64 @@ def _jobs(
                 jobs.append((config, lane))
                 seen.add(key)
     return jobs
+
+
+def _cloud_lane_counts(
+    lane: str,
+    candidates: list[ProxyConfig],
+    resolved: set[str],
+    results: dict[tuple[str, str], TestResult],
+    history_eligible: int,
+    mac_expected: int,
+) -> dict[str, int | float]:
+    prefix = f"{lane}_"
+    expected = sum(config.fingerprint in resolved for config in candidates)
+    tested = sum((config.fingerprint, lane) in results for config in candidates)
+    worked = sum(
+        results[(config.fingerprint, lane)].worked
+        for config in candidates
+        if (config.fingerprint, lane) in results
+    )
+    passed = sum(
+        results[(config.fingerprint, lane)].reason is None
+        for config in candidates
+        if (config.fingerprint, lane) in results
+    )
+    return {
+        prefix + "resolution_failed": len(candidates) - expected,
+        prefix + "cloud_expected": expected,
+        prefix + "cloud_tested": tested,
+        prefix + "cloud_untested": max(0, expected - tested),
+        prefix + "cloud_worked": worked,
+        prefix + "cloud_pass": passed,
+        prefix + "history_eligible": history_eligible,
+        prefix + "mac_expected": mac_expected,
+        prefix + "cloud_completion_pct": round(tested / expected * 100, 2) if expected else 100.0,
+    }
+
+
+def _tcp_tls_telemetry_counts(
+    probe_targets: list[dict[str, Any]],
+    results: dict[str, Any],
+    eligible_population: int,
+) -> dict[str, int | str]:
+    statuses = [results.get(f"{target['host']}:{target['port']}") for target in probe_targets]
+    tested = [status for status in statuses if isinstance(status, dict)]
+    passed = sum(bool(status.get("ok")) for status in tested)
+    failed = len(tested) - passed
+    expected = len(probe_targets)
+    return {
+        "tcp_tls_telemetry_population": eligible_population,
+        "tcp_tls_telemetry_expected": expected,
+        "tcp_tls_telemetry_tested": len(tested),
+        "tcp_tls_telemetry_sampling_policy": (
+            "top-ranked history-eligible TCP/TLS-capable White configs; max 60"
+        ),
+        "white_tcp_tls_tested": len(tested),
+        "white_tcp_tls_pass": passed,
+        "white_tcp_tls_fail": failed,
+        "white_tcp_tls_unknown": expected - len(tested),
+    }
 
 
 def _hold(
@@ -279,7 +334,6 @@ async def run(root: Path, config_path: Path, core_override: str | None = None) -
         _hold(root, previous_stats, "TEST_TARGET_OUTAGE", {})
 
     core_path = find_core(core_override)
-    seed = datetime.now(UTC).strftime("%Y-%m-%dT%H")
     candidates = {
         "main": [config for config in unique if "main" in config.lanes],
         "white": [config for config in unique if "white" in config.lanes],
@@ -342,13 +396,23 @@ async def run(root: Path, config_path: Path, core_override: str | None = None) -
 
     white_tcp_tls_results: dict[str, str] = {}
     white_tcp_tls_telemetry = {
+        "tcp_tls_telemetry_population": 0,
+        "tcp_tls_telemetry_expected": 0,
+        "tcp_tls_telemetry_tested": 0,
+        "tcp_tls_telemetry_sampling_policy": (
+            "top-ranked history-eligible TCP/TLS-capable White configs; max 60"
+        ),
         "white_tcp_tls_tested": 0,
         "white_tcp_tls_pass": 0,
         "white_tcp_tls_fail": 0,
         "white_tcp_tls_unknown": 0,
     }
     if ranked_white and os.environ.get("SWIFT_RU_PROBE_URL"):
-        top_white = [item for item in ranked_white if item.config.protocol not in {"hysteria", "hysteria2", "tuic"}][:60]
+        top_white = [
+            item
+            for item in ranked_white
+            if item.config.protocol not in {"hysteria", "hysteria2", "tuic"}
+        ][:60]
         probe_targets = [
             {
                 "host": item.config.resolved_ip or item.config.host,
@@ -369,17 +433,22 @@ async def run(root: Path, config_path: Path, core_override: str | None = None) -
                 white_tcp_tls_results[item.config.fingerprint] = "unsupported"
             elif key_id in ru_results:
                 status_item = ru_results[key_id]
-                white_tcp_tls_results[item.config.fingerprint] = "pass" if status_item.get("ok") else "fail"
+                white_tcp_tls_results[item.config.fingerprint] = (
+                    "pass" if status_item.get("ok") else "fail"
+                )
             else:
                 white_tcp_tls_results[item.config.fingerprint] = "unknown"
 
-        white_tcp_tls_telemetry["white_tcp_tls_tested"] = len(probe_targets)
-        white_tcp_tls_telemetry["white_tcp_tls_pass"] = sum(1 for r in ru_results.values() if r.get("ok"))
-        white_tcp_tls_telemetry["white_tcp_tls_fail"] = sum(1 for r in ru_results.values() if not r.get("ok"))
-        white_tcp_tls_telemetry["white_tcp_tls_unknown"] = max(
-            0,
-            len(probe_targets)
-            - (white_tcp_tls_telemetry["white_tcp_tls_pass"] + white_tcp_tls_telemetry["white_tcp_tls_fail"]),
+        white_tcp_tls_telemetry = _tcp_tls_telemetry_counts(
+            probe_targets,
+            ru_results,
+            len(
+                [
+                    item
+                    for item in ranked_white
+                    if item.config.protocol not in {"hysteria", "hysteria2", "tuic"}
+                ]
+            ),
         )
         LOGGER.info(
             "white ru_probe telemetry tested=%d passed=%d failed=%d unknown=%d (telemetry-only, no gating)",
@@ -397,59 +466,34 @@ async def run(root: Path, config_path: Path, core_override: str | None = None) -
     white = ranked_white
 
     main_unique = len([c for c in unique if "main" in c.lanes])
-    main_resolution_failed = sum(
-        config.fingerprint not in resolved for config in candidates["main"]
-    )
-    main_cloud_expected = len(candidates["main"]) - main_resolution_failed
-    main_tested_fps = {r.fingerprint for r in results_list if r.lane == "main"}
-    main_cloud_tested = len(main_tested_fps)
-    main_cloud_untested = max(0, main_cloud_expected - main_cloud_tested)
-    main_cloud_worked = sum(
-        1 for c in candidates["main"]
-        if (c.fingerprint, "main") in results and results[(c.fingerprint, "main")].worked
-    )
-    main_cloud_pass = sum(
-        1 for c in candidates["main"]
-        if (c.fingerprint, "main") in results
-        and results[(c.fingerprint, "main")].reason is None
-    )
     main_history_eligible = len(ranked_main)
     main_mac_expected = len(main)
-    main_cloud_completion_pct = round((main_cloud_tested / main_cloud_expected * 100), 2) if main_cloud_expected else 100.0
+    main_counts = _cloud_lane_counts(
+        "main", candidates["main"], resolved, results, main_history_eligible, main_mac_expected
+    )
+    main_cloud_expected = int(main_counts["main_cloud_expected"])
+    main_cloud_tested = int(main_counts["main_cloud_tested"])
+    main_cloud_pass = int(main_counts["main_cloud_pass"])
 
     white_pool_count = len(white_pool)
     white_evidence_matched = len(white_signals)
-    white_resolution_failed = sum(
-        config.fingerprint not in resolved for config in candidates["white"]
-    )
-    white_cloud_expected = len(candidates["white"]) - white_resolution_failed
-    white_tested_fps = {r.fingerprint for r in results_list if r.lane == "white"}
-    white_cloud_tested = len(white_tested_fps)
-    white_cloud_untested = max(0, white_cloud_expected - white_cloud_tested)
-    white_cloud_worked = sum(
-        1 for c in candidates["white"]
-        if (c.fingerprint, "white") in results and results[(c.fingerprint, "white")].worked
-    )
-    white_cloud_pass = sum(
-        1 for c in candidates["white"]
-        if (c.fingerprint, "white") in results
-        and results[(c.fingerprint, "white")].reason is None
-    )
     white_history_eligible = len(ranked_white)
     white_mac_expected = len(white)
-    white_cloud_completion_pct = round((white_cloud_tested / white_cloud_expected * 100), 2) if white_cloud_expected else 100.0
+    white_counts = _cloud_lane_counts(
+        "white",
+        candidates["white"],
+        resolved,
+        results,
+        white_history_eligible,
+        white_mac_expected,
+    )
+    white_cloud_tested = int(white_counts["white_cloud_tested"])
+    white_cloud_pass = int(white_counts["white_cloud_pass"])
 
     funnel = {
         "main": {
             "main_unique": main_unique,
-            "main_resolution_failed": main_resolution_failed,
-            "main_cloud_expected": main_cloud_expected,
-            "main_cloud_tested": main_cloud_tested,
-            "main_cloud_untested": main_cloud_untested,
-            "main_cloud_worked": main_cloud_worked,
-            "main_cloud_pass": main_cloud_pass,
-            "main_history_eligible": main_history_eligible,
-            "main_mac_expected": main_mac_expected,
+            **main_counts,
             "main_mac_tested": 0,
             "main_mac_untested": main_mac_expected,
             "main_mac_https_pass": 0,
@@ -457,25 +501,16 @@ async def run(root: Path, config_path: Path, core_override: str | None = None) -
             "main_mac_r2_pass": 0,
             "main_mac_sustained_pass": 0,
             "main_published": 0,
-            "main_cloud_completion_pct": main_cloud_completion_pct,
             "main_mac_completion_pct": 0.0,
         },
         "white": {
             "white_pool": white_pool_count,
             "white_evidence_matched": white_evidence_matched,
-            "white_resolution_failed": white_resolution_failed,
-            "white_cloud_expected": white_cloud_expected,
-            "white_cloud_tested": white_cloud_tested,
-            "white_cloud_untested": white_cloud_untested,
-            "white_cloud_worked": white_cloud_worked,
-            "white_cloud_pass": white_cloud_pass,
-            "white_history_eligible": white_history_eligible,
-            "white_mac_expected": white_mac_expected,
+            **white_counts,
             "white_mac_tested": 0,
             "white_mac_untested": white_mac_expected,
             "white_mac_sustained_pass": 0,
             "white_published": 0,
-            "white_cloud_completion_pct": white_cloud_completion_pct,
             "white_mac_completion_pct": 0.0,
             **white_tcp_tls_telemetry,
         },
@@ -546,9 +581,13 @@ async def run(root: Path, config_path: Path, core_override: str | None = None) -
 
     before_configs = history.get("configs", {})
     never_tested_before = [
-        cfg for cfg in unique
+        cfg
+        for cfg in unique
         if cfg.fingerprint not in before_configs
-        or not any(l.get("observations") for l in before_configs[cfg.fingerprint].get("lanes", {}).values())
+        or not any(
+            lane.get("observations")
+            for lane in before_configs[cfg.fingerprint].get("lanes", {}).values()
+        )
     ]
 
     tested_fps = {result.fingerprint for result in results_list}
@@ -556,9 +595,13 @@ async def run(root: Path, config_path: Path, core_override: str | None = None) -
 
     after_configs = temp_history.get("configs", {})
     never_tested_after = [
-        cfg for cfg in unique
+        cfg
+        for cfg in unique
         if cfg.fingerprint not in after_configs
-        or not any(l.get("observations") for l in after_configs[cfg.fingerprint].get("lanes", {}).values())
+        or not any(
+            lane.get("observations")
+            for lane in after_configs[cfg.fingerprint].get("lanes", {}).values()
+        )
     ]
 
     ages_hours = []
@@ -571,10 +614,16 @@ async def run(root: Path, config_path: Path, core_override: str | None = None) -
             ages_hours.append(0.0)
 
     oldest_never_tested_age_hours = round(max(ages_hours), 2) if ages_hours else 0.0
-    average_never_tested_age_hours = round(sum(ages_hours) / len(ages_hours), 2) if ages_hours else 0.0
+    average_never_tested_age_hours = (
+        round(sum(ages_hours) / len(ages_hours), 2) if ages_hours else 0.0
+    )
     backlog_change = len(never_tested_after) - len(never_tested_before)
     first_tested_count = len(tested_first_time)
-    estimated_runs_to_clear = (len(never_tested_after) + max(1, first_tested_count) - 1) // max(1, first_tested_count) if never_tested_after else 0
+    estimated_runs_to_clear = (
+        (len(never_tested_after) + max(1, first_tested_count) - 1) // max(1, first_tested_count)
+        if never_tested_after
+        else 0
+    )
     estimated_hours_to_clear = round(estimated_runs_to_clear * 0.5, 1)
 
     discovery_stats = {
@@ -591,10 +640,10 @@ async def run(root: Path, config_path: Path, core_override: str | None = None) -
     def _is_ru_target(cfg: ProxyConfig) -> bool:
         rec = after_configs.get(cfg.fingerprint, {})
         geo = None
-        for l in rec.get("lanes", {}).values():
-            for o in reversed(l.get("observations", [])):
-                if o.get("country"):
-                    geo = o.get("country")
+        for lane in rec.get("lanes", {}).values():
+            for observation in reversed(lane.get("observations", [])):
+                if observation.get("country"):
+                    geo = observation.get("country")
                     break
         return geo == "RU" or cfg.host.endswith(".ru") or "RU" in cfg.remark.upper()
 
@@ -606,9 +655,21 @@ async def run(root: Path, config_path: Path, core_override: str | None = None) -
             "discovered_total": len(ru_hy2_pool),
             "never_tested": sum(1 for c in ru_hy2_pool if c in never_tested_after),
             "first_tested_this_run": sum(1 for c in ru_hy2_pool if c in tested_first_time),
-            "global_pass": sum(1 for c in ru_hy2_pool if (c.fingerprint, "main") in results and results[(c.fingerprint, "main")].worked),
-            "history_eligible": sum(1 for item in ranked_main if item.config.protocol == "hysteria2" and _is_ru_target(item.config)),
-            "reached_mac": sum(1 for item in main if item.config.protocol == "hysteria2" and _is_ru_target(item.config)),
+            "global_pass": sum(
+                1
+                for c in ru_hy2_pool
+                if (c.fingerprint, "main") in results and results[(c.fingerprint, "main")].worked
+            ),
+            "history_eligible": sum(
+                1
+                for item in ranked_main
+                if item.config.protocol == "hysteria2" and _is_ru_target(item.config)
+            ),
+            "reached_mac": sum(
+                1
+                for item in main
+                if item.config.protocol == "hysteria2" and _is_ru_target(item.config)
+            ),
             "mac_pass": 0,
             "published": 0,
         },
@@ -616,8 +677,14 @@ async def run(root: Path, config_path: Path, core_override: str | None = None) -
             "discovered_total": len(hy1_pool),
             "never_tested": sum(1 for c in hy1_pool if c in never_tested_after),
             "first_tested_this_run": sum(1 for c in hy1_pool if c in tested_first_time),
-            "global_pass": sum(1 for c in hy1_pool if (c.fingerprint, "main") in results and results[(c.fingerprint, "main")].worked),
-            "history_eligible": sum(1 for item in ranked_main if item.config.protocol == "hysteria"),
+            "global_pass": sum(
+                1
+                for c in hy1_pool
+                if (c.fingerprint, "main") in results and results[(c.fingerprint, "main")].worked
+            ),
+            "history_eligible": sum(
+                1 for item in ranked_main if item.config.protocol == "hysteria"
+            ),
             "reached_mac": sum(1 for item in main if item.config.protocol == "hysteria"),
             "mac_pass": 0,
             "published": 0,
