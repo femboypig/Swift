@@ -171,7 +171,9 @@ def score_lane(
         )
 
     # Bayesian confidence shrinkage for history components
-    confidence_window = float(settings.get("confidence_window", 10.0) if settings else (10.0 if lane == "main" else 4.0))
+    confidence_window = float(
+        settings.get("confidence_window", 10.0) if settings else (10.0 if lane == "main" else 4.0)
+    )
     neutral_availability = float(settings.get("neutral_availability", 0.50) if settings else 0.50)
     confidence = min(len(observations) / max(1.0, confidence_window), 1.0)
 
@@ -350,7 +352,9 @@ def prune_history(history: dict[str, Any], max_configs: int = 50_000) -> None:
     stale = []
     for fingerprint, record in configs.items():
         try:
-            last_seen = datetime.fromisoformat(str(record.get("last_seen", "")).replace("Z", "+00:00"))
+            last_seen = datetime.fromisoformat(
+                str(record.get("last_seen", "")).replace("Z", "+00:00")
+            )
         except ValueError:
             last_seen = datetime.min.replace(tzinfo=UTC)
         states = {lane.get("state") for lane in record.get("lanes", {}).values()}

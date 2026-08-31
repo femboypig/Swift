@@ -155,7 +155,9 @@ async def run(root: Path, settings: dict[str, Any]) -> int:
                         len(working) - len(passed_working),
                     )
                     working = passed_working
-                    stable_candidates = [item for item in stable_candidates if item in passed_working]
+                    stable_candidates = [
+                        item for item in stable_candidates if item in passed_working
+                    ]
     stable = [
         item
         for item in stable_candidates

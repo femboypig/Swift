@@ -75,4 +75,3 @@ async def fetch_sources(specs: list[SourceSpec], timeout: float = 25.0) -> list[
                 result.elapsed_ms,
             )
     return results
-

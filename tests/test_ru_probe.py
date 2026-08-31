@@ -49,7 +49,9 @@ class TestRuProbe(unittest.TestCase):
             {"host": "1.2.3.4", "port": 443, "sni": "test.com"},
             {"host": "5.6.7.8", "port": 8443, "sni": "test2.com"},
         ]
-        res = probe_ru_targets(targets, probe_url="https://example.com/probe", probe_key="secret123")
+        res = probe_ru_targets(
+            targets, probe_url="https://example.com/probe", probe_key="secret123"
+        )
         self.assertEqual(len(res), 2)
         self.assertTrue(res["1.2.3.4:443"]["ok"])
         self.assertEqual(res["1.2.3.4:443"]["latency_ms"], 42)
@@ -80,9 +82,7 @@ class TestRuProbe(unittest.TestCase):
             {"host": "1.2.3.4", "port": 443},
             {"host": "1.2.3.4", "port": 443},
         ]
-        res = probe_ru_targets(
-            targets, probe_url="https://example.com/probe", chunk_size=1
-        )
+        res = probe_ru_targets(targets, probe_url="https://example.com/probe", chunk_size=1)
         self.assertEqual(mock_urlopen.call_count, 3)
         self.assertTrue(res["1.2.3.4:443"]["ok"])
 

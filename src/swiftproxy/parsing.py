@@ -400,8 +400,12 @@ def parse_tuic(uri: str) -> ProxyConfig:
             raise ValueError("invalid TUIC heartbeat")
         options["heartbeat"] = heartbeat
     return ProxyConfig(
-        "tuic", _host(parts), _port(parts.port), {"uuid": user, "password": password}, options,
-        _fragment(parts)
+        "tuic",
+        _host(parts),
+        _port(parts.port),
+        {"uuid": user, "password": password},
+        options,
+        _fragment(parts),
     )
 
 
@@ -575,7 +579,9 @@ def serialize_uri(config: ProxyConfig, name: str | None = None) -> str:
         encoded = base64.urlsafe_b64encode(credentials).decode().rstrip("=")
         return f"ss://{encoded}@{endpoint}{suffix}"
     if config.protocol == "hysteria":
-        query = [(key, value) for key, value in _common_query(config) if key not in {"security", "type"}]
+        query = [
+            (key, value) for key, value in _common_query(config) if key not in {"security", "type"}
+        ]
         if config.auth.get("auth"):
             query.append(("auth", str(config.auth["auth"])))
         if config.options.get("obfs"):
@@ -589,7 +595,9 @@ def serialize_uri(config: ProxyConfig, name: str | None = None) -> str:
         mark = f"?{urlencode(query)}" if query else ""
         return f"hysteria://{endpoint}{mark}{suffix}"
     if config.protocol == "hysteria2":
-        query = [(key, value) for key, value in _common_query(config) if key not in {"security", "type"}]
+        query = [
+            (key, value) for key, value in _common_query(config) if key not in {"security", "type"}
+        ]
         if config.options.get("obfs"):
             query.extend(
                 [
@@ -604,9 +612,13 @@ def serialize_uri(config: ProxyConfig, name: str | None = None) -> str:
         if config.options.get("down_mbps"):
             query.append(("downmbps", str(config.options["down_mbps"])))
         mark = f"?{urlencode(query)}" if query else ""
-        return f"hysteria2://{quote(str(config.auth['password']), safe='')}@{endpoint}{mark}{suffix}"
+        return (
+            f"hysteria2://{quote(str(config.auth['password']), safe='')}@{endpoint}{mark}{suffix}"
+        )
     if config.protocol == "tuic":
-        query = [(key, value) for key, value in _common_query(config) if key not in {"security", "type"}]
+        query = [
+            (key, value) for key, value in _common_query(config) if key not in {"security", "type"}
+        ]
         query.extend(
             [
                 ("congestion_control", str(config.options.get("congestion_control", "cubic"))),

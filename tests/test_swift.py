@@ -38,7 +38,6 @@ from swiftproxy.scoring import (
     empty_history,
     rank_configs,
     score_lane,
-    state_after,
 )
 from swiftproxy.testing import resolve_public_host, sing_box_config, sing_box_outbound
 from swiftproxy.whitelist import build_evidence, evidence_for, evidence_priority
@@ -108,9 +107,7 @@ class ParsingTests(unittest.TestCase):
     def test_xray_transport_names_are_normalized(self) -> None:
         raw = parse_uri(vless_uri().replace("type=tcp", "type=raw"))
         websocket = parse_uri(
-            vless_uri()
-            .replace("type=tcp", "type=websocket")
-            .replace("&sni=", "&path=%2Fws&sni=")
+            vless_uri().replace("type=tcp", "type=websocket").replace("&sni=", "&path=%2Fws&sni=")
         )
         self.assertEqual(raw.options["transport"], "tcp")
         self.assertEqual(websocket.options["transport"], "ws")
@@ -209,7 +206,10 @@ class ParsingTests(unittest.TestCase):
             "http://example.com/subscription.txt",
             "  https://example.com/subscription.txt  ",
         ):
-            with self.subTest(value=value), self.assertRaisesRegex(ValueError, "unsupported protocol"):
+            with (
+                self.subTest(value=value),
+                self.assertRaisesRegex(ValueError, "unsupported protocol"),
+            ):
                 parse_uri(value)
 
     def test_base64_subscription_still_extracts_supported_proxy_uri(self) -> None:
@@ -316,9 +316,7 @@ class WhiteEvidenceTests(unittest.TestCase):
         evidence = build_evidence(
             [SourceResult(cidr, self.cidr_feed()), SourceResult(domains, self.domain_feed())]
         )
-        config = parse_uri(
-            f"vless://{UUID_A}@8.8.8.8:443?encryption=none&type=ws&host=example.com"
-        )
+        config = parse_uri(f"vless://{UUID_A}@8.8.8.8:443?encryption=none&type=ws&host=example.com")
         config.resolved_ip = "8.8.8.8"
         self.assertIsNone(evidence_for(config, evidence))
         self.assertGreater(evidence_priority("cidr+sni"), evidence_priority("sni"))
@@ -327,9 +325,7 @@ class WhiteEvidenceTests(unittest.TestCase):
         primary = SourceSpec(
             "primary", "primary", "https://example.com/primary", set(), "white-cidr"
         )
-        mirror = SourceSpec(
-            "mirror", "mirror", "https://example.com/mirror", set(), "white-cidr"
-        )
+        mirror = SourceSpec("mirror", "mirror", "https://example.com/mirror", set(), "white-cidr")
         results = [SourceResult(primary, "not-a-network"), SourceResult(mirror, self.cidr_feed())]
         evidence = build_evidence(results)
         self.assertEqual(evidence.cidr_source, "mirror")
@@ -505,7 +501,9 @@ class ScoringAndHistoryTests(unittest.TestCase):
         chosen_a = choose_candidates([new, active], history, "main", 2, "seed")
         chosen_b = choose_candidates([active, new], history, "main", 2, "seed")
         self.assertEqual(chosen_a[0].fingerprint, active.fingerprint)
-        self.assertEqual([item.fingerprint for item in chosen_a], [item.fingerprint for item in chosen_b])
+        self.assertEqual(
+            [item.fingerprint for item in chosen_a], [item.fingerprint for item in chosen_b]
+        )
 
     def test_ranking_preserves_previous_order_inside_score_bucket(self) -> None:
         first = parse_uri(vless_uri(uuid=UUID_A))
@@ -672,11 +670,15 @@ class OutputTests(unittest.TestCase):
                 (root / "sub/happ/white.txt").write_text(
                     happ_subscription([], "Swift White", "https://example.com")
                 )
-                (root / "stats.json").write_text(json.dumps({
-                    "project": "Swift",
-                    "tagline": "Filter the garbage. Keep what works.",
-                    "production": {"main": 1, "white": 0},
-                }))
+                (root / "stats.json").write_text(
+                    json.dumps(
+                        {
+                            "project": "Swift",
+                            "tagline": "Filter the garbage. Keep what works.",
+                            "production": {"main": 1, "white": 0},
+                        }
+                    )
+                )
                 (root / relative).write_text(bad_content)
                 with self.assertRaisesRegex(RuntimeError, "non-proxy URL"):
                     check_outputs(root, 80, 200)

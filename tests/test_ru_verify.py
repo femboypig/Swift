@@ -7,13 +7,11 @@ import unittest
 from pathlib import Path
 from unittest.mock import AsyncMock, patch
 
-from swiftproxy.models import ProxyConfig
 from swiftproxy.parsing import parse_uri
 from swiftproxy.ru_verify import (
     DownloadAttempt,
     RuVerifyResult,
     _verify_single,
-    _curl_download,
     _probe_service_reachability,
     run_ru_verify,
 )
@@ -58,7 +56,9 @@ class TestRuVerify(unittest.TestCase):
             sub_dir = root / "sub"
             sub_dir.mkdir(parents=True)
             white_file = sub_dir / "white.txt"
-            line_w = "vless://b1111111-1111-1111-1111-111111111111@1.2.3.4:443?security=none#white_node"
+            line_w = (
+                "vless://b1111111-1111-1111-1111-111111111111@1.2.3.4:443?security=none#white_node"
+            )
             white_file.write_text(f"{line_w}\n")
 
             cfg_w = parse_uri(line_w)
@@ -85,7 +85,9 @@ class TestRuVerify(unittest.TestCase):
             main_file = sub_dir / "main.txt"
             white_file = sub_dir / "white.txt"
 
-            shared_line = "vless://c1111111-1111-1111-1111-111111111111@1.2.3.4:443?security=none#shared_node"
+            shared_line = (
+                "vless://c1111111-1111-1111-1111-111111111111@1.2.3.4:443?security=none#shared_node"
+            )
             main_file.write_text(f"{shared_line}\n")
             white_file.write_text(f"{shared_line}\n")
 
@@ -117,16 +119,20 @@ class TestRuVerify(unittest.TestCase):
             main_file = sub_dir / "main.txt"
             white_file = sub_dir / "white.txt"
 
-            shared_line = "vless://d1111111-1111-1111-1111-111111111111@1.2.3.4:443?security=none#bad_shared"
-            good_main = "vless://d2222222-2222-2222-2222-222222222222@5.6.7.8:443?security=none#good_main"
-            good_white = "vless://d3333333-3333-3333-3333-333333333333@9.9.9.9:443?security=none#good_white"
+            shared_line = (
+                "vless://d1111111-1111-1111-1111-111111111111@1.2.3.4:443?security=none#bad_shared"
+            )
+            good_main = (
+                "vless://d2222222-2222-2222-2222-222222222222@5.6.7.8:443?security=none#good_main"
+            )
+            good_white = (
+                "vless://d3333333-3333-3333-3333-333333333333@9.9.9.9:443?security=none#good_white"
+            )
 
             main_file.write_text(f"{shared_line}\n{good_main}\n")
             white_file.write_text(f"{shared_line}\n{good_white}\n")
 
             cfg_shared = parse_uri(shared_line)
-            cfg_m = parse_uri(good_main)
-            cfg_w = parse_uri(good_white)
 
             async def fake_verify(config, *args):
                 if config.fingerprint == cfg_shared.fingerprint:
@@ -165,12 +171,15 @@ class TestRuVerify(unittest.TestCase):
             sub_dir.mkdir(parents=True)
             white_file = sub_dir / "white.txt"
 
-            stall_line = "vless://e1111111-1111-1111-1111-111111111111@1.2.3.4:443?security=none#stall_white"
-            good_line = "vless://e2222222-2222-2222-2222-222222222222@5.6.7.8:443?security=none#good_white"
+            stall_line = (
+                "vless://e1111111-1111-1111-1111-111111111111@1.2.3.4:443?security=none#stall_white"
+            )
+            good_line = (
+                "vless://e2222222-2222-2222-2222-222222222222@5.6.7.8:443?security=none#good_white"
+            )
             white_file.write_text(f"{stall_line}\n{good_line}\n")
 
             cfg_stall = parse_uri(stall_line)
-            cfg_good = parse_uri(good_line)
 
             async def fake_verify(config, *args):
                 if config.fingerprint == cfg_stall.fingerprint:
@@ -207,8 +216,12 @@ class TestRuVerify(unittest.TestCase):
             sub_dir.mkdir(parents=True)
             white_file = sub_dir / "white.txt"
 
-            slow_line = "vless://f1111111-1111-1111-1111-111111111111@1.2.3.4:443?security=none#slow_white"
-            good_line = "vless://f2222222-2222-2222-2222-222222222222@5.6.7.8:443?security=none#good_white"
+            slow_line = (
+                "vless://f1111111-1111-1111-1111-111111111111@1.2.3.4:443?security=none#slow_white"
+            )
+            good_line = (
+                "vless://f2222222-2222-2222-2222-222222222222@5.6.7.8:443?security=none#good_white"
+            )
             white_file.write_text(f"{slow_line}\n{good_line}\n")
 
             cfg_slow = parse_uri(slow_line)
@@ -249,11 +262,13 @@ class TestRuVerify(unittest.TestCase):
             sub_dir.mkdir(parents=True)
             main_file = sub_dir / "main.txt"
             stats_file = root / "stats.json"
-            stats_file.write_text(json.dumps({"project": "Swift", "tagline": "Filter the garbage. Keep what works."}))
+            stats_file.write_text(
+                json.dumps({"project": "Swift", "tagline": "Filter the garbage. Keep what works."})
+            )
 
             # 200 configs with valid 8-char hex UUID
             lines = [
-                f"vless://{i:08x}-1111-1111-1111-111111111111@1.2.3.{i%250 + 1}:443?security=none#node{i}"
+                f"vless://{i:08x}-1111-1111-1111-111111111111@1.2.3.{i % 250 + 1}:443?security=none#node{i}"
                 for i in range(200)
             ]
             main_file.write_text("\n".join(lines) + "\n")
@@ -283,9 +298,9 @@ class TestRuVerify(unittest.TestCase):
             self.assertEqual(code, 0)
 
             # Exactly 10 nodes must be published, NO LKG trigger
-            written = [l for l in main_file.read_text().splitlines() if l.strip()]
+            written = [line for line in main_file.read_text().splitlines() if line.strip()]
             self.assertEqual(len(written), 10)
-            
+
             stats = json.loads(stats_file.read_text())
             self.assertEqual(stats["production"]["main"], 10)
             self.assertEqual(stats["mac_verification"]["main"]["mac_pass"], 10)
@@ -299,10 +314,12 @@ class TestRuVerify(unittest.TestCase):
             sub_dir.mkdir(parents=True)
             main_file = sub_dir / "main.txt"
             stats_file = root / "stats.json"
-            stats_file.write_text(json.dumps({"project": "Swift", "tagline": "Filter the garbage. Keep what works."}))
+            stats_file.write_text(
+                json.dumps({"project": "Swift", "tagline": "Filter the garbage. Keep what works."})
+            )
 
             lines = [
-                f"vless://{i:08x}-1111-1111-1111-111111111111@1.2.3.{i%250 + 1}:443?security=none#node{i}"
+                f"vless://{i:08x}-1111-1111-1111-111111111111@1.2.3.{i % 250 + 1}:443?security=none#node{i}"
                 for i in range(200)
             ]
             main_file.write_text("\n".join(lines) + "\n")
@@ -331,7 +348,7 @@ class TestRuVerify(unittest.TestCase):
             code = asyncio.run(run_ru_verify(root, "sing-box"))
             self.assertEqual(code, 0)
 
-            written = [l for l in main_file.read_text().splitlines() if l.strip()]
+            written = [line for line in main_file.read_text().splitlines() if line.strip()]
             self.assertEqual(len(written), 15)
 
     @patch("swiftproxy.ru_verify._verify_single")
@@ -342,10 +359,12 @@ class TestRuVerify(unittest.TestCase):
             sub_dir.mkdir(parents=True)
             main_file = sub_dir / "main.txt"
             stats_file = root / "stats.json"
-            stats_file.write_text(json.dumps({"project": "Swift", "tagline": "Filter the garbage. Keep what works."}))
+            stats_file.write_text(
+                json.dumps({"project": "Swift", "tagline": "Filter the garbage. Keep what works."})
+            )
 
             lines = [
-                f"vless://{i:08x}-1111-1111-1111-111111111111@1.2.3.{i%250 + 1}:443?security=none#node{i}"
+                f"vless://{i:08x}-1111-1111-1111-111111111111@1.2.3.{i % 250 + 1}:443?security=none#node{i}"
                 for i in range(200)
             ]
             main_file.write_text("\n".join(lines) + "\n")
@@ -363,7 +382,7 @@ class TestRuVerify(unittest.TestCase):
             code = asyncio.run(run_ru_verify(root, "sing-box"))
             self.assertEqual(code, 0)
 
-            written = [l for l in main_file.read_text().splitlines() if l.strip()]
+            written = [line for line in main_file.read_text().splitlines() if line.strip()]
             self.assertEqual(len(written), 0)
             stats = json.loads(stats_file.read_text())
             self.assertEqual(stats["production"]["main"], 0)
@@ -377,7 +396,7 @@ class TestRuVerify(unittest.TestCase):
             sub_dir.mkdir(parents=True)
             main_file = sub_dir / "main.txt"
             lines = [
-                f"vless://{i:08x}-1111-1111-1111-111111111111@1.2.3.{i+1}:443?security=none#node{i}"
+                f"vless://{i:08x}-1111-1111-1111-111111111111@1.2.3.{i + 1}:443?security=none#node{i}"
                 for i in range(12)
             ]
             main_file.write_text("\n".join(lines) + "\n")
@@ -404,10 +423,12 @@ class TestRuVerify(unittest.TestCase):
             sub_dir.mkdir(parents=True)
             white_file = sub_dir / "white.txt"
             stats_file = root / "stats.json"
-            stats_file.write_text(json.dumps({"project": "Swift", "tagline": "Filter the garbage. Keep what works."}))
+            stats_file.write_text(
+                json.dumps({"project": "Swift", "tagline": "Filter the garbage. Keep what works."})
+            )
 
             lines = [
-                f"vless://{i:08x}-1111-1111-1111-111111111111@1.2.3.{i%250 + 1}:443?security=none#white{i}"
+                f"vless://{i:08x}-1111-1111-1111-111111111111@1.2.3.{i % 250 + 1}:443?security=none#white{i}"
                 for i in range(200)
             ]
             white_file.write_text("\n".join(lines) + "\n")
@@ -435,7 +456,7 @@ class TestRuVerify(unittest.TestCase):
             code = asyncio.run(run_ru_verify(root, "sing-box"))
             self.assertEqual(code, 0)
 
-            written = [l for l in white_file.read_text().splitlines() if l.strip()]
+            written = [line for line in white_file.read_text().splitlines() if line.strip()]
             self.assertEqual(len(written), 2)
             stats = json.loads(stats_file.read_text())
             self.assertEqual(stats["production"]["white"], 2)
@@ -457,7 +478,15 @@ class TestRuVerify(unittest.TestCase):
             all_file = sub_dir / "all.txt"
             all_file.write_text("")
             stats_file = root / "stats.json"
-            stats_file.write_text(json.dumps({"project": "Swift", "tagline": "Filter the garbage. Keep what works.", "production": {"main": 1, "white": 1}}))
+            stats_file.write_text(
+                json.dumps(
+                    {
+                        "project": "Swift",
+                        "tagline": "Filter the garbage. Keep what works.",
+                        "production": {"main": 1, "white": 1},
+                    }
+                )
+            )
 
             line_m = "vless://11111111-1111-1111-1111-111111111111@1.2.3.4:443?security=none#node_m"
             line_w = "vless://22222222-2222-2222-2222-222222222222@5.6.7.8:443?security=none#node_w"
@@ -501,17 +530,25 @@ class TestRuVerify(unittest.TestCase):
     @patch("swiftproxy.ru_verify._probe_service_reachability", new_callable=AsyncMock)
     @patch("swiftproxy.ru_verify._curl_download", new_callable=AsyncMock)
     @patch("swiftproxy.ru_verify._curl_probe", new_callable=AsyncMock)
-    def test_two_fast_downloads_pass(self, mock_probe, mock_dl, mock_svc, mock_exec, mock_wait, mock_stop):
+    def test_two_fast_downloads_pass(
+        self, mock_probe, mock_dl, mock_svc, mock_exec, mock_wait, mock_stop
+    ):
         mock_wait.return_value = True
         mock_exec.return_value = AsyncMock()
         mock_probe.return_value = True
         mock_svc.return_value = "reachable"
         mock_dl.side_effect = [
-            DownloadAttempt(ok=True, status_code=200, time_total=1.0, bytes_downloaded=262144, speed_kbps=200.0),
-            DownloadAttempt(ok=True, status_code=200, time_total=1.0, bytes_downloaded=262144, speed_kbps=220.0),
+            DownloadAttempt(
+                ok=True, status_code=200, time_total=1.0, bytes_downloaded=262144, speed_kbps=200.0
+            ),
+            DownloadAttempt(
+                ok=True, status_code=200, time_total=1.0, bytes_downloaded=262144, speed_kbps=220.0
+            ),
         ]
 
-        cfg = parse_uri("vless://a1111111-1111-1111-1111-111111111111@1.2.3.4:443?security=none#node")
+        cfg = parse_uri(
+            "vless://a1111111-1111-1111-1111-111111111111@1.2.3.4:443?security=none#node"
+        )
         sem = asyncio.Semaphore(1)
         res = asyncio.run(_verify_single(cfg, "sing-box", sem))
 
@@ -527,17 +564,23 @@ class TestRuVerify(unittest.TestCase):
     @patch("swiftproxy.ru_verify._probe_service_reachability", new_callable=AsyncMock)
     @patch("swiftproxy.ru_verify._curl_download", new_callable=AsyncMock)
     @patch("swiftproxy.ru_verify._curl_probe", new_callable=AsyncMock)
-    def test_r1_fast_r2_stall_fails(self, mock_probe, mock_dl, mock_svc, mock_exec, mock_wait, mock_stop):
+    def test_r1_fast_r2_stall_fails(
+        self, mock_probe, mock_dl, mock_svc, mock_exec, mock_wait, mock_stop
+    ):
         mock_wait.return_value = True
         mock_exec.return_value = AsyncMock()
         mock_probe.return_value = True
         mock_svc.return_value = "reachable"
         mock_dl.side_effect = [
-            DownloadAttempt(ok=True, status_code=200, time_total=1.0, bytes_downloaded=262144, speed_kbps=250.0),
+            DownloadAttempt(
+                ok=True, status_code=200, time_total=1.0, bytes_downloaded=262144, speed_kbps=250.0
+            ),
             DownloadAttempt(ok=False, time_total=3.1, is_stall=True, error="Operation too slow"),
         ]
 
-        cfg = parse_uri("vless://a1111111-1111-1111-1111-111111111111@1.2.3.4:443?security=none#node")
+        cfg = parse_uri(
+            "vless://a1111111-1111-1111-1111-111111111111@1.2.3.4:443?security=none#node"
+        )
         sem = asyncio.Semaphore(1)
         res = asyncio.run(_verify_single(cfg, "sing-box", sem))
 
@@ -551,17 +594,27 @@ class TestRuVerify(unittest.TestCase):
     @patch("swiftproxy.ru_verify._probe_service_reachability", new_callable=AsyncMock)
     @patch("swiftproxy.ru_verify._curl_download", new_callable=AsyncMock)
     @patch("swiftproxy.ru_verify._curl_probe", new_callable=AsyncMock)
-    def test_ozon_timeout_does_not_drop_generic_main_node(self, mock_probe, mock_dl, mock_svc, mock_exec, mock_wait, mock_stop):
+    def test_ozon_timeout_does_not_drop_generic_main_node(
+        self, mock_probe, mock_dl, mock_svc, mock_exec, mock_wait, mock_stop
+    ):
         mock_wait.return_value = True
         mock_exec.return_value = AsyncMock()
         mock_probe.return_value = True
         mock_dl.side_effect = [
-            DownloadAttempt(ok=True, status_code=200, time_total=1.0, bytes_downloaded=262144, speed_kbps=150.0),
-            DownloadAttempt(ok=True, status_code=200, time_total=1.0, bytes_downloaded=262144, speed_kbps=140.0),
+            DownloadAttempt(
+                ok=True, status_code=200, time_total=1.0, bytes_downloaded=262144, speed_kbps=150.0
+            ),
+            DownloadAttempt(
+                ok=True, status_code=200, time_total=1.0, bytes_downloaded=262144, speed_kbps=140.0
+            ),
         ]
-        mock_svc.side_effect = lambda port, url, *args, **kwargs: "unreachable" if "ozon" in url else "reachable"
+        mock_svc.side_effect = (
+            lambda port, url, *args, **kwargs: "unreachable" if "ozon" in url else "reachable"
+        )
 
-        cfg = parse_uri("vless://a1111111-1111-1111-1111-111111111111@1.2.3.4:443?security=none#node_nl")
+        cfg = parse_uri(
+            "vless://a1111111-1111-1111-1111-111111111111@1.2.3.4:443?security=none#node_nl"
+        )
         sem = asyncio.Semaphore(1)
         res = asyncio.run(_verify_single(cfg, "sing-box", sem, country="NL"))
 
@@ -575,27 +628,43 @@ class TestRuVerify(unittest.TestCase):
     @patch("swiftproxy.ru_verify._probe_service_reachability", new_callable=AsyncMock)
     @patch("swiftproxy.ru_verify._curl_download", new_callable=AsyncMock)
     @patch("swiftproxy.ru_verify._curl_probe", new_callable=AsyncMock)
-    def test_ru_egress_service_classification(self, mock_probe, mock_dl, mock_svc, mock_exec, mock_wait, mock_stop):
+    def test_ru_egress_service_classification(
+        self, mock_probe, mock_dl, mock_svc, mock_exec, mock_wait, mock_stop
+    ):
         mock_wait.return_value = True
         mock_exec.return_value = AsyncMock()
         mock_probe.return_value = True
         mock_dl.side_effect = [
-            DownloadAttempt(ok=True, status_code=200, time_total=1.0, bytes_downloaded=262144, speed_kbps=200.0),
-            DownloadAttempt(ok=True, status_code=200, time_total=1.0, bytes_downloaded=262144, speed_kbps=200.0),
+            DownloadAttempt(
+                ok=True, status_code=200, time_total=1.0, bytes_downloaded=262144, speed_kbps=200.0
+            ),
+            DownloadAttempt(
+                ok=True, status_code=200, time_total=1.0, bytes_downloaded=262144, speed_kbps=200.0
+            ),
         ]
 
-        mock_svc.side_effect = lambda port, url, *args, **kwargs: "unreachable" if "ozon" in url else "reachable"
-        cfg = parse_uri("vless://a1111111-1111-1111-1111-111111111111@1.2.3.4:443?security=none#node_ru")
+        mock_svc.side_effect = (
+            lambda port, url, *args, **kwargs: "unreachable" if "ozon" in url else "reachable"
+        )
+        cfg = parse_uri(
+            "vless://a1111111-1111-1111-1111-111111111111@1.2.3.4:443?security=none#node_ru"
+        )
         sem = asyncio.Semaphore(1)
         res1 = asyncio.run(_verify_single(cfg, "sing-box", sem, country="RU"))
         self.assertTrue(res1.passed)
         self.assertTrue(res1.ru_service_ok)
 
         mock_dl.side_effect = [
-            DownloadAttempt(ok=True, status_code=200, time_total=1.0, bytes_downloaded=262144, speed_kbps=200.0),
-            DownloadAttempt(ok=True, status_code=200, time_total=1.0, bytes_downloaded=262144, speed_kbps=200.0),
+            DownloadAttempt(
+                ok=True, status_code=200, time_total=1.0, bytes_downloaded=262144, speed_kbps=200.0
+            ),
+            DownloadAttempt(
+                ok=True, status_code=200, time_total=1.0, bytes_downloaded=262144, speed_kbps=200.0
+            ),
         ]
-        mock_svc.side_effect = lambda port, url, *args, **kwargs: "unreachable" if "yandex" in url else "reachable"
+        mock_svc.side_effect = (
+            lambda port, url, *args, **kwargs: "unreachable" if "yandex" in url else "reachable"
+        )
         res2 = asyncio.run(_verify_single(cfg, "sing-box", sem, country="RU"))
         self.assertTrue(res2.passed)
         self.assertFalse(res2.ru_service_ok)
@@ -617,7 +686,9 @@ class TestRuVerify(unittest.TestCase):
         mock_wait.return_value = False
         mock_exec.return_value = AsyncMock()
 
-        cfg = parse_uri("vless://a1111111-1111-1111-1111-111111111111@1.2.3.4:443?security=none#node")
+        cfg = parse_uri(
+            "vless://a1111111-1111-1111-1111-111111111111@1.2.3.4:443?security=none#node"
+        )
         sem = asyncio.Semaphore(1)
         res = asyncio.run(_verify_single(cfg, "sing-box", sem))
 
