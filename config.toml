@@ -44,9 +44,11 @@ main = 80
 white = 200
 
 [selection]
-main_candidates = 1000
-mac_candidates = 300
-white_candidates = 250
+# Exhaustive validation: all unique eligible candidates are evaluated through Cloud and Mac stages.
+# Pre-validation truncation caps are removed.
+main_candidates = 0
+mac_candidates = 0
+white_candidates = 0
 
 [testing]
 concurrency = 20

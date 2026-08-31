@@ -23,8 +23,8 @@ def choose_candidates(
     configs: list[ProxyConfig],
     history: dict[str, Any],
     lane: str,
-    limit: int,
-    seed: str,
+    limit: int | None = None,
+    seed: str | None = None,
 ) -> list[ProxyConfig]:
     eligible = [config for config in configs if lane in config.lanes]
 
@@ -41,11 +41,13 @@ def choose_candidates(
             tier = 3
         else:
             tier = 4
-        lottery = hashlib.sha256(f"{seed}:{lane}:{config.fingerprint}".encode()).hexdigest()
+        lottery = hashlib.sha256(f"{seed or ''}:{lane}:{config.fingerprint}".encode()).hexdigest()
         return tier, -float(record.get("score", 0)), lottery
 
     eligible.sort(key=key)
-    return eligible[:limit]
+    if limit is not None and limit > 0:
+        return eligible[:limit]
+    return eligible
 
 
 def add_observation(
@@ -313,15 +315,15 @@ def diverse_selection(
 
 def select_pre_mac_candidates(
     eligible: list[RankedConfig],
-    limit: int,
-    seed: str,
-    history: dict[str, Any],
+    limit: int | None = None,
+    seed: str | None = None,
+    history: dict[str, Any] | None = None,
 ) -> list[RankedConfig]:
-    if len(eligible) <= limit:
+    if limit is None or limit <= 0 or len(eligible) <= limit:
         return list(eligible)
 
     def pre_mac_sort_key(item: RankedConfig) -> tuple[int, float, str]:
-        rec = _lane_record(history, item.config.fingerprint, item.lane)
+        rec = _lane_record(history or {}, item.config.fingerprint, item.lane)
         state = item.state or rec.get("state", "new")
         if state == "active":
             tier = 0
@@ -331,7 +333,7 @@ def select_pre_mac_candidates(
             tier = 2
         else:
             tier = 3
-        lottery = hashlib.sha256(f"{seed}:mac:{item.config.fingerprint}".encode()).hexdigest()
+        lottery = hashlib.sha256(f"{seed or ''}:mac:{item.config.fingerprint}".encode()).hexdigest()
         return tier, -item.score, lottery
 
     sorted_eligible = sorted(eligible, key=pre_mac_sort_key)
