@@ -22,7 +22,7 @@ from .output import (
     check_outputs,
     suspicious_run,
     write_json,
-    write_subscriptions,
+    write_mac_handoff,
 )
 from .parsing import deduplicate, parse_sources, parse_uri
 from .scoring import (
@@ -397,7 +397,10 @@ async def run(root: Path, config_path: Path, core_override: str | None = None) -
     white = ranked_white
 
     main_unique = len([c for c in unique if "main" in c.lanes])
-    main_cloud_expected = len(candidates["main"])
+    main_resolution_failed = sum(
+        config.fingerprint not in resolved for config in candidates["main"]
+    )
+    main_cloud_expected = len(candidates["main"]) - main_resolution_failed
     main_tested_fps = {r.fingerprint for r in results_list if r.lane == "main"}
     main_cloud_tested = len(main_tested_fps)
     main_cloud_untested = max(0, main_cloud_expected - main_cloud_tested)
@@ -411,7 +414,10 @@ async def run(root: Path, config_path: Path, core_override: str | None = None) -
 
     white_pool_count = len(white_pool)
     white_evidence_matched = len(white_signals)
-    white_cloud_expected = len(candidates["white"])
+    white_resolution_failed = sum(
+        config.fingerprint not in resolved for config in candidates["white"]
+    )
+    white_cloud_expected = len(candidates["white"]) - white_resolution_failed
     white_tested_fps = {r.fingerprint for r in results_list if r.lane == "white"}
     white_cloud_tested = len(white_tested_fps)
     white_cloud_untested = max(0, white_cloud_expected - white_cloud_tested)
@@ -426,6 +432,7 @@ async def run(root: Path, config_path: Path, core_override: str | None = None) -
     funnel = {
         "main": {
             "main_unique": main_unique,
+            "main_resolution_failed": main_resolution_failed,
             "main_cloud_expected": main_cloud_expected,
             "main_cloud_tested": main_cloud_tested,
             "main_cloud_untested": main_cloud_untested,
@@ -445,6 +452,7 @@ async def run(root: Path, config_path: Path, core_override: str | None = None) -
         "white": {
             "white_pool": white_pool_count,
             "white_evidence_matched": white_evidence_matched,
+            "white_resolution_failed": white_resolution_failed,
             "white_cloud_expected": white_cloud_expected,
             "white_cloud_tested": white_cloud_tested,
             "white_cloud_untested": white_cloud_untested,
@@ -589,8 +597,8 @@ async def run(root: Path, config_path: Path, core_override: str | None = None) -
             "global_pass": sum(1 for c in ru_hy2_pool if (c.fingerprint, "main") in results and results[(c.fingerprint, "main")].worked),
             "history_eligible": sum(1 for item in ranked_main if item.config.protocol == "hysteria2" and _is_ru_target(item.config)),
             "reached_mac": sum(1 for item in main if item.config.protocol == "hysteria2" and _is_ru_target(item.config)),
-            "mac_pass": sum(1 for item in main if item.config.protocol == "hysteria2" and _is_ru_target(item.config)),
-            "published": sum(1 for item in main if item.config.protocol == "hysteria2" and _is_ru_target(item.config)),
+            "mac_pass": 0,
+            "published": 0,
         },
         "hysteria_v1": {
             "discovered_total": len(hy1_pool),
@@ -599,8 +607,8 @@ async def run(root: Path, config_path: Path, core_override: str | None = None) -
             "global_pass": sum(1 for c in hy1_pool if (c.fingerprint, "main") in results and results[(c.fingerprint, "main")].worked),
             "history_eligible": sum(1 for item in ranked_main if item.config.protocol == "hysteria"),
             "reached_mac": sum(1 for item in main if item.config.protocol == "hysteria"),
-            "mac_pass": sum(1 for item in main if item.config.protocol == "hysteria"),
-            "published": sum(1 for item in main if item.config.protocol == "hysteria"),
+            "mac_pass": 0,
+            "published": 0,
         },
     }
 
@@ -621,7 +629,7 @@ async def run(root: Path, config_path: Path, core_override: str | None = None) -
             "eligible": len(white_signals),
             "published": dict(sorted(published_evidence.items())),
         },
-        published=reason is None,
+        published=False,
         previous=previous_stats,
         reason=reason,
         discovery=discovery_stats,
@@ -633,13 +641,9 @@ async def run(root: Path, config_path: Path, core_override: str | None = None) -
         write_json(stats_path, stats)
         raise RunHeld(reason)
 
-    write_subscriptions(
-        root,
-        main,
-        white,
-        alive,
-        settings["project"]["repository"],
-    )
+    stats["stage"] = "cloud_prepared"
+    stats["prepared_for_mac"] = {"main": len(main), "white": len(white)}
+    write_mac_handoff(root, main, white, alive)
     prune_history(temp_history)
     write_json(history_path, temp_history, compact=True)
     write_json(
@@ -651,7 +655,12 @@ async def run(root: Path, config_path: Path, core_override: str | None = None) -
         compact=True,
     )
     write_json(stats_path, stats)
-    LOGGER.info("published main=%d white=%d all=%d", len(main), len(white), len(alive))
+    LOGGER.info(
+        "prepared_mac_artifact_main=%d prepared_mac_artifact_white=%d cloud_all=%d",
+        len(main),
+        len(white),
+        len(alive),
+    )
 
 
 def cli(argv: list[str] | None = None) -> int:
