@@ -780,6 +780,41 @@ class TestExhaustiveValidationPipeline(unittest.TestCase):
             for path, content in originals.items():
                 self.assertEqual(path.read_text(), content)
 
+    def test_mac_publication_failure_keeps_handoff_and_production(self):
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            root = Path(tmp_dir)
+            (root / "sub/happ").mkdir(parents=True)
+            (root / "data/mac-candidates").mkdir(parents=True)
+            old = _make_config("old-publication", host="14.1.0.1")
+            candidate = _make_config("new-publication", host="14.2.0.1")
+            old_main = serialize_uri(old) + "\n"
+            (root / "sub/main.txt").write_text(old_main)
+            (root / "sub/white.txt").write_text("")
+            (root / "data/mac-candidates/main.txt").write_text(serialize_uri(candidate) + "\n")
+            (root / "data/mac-candidates/white.txt").write_text("")
+
+            async def pass_candidate(config, *args):
+                return RuVerifyResult(
+                    config.fingerprint,
+                    passed=True,
+                    r1_kbps=100.0,
+                    r2_kbps=100.0,
+                    https_passed=3,
+                )
+
+            with (
+                patch("swiftproxy.ru_verify._verify_single", side_effect=pass_candidate),
+                patch(
+                    "swiftproxy.ru_verify.write_final_subscriptions",
+                    side_effect=OSError("simulated publication failure"),
+                ),
+            ):
+                with self.assertRaisesRegex(OSError, "simulated publication failure"):
+                    asyncio.run(run_ru_verify(root, "sing-box"))
+
+            self.assertEqual((root / "sub/main.txt").read_text(), old_main)
+            self.assertTrue((root / "data/mac-candidates/main.txt").exists())
+
     def test_tcp_tls_telemetry_reports_sample_scope(self):
         targets = [
             {"host": "1.1.1.1", "port": 443, "sni": "one.example"},
