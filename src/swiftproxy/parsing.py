@@ -13,7 +13,10 @@ from urllib.parse import parse_qs, quote, unquote, urlencode, urlsplit
 from .models import ProxyConfig, SourceResult
 
 
-SCHEMES = ("vless", "vmess", "trojan", "ss", "hysteria", "hysteria2", "hy2", "tuic")
+SUPPORTED_PROXY_SCHEMES = frozenset(
+    {"vless", "vmess", "trojan", "ss", "hysteria", "hysteria2", "hy2", "tuic"}
+)
+SCHEMES = tuple(sorted(SUPPORTED_PROXY_SCHEMES))
 URI_RE = re.compile(r"(?i)(?:vless|vmess|trojan|ss|hysteria|hysteria2|hy2|tuic)://[^\s<>\"']+")
 CONTROL_RE = re.compile(r"[\x00-\x1f\x7f]")
 SAFE_TOKEN_RE = re.compile(r"^[^\x00-\x20\x7f]{1,1024}$")
@@ -411,6 +414,8 @@ def parse_uri(uri: str) -> ProxyConfig:
     if not uri or len(uri) > 8192 or CONTROL_RE.search(uri):
         raise ValueError("malformed URI")
     scheme = uri.split(":", 1)[0].lower()
+    if scheme not in SUPPORTED_PROXY_SCHEMES or not uri.lower().startswith(f"{scheme}://"):
+        raise ValueError("unsupported protocol")
     parsers = {
         "vless": parse_vless,
         "vmess": parse_vmess,
