@@ -64,6 +64,7 @@ class RuVerifyResult:
     r2_kbps: float = 0.0
     min_kbps: float = 0.0
     https_passed: int = 0
+    https_attempted: int = 0
     https_total: int = 3
     services: dict[str, str] = field(default_factory=dict)
     ru_service_ok: bool | None = None
@@ -271,16 +272,26 @@ async def _verify_single(
 
                 # 1. HTTPS Reachability (require >= 2 of 3)
                 https_passed = 0
-                for probe_url in PROBE_URLS:
+                https_attempted = 0
+                required_https = 2
+                for index, probe_url in enumerate(PROBE_URLS):
+                    https_attempted += 1
                     if await _curl_probe(socks_port, probe_url, timeout=4.0):
                         https_passed += 1
 
-                if https_passed < 2:
+                    remaining = len(PROBE_URLS) - index - 1
+                    if https_passed >= required_https:
+                        break
+                    if https_passed + remaining < required_https:
+                        break
+
+                if https_passed < required_https:
                     return RuVerifyResult(
                         fingerprint=config.fingerprint,
                         passed=False,
                         reason="HTTPS_FAILED",
                         https_passed=https_passed,
+                        https_attempted=https_attempted,
                         https_total=len(PROBE_URLS),
                     )
 
@@ -293,6 +304,7 @@ async def _verify_single(
                         passed=False,
                         reason=reason,
                         https_passed=https_passed,
+                        https_attempted=https_attempted,
                         https_total=len(PROBE_URLS),
                         r1_kbps=res1.speed_kbps,
                     )
@@ -306,6 +318,7 @@ async def _verify_single(
                         passed=False,
                         reason=reason,
                         https_passed=https_passed,
+                        https_attempted=https_attempted,
                         https_total=len(PROBE_URLS),
                         r1_kbps=res1.speed_kbps,
                         r2_kbps=res2.speed_kbps,
@@ -319,6 +332,7 @@ async def _verify_single(
                         passed=False,
                         reason="TOO_SLOW",
                         https_passed=https_passed,
+                        https_attempted=https_attempted,
                         https_total=len(PROBE_URLS),
                         r1_kbps=res1.speed_kbps,
                         r2_kbps=res2.speed_kbps,
@@ -348,6 +362,7 @@ async def _verify_single(
                     r2_kbps=res2.speed_kbps,
                     min_kbps=min_speed,
                     https_passed=https_passed,
+                    https_attempted=https_attempted,
                     https_total=len(PROBE_URLS),
                     services=services,
                     ru_service_ok=ru_service_ok,
@@ -458,10 +473,38 @@ async def run_ru_verify(
 
     semaphore = asyncio.Semaphore(concurrency)
     tasks = [
-        _verify_single(item[0], sing_box_path, semaphore, item[1])
+        asyncio.create_task(_verify_single(item[0], sing_box_path, semaphore, item[1]))
         for item in unique_candidates.values()
     ]
-    results = await asyncio.gather(*tasks)
+    results: list[RuVerifyResult] = []
+    started = time.monotonic()
+    try:
+        for completed in asyncio.as_completed(tasks):
+            result = await completed
+            results.append(result)
+            count = len(results)
+            if count % 25 == 0 or count == len(tasks):
+                elapsed = max(0.001, time.monotonic() - started)
+                rate = count / elapsed
+                eta_seconds = int((len(tasks) - count) / rate) if rate else 0
+                passed = sum(item.passed for item in results)
+                reasons = Counter(item.reason or "PASS" for item in results)
+                common = ",".join(f"{reason}:{amount}" for reason, amount in reasons.most_common(4))
+                LOGGER.info(
+                    "RU progress=%d/%d passed=%d failed=%d rate=%.2f/s eta=%ds outcomes=%s",
+                    count,
+                    len(tasks),
+                    passed,
+                    count - passed,
+                    rate,
+                    eta_seconds,
+                    common,
+                )
+    except BaseException:
+        for task in tasks:
+            task.cancel()
+        await asyncio.gather(*tasks, return_exceptions=True)
+        raise
     results_map: dict[str, RuVerifyResult] = {r.fingerprint: r for r in results}
 
     # Safe Logging of candidates
@@ -480,7 +523,7 @@ async def run_ru_verify(
         )
         lane_tag = "MAIN+WHITE" if (is_main and is_white) else ("MAIN" if is_main else "WHITE")
         LOGGER.info(
-            "[%s] %-10s %s | %-10s | R1: %5.1f KB/s | R2: %5.1f KB/s | Min: %5.1f KB/s | HTTPS: %d/%d | Svc: %s%s | %s (%s)",
+            "[%s] %-10s %s | %-10s | R1: %5.1f KB/s | R2: %5.1f KB/s | Min: %5.1f KB/s | HTTPS: %d/%d attempted (of %d) | Svc: %s%s | %s (%s)",
             cfg.fingerprint[:12],
             cfg.protocol,
             country or "??",
@@ -489,6 +532,7 @@ async def run_ru_verify(
             r.r2_kbps,
             r.min_kbps,
             r.https_passed,
+            r.https_attempted,
             r.https_total,
             svc_str,
             ru_tag,

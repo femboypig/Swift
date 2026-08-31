@@ -530,9 +530,11 @@ class TestRuVerify(unittest.TestCase):
     @patch("swiftproxy.ru_verify._probe_service_reachability", new_callable=AsyncMock)
     @patch("swiftproxy.ru_verify._curl_download", new_callable=AsyncMock)
     @patch("swiftproxy.ru_verify._curl_probe", new_callable=AsyncMock)
+    @patch("swiftproxy.ru_verify._free_port", return_value=23001)
     def test_two_fast_downloads_pass(
-        self, mock_probe, mock_dl, mock_svc, mock_exec, mock_wait, mock_stop
+        self, mock_port, mock_probe, mock_dl, mock_svc, mock_exec, mock_wait, mock_stop
     ):
+        del mock_port
         mock_wait.return_value = True
         mock_exec.return_value = AsyncMock()
         mock_probe.return_value = True
@@ -556,7 +558,58 @@ class TestRuVerify(unittest.TestCase):
         self.assertEqual(res.r1_kbps, 200.0)
         self.assertEqual(res.r2_kbps, 220.0)
         self.assertEqual(res.min_kbps, 200.0)
+        self.assertEqual(res.https_attempted, 2)
+        self.assertEqual(mock_probe.await_count, 2)
         self.assertIsNone(res.reason)
+
+    @patch("swiftproxy.ru_verify._stop_process", new_callable=AsyncMock)
+    @patch("swiftproxy.ru_verify._wait_for_core", new_callable=AsyncMock, return_value=True)
+    @patch("asyncio.create_subprocess_exec")
+    @patch("swiftproxy.ru_verify._curl_probe", new_callable=AsyncMock, return_value=False)
+    @patch("swiftproxy.ru_verify._free_port", return_value=23001)
+    def test_two_https_failures_stop_before_redundant_third_probe(
+        self, mock_port, mock_probe, mock_exec, mock_wait, mock_stop
+    ):
+        del mock_port, mock_wait, mock_stop
+        mock_exec.return_value = AsyncMock()
+        cfg = parse_uri(
+            "vless://a1111111-1111-1111-1111-111111111111@1.2.3.4:443?security=none#node"
+        )
+
+        result = asyncio.run(_verify_single(cfg, "sing-box", asyncio.Semaphore(1)))
+
+        self.assertFalse(result.passed)
+        self.assertEqual(result.reason, "HTTPS_FAILED")
+        self.assertEqual(result.https_attempted, 2)
+        self.assertEqual(mock_probe.await_count, 2)
+
+    def test_cancellation_stops_sing_box_process(self):
+        async def exercise():
+            cfg = parse_uri(
+                "vless://a1111111-1111-1111-1111-111111111111@1.2.3.4:443?security=none#node"
+            )
+            probe_started = asyncio.Event()
+
+            async def hanging_probe(*args, **kwargs):
+                probe_started.set()
+                await asyncio.Event().wait()
+
+            process = AsyncMock()
+            with (
+                patch("swiftproxy.ru_verify._free_port", return_value=23001),
+                patch("asyncio.create_subprocess_exec", new=AsyncMock(return_value=process)),
+                patch("swiftproxy.ru_verify._wait_for_core", new=AsyncMock(return_value=True)),
+                patch("swiftproxy.ru_verify._curl_probe", side_effect=hanging_probe),
+                patch("swiftproxy.ru_verify._stop_process", new=AsyncMock()) as stop_process,
+            ):
+                task = asyncio.create_task(_verify_single(cfg, "sing-box", asyncio.Semaphore(1)))
+                await probe_started.wait()
+                task.cancel()
+                with self.assertRaises(asyncio.CancelledError):
+                    await task
+                stop_process.assert_awaited_once_with(process)
+
+        asyncio.run(exercise())
 
     @patch("swiftproxy.ru_verify._stop_process", new_callable=AsyncMock)
     @patch("swiftproxy.ru_verify._wait_for_core", new_callable=AsyncMock)
