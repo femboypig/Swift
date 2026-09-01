@@ -313,9 +313,15 @@ class TrafficTargetTests(unittest.IsolatedAsyncioTestCase):
         self, mock_exec, mock_port, mock_probe, mock_geo, mock_throughput, mock_wait, mock_stop
     ) -> None:
         del mock_exec, mock_port, mock_geo, mock_wait, mock_stop
-        mock_probe.side_effect = lambda port, url, settings: (
-            None if url == "https://down.test" else (80.0, 20.0, 40.0)
-        )
+
+        def probe(port, url, settings, failure=None):
+            if url != "https://down.test":
+                return 80.0, 20.0, 40.0
+            if failure is not None:
+                failure.append("CURL_28")
+            return None
+
+        mock_probe.side_effect = probe
         config = parse_uri(vless_uri())
         results = [TestResult(config.fingerprint, "main", "2026-08-31T00:00:00Z") for _ in range(2)]
 
@@ -338,6 +344,15 @@ class TrafficTargetTests(unittest.IsolatedAsyncioTestCase):
             self.assertEqual(result.success_count, 4)
             self.assertEqual(result.failure_count, 1)
             self.assertEqual(result.rounds_succeeded, 1)
+            distinct = result.round_diagnostics[0]["targets"][:3]
+            self.assertEqual(
+                {item["target"] for item in distinct}, {"one.test", "two.test", "down.test"}
+            )
+            self.assertEqual(
+                [item["failure"] for item in distinct if not item["success"]],
+                ["CURL_28"],
+            )
+            self.assertTrue(result.round_diagnostics[0]["throughput"]["success"])
         self.assertEqual(mock_probe.await_count, 10)
         self.assertEqual(mock_throughput.await_count, 2)
 
@@ -352,7 +367,7 @@ class TrafficTargetTests(unittest.IsolatedAsyncioTestCase):
         self, mock_exec, mock_port, mock_probe, mock_geo, mock_throughput, mock_wait, mock_stop
     ) -> None:
         del mock_exec, mock_port, mock_geo, mock_wait, mock_stop
-        mock_probe.side_effect = lambda port, url, settings: (
+        mock_probe.side_effect = lambda port, url, settings, failure=None: (
             (80.0, 20.0, 40.0) if url == "https://one.test" else None
         )
         config = parse_uri(vless_uri())
@@ -373,6 +388,58 @@ class TrafficTargetTests(unittest.IsolatedAsyncioTestCase):
         self.assertIsNone(throughput)
         self.assertEqual(result.rounds_succeeded, 0)
         mock_throughput.assert_not_awaited()
+
+    @patch("swiftproxy.testing._stop_process", new_callable=AsyncMock)
+    @patch("swiftproxy.testing._wait_for_core", new_callable=AsyncMock, return_value=False)
+    @patch("swiftproxy.testing._free_port", return_value=23001)
+    @patch("asyncio.create_subprocess_exec", new_callable=AsyncMock)
+    async def test_core_exit_is_recorded_without_config_data(
+        self, mock_exec, mock_port, mock_wait, mock_stop
+    ) -> None:
+        del mock_port, mock_wait, mock_stop
+        mock_exec.return_value.returncode = 23
+        config = parse_uri(vless_uri())
+        result = TestResult(config.fingerprint, "main", "2026-09-01T00:00:00Z")
+        with tempfile.TemporaryDirectory() as temp_dir:
+            error, throughput = await _test_round(
+                config,
+                "main",
+                "sing-box",
+                self.settings(),
+                result,
+                Path(temp_dir),
+                0,
+            )
+        self.assertEqual(error, "CORE_START_FAILED")
+        self.assertIsNone(throughput)
+        self.assertEqual(
+            result.core_start_failures,
+            [{"category": "CORE_EXITED", "exit_code": 23}],
+        )
+
+    async def test_invalid_core_config_is_safely_categorized(self) -> None:
+        config = parse_uri(vless_uri())
+        result = TestResult(config.fingerprint, "main", "2026-09-01T00:00:00Z")
+        with (
+            tempfile.TemporaryDirectory() as temp_dir,
+            patch("swiftproxy.testing.sing_box_config", side_effect=ValueError("contains-secret")),
+        ):
+            error, throughput = await _test_round(
+                config,
+                "main",
+                "sing-box",
+                self.settings(),
+                result,
+                Path(temp_dir),
+                0,
+            )
+        self.assertEqual(error, "CORE_START_FAILED")
+        self.assertIsNone(throughput)
+        self.assertEqual(
+            result.core_start_failures,
+            [{"category": "CONFIG_REJECTED", "exit_code": None}],
+        )
+        self.assertNotIn("contains-secret", json.dumps(result.core_start_failures))
 
 
 class EndpointResolutionTests(unittest.IsolatedAsyncioTestCase):

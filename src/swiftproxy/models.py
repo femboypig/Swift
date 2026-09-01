@@ -91,6 +91,8 @@ class TestResult:
     asn: int | None = None
     provider: str | None = None
     reason: str | None = None
+    round_diagnostics: list[dict[str, Any]] = field(default_factory=list)
+    core_start_failures: list[dict[str, Any]] = field(default_factory=list)
 
     @property
     def worked(self) -> bool:

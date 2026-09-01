@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import asyncio
 import contextlib
+import errno
 import ipaddress
 import json
 import logging
@@ -15,6 +16,7 @@ from datetime import UTC, datetime
 from pathlib import Path
 from collections.abc import Callable
 from typing import Any
+from urllib.parse import urlsplit
 
 from .models import ProxyConfig, TestResult
 from .parsing import parse_uri, serialize_uri
@@ -340,6 +342,7 @@ async def _curl(
     request_timeout: float,
     output: Path | None = None,
     max_bytes: int | None = None,
+    failure: list[str] | None = None,
 ) -> dict[str, Any] | None:
     command = [
         "curl",
@@ -360,26 +363,40 @@ async def _curl(
     if max_bytes:
         command.extend(["--max-filesize", str(max_bytes)])
     command.append(url)
-    process = await asyncio.create_subprocess_exec(
-        *command,
-        stdout=asyncio.subprocess.PIPE,
-        stderr=asyncio.subprocess.DEVNULL,
-    )
+    try:
+        process = await asyncio.create_subprocess_exec(
+            *command,
+            stdout=asyncio.subprocess.PIPE,
+            stderr=asyncio.subprocess.DEVNULL,
+        )
+    except OSError:
+        if failure is not None:
+            failure.append("CURL_EXEC_ERROR")
+        return None
     stdout, _ = await process.communicate()
     if process.returncode != 0:
+        if failure is not None:
+            failure.append(f"CURL_{process.returncode}")
         return None
     try:
         metrics = json.loads(stdout)
         status = int(metrics.get("response_code", 0))
     except (json.JSONDecodeError, TypeError, ValueError):
+        if failure is not None:
+            failure.append("CURL_BAD_RESPONSE")
         return None
     if not 200 <= status < 400:
+        if failure is not None:
+            failure.append(f"HTTP_{status}")
         return None
     return metrics
 
 
 async def _probe(
-    socks_port: int, url: str, settings: dict[str, Any]
+    socks_port: int,
+    url: str,
+    settings: dict[str, Any],
+    failure: list[str] | None = None,
 ) -> tuple[float, float, float] | None:
     metrics = await _curl(
         socks_port,
@@ -387,6 +404,7 @@ async def _probe(
         float(settings["connect_timeout"]),
         float(settings["request_timeout"]),
         max_bytes=128 * 1024,
+        failure=failure,
     )
     if not metrics:
         return None
@@ -398,7 +416,11 @@ async def _probe(
     return total, connect, response
 
 
-async def _throughput(socks_port: int, settings: dict[str, Any]) -> float | None:
+async def _throughput(
+    socks_port: int,
+    settings: dict[str, Any],
+    failure: list[str] | None = None,
+) -> float | None:
     size = int(settings["download_bytes"])
     url = str(settings["download_url"]).replace("{bytes}", str(size))
     metrics = await _curl(
@@ -407,6 +429,7 @@ async def _throughput(socks_port: int, settings: dict[str, Any]) -> float | None
         float(settings["connect_timeout"]),
         float(settings["download_timeout"]),
         max_bytes=size + 1024,
+        failure=failure,
     )
     if not metrics or float(metrics.get("size_download", 0)) < size * 0.8:
         return None
@@ -473,6 +496,17 @@ def _minimum_throughput(lane: str, settings: dict[str, Any]) -> float:
     return float(settings[f"{lane}_min_throughput_bps"])
 
 
+def _target_id(url: str) -> str:
+    host = urlsplit(url).hostname or "unknown"
+    return {
+        "www.gstatic.com": "gstatic",
+        "cp.cloudflare.com": "cloudflare",
+        "connectivitycheck.platform.hicloud.com": "hicloud",
+        "captive.apple.com": "apple",
+        "www.msftconnecttest.com": "microsoft",
+    }.get(host, host[:64])
+
+
 async def _test_round(
     config: ProxyConfig,
     lane: str,
@@ -483,20 +517,52 @@ async def _test_round(
     round_index: int,
 ) -> tuple[str | None, float | None]:
     result.rounds_attempted += 1
+    round_diagnostic: dict[str, Any] = {
+        "round": round_index + 1,
+        "targets": [],
+        "throughput": {"attempted": False, "success": False},
+        "core_start": None,
+    }
+    result.round_diagnostics.append(round_diagnostic)
     socks_port = _free_port()
     config_path = directory / f"config-{round_index}.json"
-    config_path.write_text(json.dumps(sing_box_config(config, socks_port), separators=(",", ":")))
-    process = await asyncio.create_subprocess_exec(
-        core_path,
-        "run",
-        "-c",
-        str(config_path),
-        stdout=asyncio.subprocess.DEVNULL,
-        stderr=asyncio.subprocess.DEVNULL,
-        start_new_session=True,
-    )
+    try:
+        core_config = sing_box_config(config, socks_port)
+    except (KeyError, TypeError, ValueError):
+        core_failure = {"category": "CONFIG_REJECTED", "exit_code": None}
+        round_diagnostic["core_start"] = core_failure
+        result.core_start_failures.append(core_failure)
+        return "CORE_START_FAILED", None
+    config_path.write_text(json.dumps(core_config, separators=(",", ":")))
+    try:
+        process = await asyncio.create_subprocess_exec(
+            core_path,
+            "run",
+            "-c",
+            str(config_path),
+            stdout=asyncio.subprocess.DEVNULL,
+            stderr=asyncio.subprocess.DEVNULL,
+            start_new_session=True,
+        )
+    except OSError as exc:
+        category = (
+            "RESOURCE_ERROR"
+            if exc.errno in {errno.EAGAIN, errno.EMFILE, errno.ENFILE, errno.ENOMEM}
+            else "SPAWN_ERROR"
+        )
+        core_failure = {"category": category, "exit_code": None}
+        round_diagnostic["core_start"] = core_failure
+        result.core_start_failures.append(core_failure)
+        return "CORE_START_FAILED", None
     try:
         if not await _wait_for_core(process, socks_port):
+            exit_code = process.returncode if isinstance(process.returncode, int) else None
+            core_failure = {
+                "category": "CORE_EXITED" if exit_code is not None else "LISTEN_TIMEOUT",
+                "exit_code": exit_code,
+            }
+            round_diagnostic["core_start"] = core_failure
+            result.core_start_failures.append(core_failure)
             return "CORE_START_FAILED", None
         targets = settings["white_probe_urls"] if lane == "white" else settings["probe_urls"]
         probes = int(settings["probes"])
@@ -511,7 +577,16 @@ async def _test_round(
         # outage count once or twice depending on the config fingerprint.
         initial_targets = ordered_targets[: min(probes, len(ordered_targets))]
         for target in initial_targets:
-            measurement = await _probe(socks_port, target, settings)
+            failure: list[str] = []
+            measurement = await _probe(socks_port, target, settings, failure)
+            round_diagnostic["targets"].append(
+                {
+                    "target": _target_id(target),
+                    "distinct": True,
+                    "success": measurement is not None,
+                    "failure": failure[0] if failure else None,
+                }
+            )
             if measurement is None:
                 result.failure_count += 1
                 continue
@@ -526,7 +601,16 @@ async def _test_round(
         retry_targets = successful_targets or ordered_targets
         for index in range(probes - len(initial_targets)):
             target = retry_targets[index % len(retry_targets)]
-            measurement = await _probe(socks_port, target, settings)
+            failure = []
+            measurement = await _probe(socks_port, target, settings, failure)
+            round_diagnostic["targets"].append(
+                {
+                    "target": _target_id(target),
+                    "distinct": False,
+                    "success": measurement is not None,
+                    "failure": failure[0] if failure else None,
+                }
+            )
             if measurement is None:
                 result.failure_count += 1
                 continue
@@ -542,7 +626,16 @@ async def _test_round(
             settings["throughput_probe_ratio"]
         ):
             return None, None
-        throughput = await _throughput(socks_port, settings)
+        throughput_failure: list[str] = []
+        round_diagnostic["throughput"]["attempted"] = True
+        throughput = await _throughput(socks_port, settings, throughput_failure)
+        round_diagnostic["throughput"].update(
+            {
+                "success": throughput is not None,
+                "bps": round(throughput, 2) if throughput is not None else None,
+                "failure": throughput_failure[0] if throughput_failure else None,
+            }
+        )
         if throughput is not None and throughput >= _minimum_throughput(lane, settings):
             result.rounds_succeeded += 1
         if result.country is None:

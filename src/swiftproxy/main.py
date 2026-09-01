@@ -35,6 +35,7 @@ from .scoring import (
 from .ru_probe import probe_ru_targets
 from .sources import fetch_sources, source_specs
 from .testing import preflight_targets, resolve_candidates, test_candidates
+from .telemetry import cloud_result_record, population_record, write_jsonl
 from .whitelist import (
     _visible_server_name,
     build_evidence,
@@ -283,9 +284,15 @@ async def run(root: Path, config_path: Path, core_override: str | None = None) -
             {"source_status": _source_status(evidence_results)},
         )
     parsed, parse_failures, collected = parse_sources(source_results)
+    current_sources: dict[str, set[str]] = {}
+    current_source_lanes: dict[str, set[str]] = {}
+    for config in parsed:
+        current_sources.setdefault(config.fingerprint, set()).update(config.sources)
+        current_source_lanes.setdefault(config.fingerprint, set()).update(config.lanes)
     previous_configs = previous_subscription_configs(root, history, allowed_sources)
     parsed.extend(previous_configs)
     unique, duplicate_count = deduplicate(parsed)
+    candidate_lanes = {config.fingerprint: set(config.lanes) for config in unique}
     parse_failures["DUPLICATE"] += duplicate_count
     LOGGER.info(
         "collection collected=%d retained=%d parsed=%d unique=%d duplicates=%d",
@@ -367,6 +374,33 @@ async def run(root: Path, config_path: Path, core_override: str | None = None) -
     )
     results_list = await test_candidates(jobs, core_path, settings["testing"])
     results = {(result.fingerprint, result.lane): result for result in results_list}
+    resolution_reasons = {**white_resolution_failures, **resolution_failures}
+    forensic_dir = root / ".swift-forensics"
+    write_jsonl(
+        forensic_dir / "population.jsonl",
+        (
+            population_record(
+                config,
+                current_sources.get(config.fingerprint, set()),
+                current_source_lanes.get(config.fingerprint, set()),
+                candidate_lanes[config.fingerprint],
+                resolution_reasons.get(config.fingerprint),
+                white_signals.get(config.fingerprint),
+            )
+            for config in sorted(unique, key=lambda item: item.fingerprint)
+        ),
+    )
+    write_jsonl(
+        forensic_dir / "cloud-results.jsonl",
+        (
+            cloud_result_record(
+                candidate_map[result.fingerprint],
+                result,
+                current_sources.get(result.fingerprint, set()),
+            )
+            for result in sorted(results_list, key=lambda item: (item.fingerprint, item.lane))
+        ),
+    )
     temp_history = copy.deepcopy(history)
     for config, lane in jobs:
         result = results.get((config.fingerprint, lane))
