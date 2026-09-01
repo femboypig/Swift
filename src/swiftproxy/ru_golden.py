@@ -5,6 +5,7 @@ import asyncio
 import contextlib
 import ipaddress
 import json
+import logging
 import math
 import os
 import socket
@@ -44,6 +45,7 @@ from .testing import (
 RESULT_SCHEMA_VERSION = 1
 TCP_PROTOCOLS = {"vless", "vmess", "trojan", "ss"}
 TERMINAL_PASS = "PASS"
+LOGGER = logging.getLogger("swift.ru_golden")
 
 
 def _now() -> str:
@@ -822,10 +824,31 @@ async def run_generation(root: Path, core: str) -> int:
     results: list[dict[str, Any]] = []
     complete = True
     run_failure: str | None = None
+    run_started = time.monotonic()
+    last_progress = run_started
+    LOGGER.info(
+        "RU generation=%s expected=%d path_mode=%s",
+        manifest["generation_id"][:12],
+        len(candidates),
+        control["path_mode"],
+    )
     try:
         async with asyncio.timeout(max(0.0, deadline_at - time.monotonic())):
             for task in asyncio.as_completed(tasks):
                 results.append(await task)
+                now_mono = time.monotonic()
+                if len(results) % 25 == 0 or now_mono - last_progress >= 30:
+                    elapsed = max(0.001, now_mono - run_started)
+                    rate = len(results) / elapsed
+                    remaining = len(candidates) - len(results)
+                    LOGGER.info(
+                        "RU progress=%d/%d rate=%.2f/s eta=%.0fs",
+                        len(results),
+                        len(candidates),
+                        rate,
+                        remaining / rate if rate else 0,
+                    )
+                    last_progress = now_mono
     except TimeoutError:
         complete = False
         run_failure = "RUN_DEADLINE"
@@ -878,6 +901,10 @@ async def run_generation(root: Path, core: str) -> int:
         "downloads": {"peak_active": governor.peak, "bytes": governor.bytes},
         "diagnostics": diagnostic_stage.summary(),
     }
+    terminal_counts: dict[str, int] = {}
+    for result in results:
+        reason = str(result.get("final", {}).get("reason", "INCOMPLETE"))
+        terminal_counts[reason] = terminal_counts.get(reason, 0) + 1
 
     write_jsonl(
         publication / "ru-results.jsonl", sorted(results, key=lambda item: item["fingerprint"])
@@ -895,6 +922,7 @@ async def run_generation(root: Path, core: str) -> int:
                 "path_mode": control["path_mode"],
                 "performance": performance,
                 "run_failure": run_failure,
+                "terminal_counts": dict(sorted(terminal_counts.items())),
             },
         )
         return 1
@@ -1043,6 +1071,7 @@ async def run_generation(root: Path, core: str) -> int:
             "preflight_ok": True,
             "postflight_ok": postflight.ok,
             "performance": performance,
+            "terminal_counts": dict(sorted(terminal_counts.items())),
         },
     )
     return 0 if complete else 1
@@ -1055,6 +1084,7 @@ def cli(argv: list[str] | None = None) -> int:
         "--core", default=os.environ.get("SWIFT_SING_BOX", ".cache/sing-box/sing-box")
     )
     args = parser.parse_args(argv)
+    logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
     root = Path(args.root).resolve()
     core = args.core if Path(args.core).is_absolute() else str(root / args.core)
     return asyncio.run(run_generation(root, core))
