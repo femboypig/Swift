@@ -23,6 +23,7 @@ from .models import ProxyConfig, RankedConfig, TestResult
 from .output import validated_proxy_lines, write_final_subscriptions, write_json
 from .parsing import parse_uri
 from .scoring import diverse_selection
+from .telemetry import mac_result_record, write_jsonl
 from .testing import (
     _direct_socks_address,
     _free_port,
@@ -100,6 +101,8 @@ class RuVerifyResult:
     services: dict[str, str] = field(default_factory=dict)
     ru_service_ok: bool | None = None
     is_infrastructure_failure: bool = False
+    r1: DownloadAttempt | None = None
+    r2: DownloadAttempt | None = None
 
 
 async def _curl_probe(
@@ -471,6 +474,7 @@ async def _verify_single(
                         https_total=len(PROBE_URLS),
                         https_diagnostics=dict(sorted(https_diagnostics.items())),
                         r1_kbps=res1.speed_kbps,
+                        r1=res1,
                     )
 
                 # 3. Download Round 2 (256 KB)
@@ -488,6 +492,8 @@ async def _verify_single(
                         r1_kbps=res1.speed_kbps,
                         r2_kbps=res2.speed_kbps,
                         min_kbps=min(res1.speed_kbps, res2.speed_kbps),
+                        r1=res1,
+                        r2=res2,
                     )
 
                 min_speed = min(res1.speed_kbps, res2.speed_kbps)
@@ -503,6 +509,8 @@ async def _verify_single(
                         r1_kbps=res1.speed_kbps,
                         r2_kbps=res2.speed_kbps,
                         min_kbps=min_speed,
+                        r1=res1,
+                        r2=res2,
                     )
 
                 # Core test passed. Run service reachability diagnostics.
@@ -533,6 +541,8 @@ async def _verify_single(
                     https_diagnostics=dict(sorted(https_diagnostics.items())),
                     services=services,
                     ru_service_ok=ru_service_ok,
+                    r1=res1,
+                    r2=res2,
                 )
             finally:
                 if process:
@@ -729,6 +739,43 @@ async def run_ru_verify(
             "PASS" if r.passed else "FAIL",
             r.reason or "OK",
         )
+
+    current_sources: dict[str, set[str]] = {}
+    population_path = root / ".swift-forensics/population.jsonl"
+    if population_path.exists():
+        try:
+            for line in population_path.read_text().splitlines():
+                record = json.loads(line)
+                current_sources[record["fingerprint"]] = set(record.get("sources", []))
+        except (KeyError, OSError, json.JSONDecodeError):
+            current_sources = {}
+
+    history_records: dict[str, Any] = {}
+    history_path = root / "data/history.json"
+    if history_path.exists():
+        try:
+            history_records = json.loads(history_path.read_text()).get("configs", {})
+        except (OSError, json.JSONDecodeError):
+            history_records = {}
+    write_jsonl(
+        root / ".swift-forensics/mac-results.jsonl",
+        (
+            mac_result_record(
+                item[0],
+                results_map[item[0].fingerprint],
+                current_sources.get(
+                    item[0].fingerprint,
+                    set(history_records.get(item[0].fingerprint, {}).get("sources", [])),
+                ),
+                {lane for lane, present in (("main", item[2]), ("white", item[3])) if present},
+            )
+            for item in sorted(
+                unique_candidates.values(),
+                key=lambda value: value[0].fingerprint,
+            )
+            if item[0].fingerprint in results_map
+        ),
+    )
 
     passed_count = sum(1 for r in results_map.values() if r.passed)
     passed_ratio = passed_count / len(results_map) if results_map else 0.0

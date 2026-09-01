@@ -76,3 +76,54 @@ def cloud_result_record(
         "rounds": result.round_diagnostics,
         "core_start_failures": result.core_start_failures,
     }
+
+
+def _download_record(attempt: Any) -> dict[str, Any] | None:
+    if attempt is None:
+        return None
+    if attempt.ok:
+        category = None
+    elif attempt.is_stall:
+        category = "STALLED"
+    elif isinstance(attempt.error, str) and attempt.error.startswith("EXIT_"):
+        category = attempt.error
+    else:
+        category = "DOWNLOAD_FAILED"
+    return {
+        "success": bool(attempt.ok),
+        "status_code": int(attempt.status_code),
+        "bytes": int(attempt.bytes_downloaded),
+        "speed_kbps": round(float(attempt.speed_kbps), 2),
+        "category": category,
+    }
+
+
+def mac_result_record(
+    config: ProxyConfig,
+    result: Any,
+    sources: set[str],
+    lanes: set[str],
+) -> dict[str, Any]:
+    return {
+        "schema_version": SCHEMA_VERSION,
+        "fingerprint": config.fingerprint,
+        "protocol": config.protocol,
+        "sources": sorted(sources),
+        "lanes": sorted(lanes),
+        "final_reason": result.reason or "PASS",
+        "passed": bool(result.passed),
+        "https": {
+            "success": int(result.https_passed),
+            "attempted": int(result.https_attempted),
+            "total": int(result.https_total),
+            "failures": dict(sorted(result.https_diagnostics.items())),
+        },
+        "r1": _download_record(result.r1),
+        "r2": _download_record(result.r2),
+        "throughput": {
+            "r1_kbps": round(float(result.r1_kbps), 2),
+            "r2_kbps": round(float(result.r2_kbps), 2),
+            "minimum_kbps": round(float(result.min_kbps), 2),
+        },
+        "infrastructure_failure": bool(result.is_infrastructure_failure),
+    }

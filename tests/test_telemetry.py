@@ -6,8 +6,14 @@ import unittest
 from pathlib import Path
 
 from swiftproxy.models import ProxyConfig, TestResult
+from swiftproxy.ru_verify import DownloadAttempt, RuVerifyResult
 from swiftproxy.scoring import add_observation, empty_history, rank_configs
-from swiftproxy.telemetry import cloud_result_record, population_record, write_jsonl
+from swiftproxy.telemetry import (
+    cloud_result_record,
+    mac_result_record,
+    population_record,
+    write_jsonl,
+)
 
 
 class TelemetryTests(unittest.TestCase):
@@ -110,6 +116,31 @@ class TelemetryTests(unittest.TestCase):
             write_jsonl(path, [record])
             written = [json.loads(line) for line in path.read_text().splitlines()]
         self.assertEqual(written, [record])
+
+    def test_mac_diagnostics_are_per_fingerprint_and_secret_free(self) -> None:
+        config = self.config()
+        result = RuVerifyResult(
+            fingerprint=config.fingerprint,
+            passed=False,
+            reason="DOWNLOAD_R2_FAILED",
+            https_passed=2,
+            https_attempted=2,
+            https_diagnostics={"CURL_28": 1},
+            r1_kbps=100,
+            r2_kbps=0,
+            min_kbps=0,
+            r1=DownloadAttempt(True, 200, 1.0, 262144, 100),
+            r2=DownloadAttempt(False, error="secret-bearing diagnostic"),
+        )
+        record = mac_result_record(config, result, {"source-a"}, {"main", "white"})
+        self.assertEqual(record["fingerprint"], config.fingerprint)
+        self.assertEqual(record["https"]["failures"], {"CURL_28": 1})
+        self.assertTrue(record["r1"]["success"])
+        self.assertEqual(record["r2"]["category"], "DOWNLOAD_FAILED")
+        serialized = json.dumps(record)
+        self.assertNotIn(str(config.auth["uuid"]), serialized)
+        self.assertNotIn(str(config.options["public_key"]), serialized)
+        self.assertNotIn("secret-bearing diagnostic", serialized)
 
     def test_telemetry_fields_do_not_change_ranking(self) -> None:
         config = self.config()

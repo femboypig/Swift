@@ -652,6 +652,12 @@ class TestExhaustiveValidationPipeline(unittest.TestCase):
             self.assertEqual(stats["collection_updated_at"], "2026-08-31T16:00:00Z")
             self.assertEqual(stats["publication_updated_at"], "2026-08-31T17:00:00Z")
             self.assertEqual(stats["updated_at"], stats["publication_updated_at"])
+            mac_records = [
+                json.loads(line)
+                for line in (root / ".swift-forensics/mac-results.jsonl").read_text().splitlines()
+            ]
+            self.assertEqual([record["fingerprint"] for record in mac_records], tested)
+            self.assertEqual(mac_records[0]["lanes"], ["main"])
 
     @patch.dict("os.environ", {"SWIFT_BIND_INTERFACE": "wlan0"})
     @patch(
