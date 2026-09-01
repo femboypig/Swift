@@ -651,6 +651,13 @@ def download_failure_reason(
     return None
 
 
+async def _bounded_preflight(interface: str, timeout: float) -> Any | None:
+    try:
+        return await asyncio.wait_for(_mac_preflight(interface), timeout)
+    except TimeoutError:
+        return None
+
+
 async def run_generation(root: Path, core: str) -> int:
     generation_dir = root / "data/ru-generation"
     manifest = json.loads((generation_dir / "manifest.json").read_text())
@@ -672,16 +679,29 @@ async def run_generation(root: Path, core: str) -> int:
     )
     if any(int(ru[key]) < 1 for key in positive):
         raise ValueError("RU stage concurrency must be positive")
+    if float(ru["preflight_timeout"]) <= 0:
+        raise ValueError("RU preflight timeout must be positive")
     per_transfer_bps = int(ru["download_bandwidth_bps"]) // int(ru["download_concurrency"])
     if per_transfer_bps <= MIN_THROUGHPUT_KBPS * 1024:
         raise ValueError("RU download budget must stay above the quality threshold")
     interface = os.environ.get("SWIFT_BIND_INTERFACE", "")
     if not interface:
         raise RuntimeError("SWIFT_BIND_INTERFACE is required")
-    preflight = await _mac_preflight(interface)
+    preflight = await _bounded_preflight(interface, float(ru["preflight_timeout"]))
+    publication = root / "data/ru-publication"
+    if preflight is None:
+        write_json(
+            publication / "result-manifest.json",
+            {
+                **manifest,
+                "complete": False,
+                "state": "HELD",
+                "reason": "RU_PREFLIGHT_TIMEOUT",
+            },
+        )
+        return 1
     control = await _direct_control(interface)
     core_control = await _core_control(core, interface)
-    publication = root / "data/ru-publication"
     if not preflight.ok or not control["success"] or not core_control["success"]:
         write_json(
             publication / "result-manifest.json",
@@ -1145,14 +1165,23 @@ async def run_generation(root: Path, core: str) -> int:
     }
     write_json(output_root / "stats.json", stats)
     write_json(output_root / "data/ru-history.json", history, compact=True)
-    postflight = await _mac_preflight(interface)
-    postflight_core = await _core_control(core, interface)
+    postflight = await _bounded_preflight(interface, float(ru["preflight_timeout"]))
+    postflight_core = (
+        await _core_control(core, interface)
+        if postflight is not None
+        else {"success": False, "category": "POSTFLIGHT_TIMEOUT"}
+    )
     infrastructure_reasons = {"SPAWN_ERROR", "RESOURCE_ERROR", "LISTEN_TIMEOUT"}
     infrastructure_failures = sum(
         terminal_counts.get(reason, 0) for reason in infrastructure_reasons
     )
     infrastructure_collapse = len(results) >= 10 and infrastructure_failures / len(results) >= 0.6
-    complete = postflight.ok and postflight_core["success"] and not infrastructure_collapse
+    complete = (
+        postflight is not None
+        and postflight.ok
+        and postflight_core["success"]
+        and not infrastructure_collapse
+    )
     write_json(
         publication / "result-manifest.json",
         {
@@ -1163,7 +1192,9 @@ async def run_generation(root: Path, core: str) -> int:
                 "RU_CORE_INFRASTRUCTURE_COLLAPSE"
                 if infrastructure_collapse
                 else (
-                    None if postflight.ok and postflight_core["success"] else "RU_POSTFLIGHT_FAILED"
+                    None
+                    if postflight is not None and postflight.ok and postflight_core["success"]
+                    else ("RU_POSTFLIGHT_TIMEOUT" if postflight is None else "RU_POSTFLIGHT_FAILED")
                 )
             ),
             "accounted_terminal": len(results),
@@ -1175,7 +1206,7 @@ async def run_generation(root: Path, core: str) -> int:
             "verifier_download_bytes": governor.bytes,
             "path_mode": control["path_mode"],
             "preflight_ok": True,
-            "postflight_ok": postflight.ok,
+            "postflight_ok": postflight is not None and postflight.ok,
             "postflight_core": postflight_core,
             "performance": performance,
             "terminal_counts": dict(sorted(terminal_counts.items())),

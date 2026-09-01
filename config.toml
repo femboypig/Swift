@@ -80,6 +80,7 @@ white_probe_urls = [
 [ru]
 # Conservative defaults for a shared household connection. These are stage
 # limits, not candidate caps: every candidate is still accounted for.
+preflight_timeout = 60
 resolution_concurrency = 40
 resolution_timeout = 8
 endpoint_concurrency = 16

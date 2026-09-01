@@ -16,7 +16,12 @@ from swiftproxy.parsing import parse_uri, serialize_uri
 from swiftproxy.publication import PublicationError, validate_publication
 from swiftproxy.ru_golden import _http_probe, _https_session, endpoint_sanity, resolve_ru
 from swiftproxy.ru_golden import DOWNLOAD_BYTES, MIN_THROUGHPUT_KBPS
-from swiftproxy.ru_golden import DownloadGovernor, _white_signal, download_failure_reason
+from swiftproxy.ru_golden import (
+    DownloadGovernor,
+    _bounded_preflight,
+    _white_signal,
+    download_failure_reason,
+)
 from swiftproxy.ru_golden import run_generation
 
 
@@ -62,6 +67,15 @@ class ResolutionTests(unittest.TestCase):
 
 
 class GoldenHttpsTests(unittest.TestCase):
+    def test_preflight_has_a_whole_stage_timeout(self) -> None:
+        async def slow_preflight(_interface: str) -> None:
+            await asyncio.sleep(1)
+
+        with patch("swiftproxy.ru_golden._mac_preflight", side_effect=slow_preflight):
+            result = asyncio.run(_bounded_preflight("wlan0", 0.001))
+
+        self.assertIsNone(result)
+
     @patch("asyncio.create_subprocess_exec")
     def test_http_error_is_not_proxy_success(self, spawn) -> None:
         process = AsyncMock()
