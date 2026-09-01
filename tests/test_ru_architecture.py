@@ -18,11 +18,14 @@ from swiftproxy.ru_golden import _http_probe, _https_session, endpoint_sanity, r
 from swiftproxy.ru_golden import DOWNLOAD_BYTES, MIN_THROUGHPUT_KBPS
 from swiftproxy.ru_golden import (
     DownloadGovernor,
+    PathHealth,
     _bounded_preflight,
     _run_admitted,
+    _wait_for_healthy_path,
     _white_signal,
     download_failure_reason,
 )
+from swiftproxy.ru_verify import MacPreflightResult
 from swiftproxy.ru_golden import run_generation
 
 
@@ -68,6 +71,47 @@ class ResolutionTests(unittest.TestCase):
 
 
 class GoldenHttpsTests(unittest.TestCase):
+    @staticmethod
+    def path_health(healthy: bool, category: str | None = None) -> PathHealth:
+        preflight = MacPreflightResult(
+            healthy,
+            "wlan0",
+            healthy,
+            3 if healthy else 0,
+            3,
+            healthy,
+            {} if healthy else {category or "CURL_97": 1},
+        )
+        return PathHealth(
+            preflight,
+            {
+                "success": healthy,
+                "latency_ms": 100.0 if healthy else None,
+                "path_mode": "direct-socks",
+            },
+            {"success": healthy, "category": None if healthy else category or "CURL_97"},
+        )
+
+    @patch("swiftproxy.ru_golden._path_health_once", new_callable=AsyncMock)
+    def test_transient_path_failure_requires_two_recovery_confirmations(self, check) -> None:
+        check.side_effect = [
+            self.path_health(False),
+            self.path_health(True),
+            self.path_health(True),
+        ]
+        health, records = asyncio.run(_wait_for_healthy_path("wlan0", "core", 1, 4, 0, 2, "test"))
+        self.assertTrue(health.healthy)
+        self.assertEqual(len(records), 3)
+        self.assertEqual(check.await_count, 3)
+
+    @patch("swiftproxy.ru_golden._path_health_once", new_callable=AsyncMock)
+    def test_path_recovery_remains_held_when_control_never_recovers(self, check) -> None:
+        check.return_value = self.path_health(False, "CURL_28")
+        health, records = asyncio.run(_wait_for_healthy_path("wlan0", "core", 1, 3, 0, 2, "test"))
+        self.assertFalse(health.healthy)
+        self.assertEqual(len(records), 3)
+        self.assertEqual(records[-1]["core_control"], {"success": False, "category": "CURL_28"})
+
     def test_queue_wait_does_not_consume_candidate_timeout(self) -> None:
         async def scenario() -> dict:
             admission = asyncio.Semaphore(1)

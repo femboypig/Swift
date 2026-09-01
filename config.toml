@@ -81,6 +81,12 @@ white_probe_urls = [
 # Conservative defaults for a shared household connection. These are stage
 # limits, not candidate caps: every candidate is still accounted for.
 preflight_timeout = 60
+# Karing's loopback direct path can briefly reject new SOCKS sessions after an
+# exhaustive run. Retry the infrastructure check instead of throwing away an
+# otherwise complete generation after one transient control failure.
+path_recovery_attempts = 8
+path_recovery_delay_seconds = 60
+path_recovery_confirmations = 2
 resolution_concurrency = 40
 resolution_timeout = 8
 endpoint_concurrency = 16

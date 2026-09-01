@@ -16,6 +16,7 @@ import time
 import tomllib
 from collections import Counter
 from collections.abc import Awaitable, Callable
+from dataclasses import dataclass
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
@@ -668,6 +669,104 @@ async def _bounded_preflight(interface: str, timeout: float) -> Any | None:
         return None
 
 
+@dataclass(slots=True)
+class PathHealth:
+    preflight: Any | None
+    control: dict[str, Any]
+    core_control: dict[str, Any]
+
+    @property
+    def healthy(self) -> bool:
+        return bool(
+            self.preflight is not None
+            and self.preflight.ok
+            and self.control.get("success")
+            and self.core_control.get("success")
+        )
+
+    def record(self, attempt: int) -> dict[str, Any]:
+        preflight = self.preflight
+        return {
+            "attempt": attempt,
+            "healthy": self.healthy,
+            "preflight": (
+                {
+                    "ok": bool(preflight.ok),
+                    "dns_ok": bool(preflight.dns_ok),
+                    "https_passed": int(preflight.https_passed),
+                    "https_total": int(preflight.https_total),
+                    "download_ok": bool(preflight.download_ok),
+                    "diagnostics": preflight.diagnostics,
+                }
+                if preflight is not None
+                else {"ok": False, "reason": "PREFLIGHT_TIMEOUT"}
+            ),
+            "control": {
+                "success": bool(self.control.get("success")),
+                "path_mode": self.control.get("path_mode"),
+            },
+            "core_control": {
+                "success": bool(self.core_control.get("success")),
+                "category": self.core_control.get("category"),
+            },
+        }
+
+
+async def _path_health_once(interface: str, core: str, timeout: float) -> PathHealth:
+    preflight = await _bounded_preflight(interface, timeout)
+    control = await _direct_control(interface)
+    core_control = await _core_control(core, interface)
+    return PathHealth(preflight, control, core_control)
+
+
+async def _wait_for_healthy_path(
+    interface: str,
+    core: str,
+    timeout: float,
+    attempts: int,
+    delay: float,
+    confirmations: int,
+    phase: str,
+) -> tuple[PathHealth, list[dict[str, Any]]]:
+    records: list[dict[str, Any]] = []
+    consecutive = 0
+    saw_failure = False
+    last: PathHealth | None = None
+    for attempt in range(1, attempts + 1):
+        last = await _path_health_once(interface, core, timeout)
+        record = last.record(attempt)
+        records.append(record)
+        if last.healthy:
+            consecutive += 1
+            required = confirmations if saw_failure else 1
+            LOGGER.info(
+                "RU %s path check attempt=%d/%d PASS confirmation=%d/%d",
+                phase,
+                attempt,
+                attempts,
+                consecutive,
+                required,
+            )
+            if consecutive >= required:
+                return last, records
+        else:
+            saw_failure = True
+            consecutive = 0
+            LOGGER.warning(
+                "RU %s path check attempt=%d/%d FAIL preflight=%s control=%s core=%s",
+                phase,
+                attempt,
+                attempts,
+                record["preflight"],
+                record["control"],
+                record["core_control"],
+            )
+        if attempt < attempts:
+            await asyncio.sleep(delay)
+    assert last is not None
+    return last, records
+
+
 async def run_generation(root: Path, core: str) -> int:
     generation_dir = root / "data/ru-generation"
     manifest = json.loads((generation_dir / "manifest.json").read_text())
@@ -691,28 +790,30 @@ async def run_generation(root: Path, core: str) -> int:
         raise ValueError("RU stage concurrency must be positive")
     if float(ru["preflight_timeout"]) <= 0:
         raise ValueError("RU preflight timeout must be positive")
+    recovery_attempts = int(ru["path_recovery_attempts"])
+    recovery_delay = float(ru["path_recovery_delay_seconds"])
+    recovery_confirmations = int(ru["path_recovery_confirmations"])
+    if recovery_attempts < 1 or recovery_delay < 0 or recovery_confirmations < 1:
+        raise ValueError("RU path recovery settings are invalid")
+    if recovery_confirmations > recovery_attempts:
+        raise ValueError("RU path confirmations cannot exceed recovery attempts")
     per_transfer_bps = int(ru["download_bandwidth_bps"]) // int(ru["download_concurrency"])
     if per_transfer_bps <= MIN_THROUGHPUT_KBPS * 1024:
         raise ValueError("RU download budget must stay above the quality threshold")
     interface = os.environ.get("SWIFT_BIND_INTERFACE", "")
     if not interface:
         raise RuntimeError("SWIFT_BIND_INTERFACE is required")
-    preflight = await _bounded_preflight(interface, float(ru["preflight_timeout"]))
+    preflight_health, preflight_checks = await _wait_for_healthy_path(
+        interface,
+        core,
+        float(ru["preflight_timeout"]),
+        recovery_attempts,
+        recovery_delay,
+        recovery_confirmations,
+        "preflight",
+    )
     publication = root / "data/ru-publication"
-    if preflight is None:
-        write_json(
-            publication / "result-manifest.json",
-            {
-                **manifest,
-                "complete": False,
-                "state": "HELD",
-                "reason": "RU_PREFLIGHT_TIMEOUT",
-            },
-        )
-        return 1
-    control = await _direct_control(interface)
-    core_control = await _core_control(core, interface)
-    if not preflight.ok or not control["success"] or not core_control["success"]:
+    if not preflight_health.healthy:
         write_json(
             publication / "result-manifest.json",
             {
@@ -720,11 +821,13 @@ async def run_generation(root: Path, core: str) -> int:
                 "complete": False,
                 "state": "HELD",
                 "reason": "RU_PREFLIGHT_FAILED",
-                "path_mode": control["path_mode"],
-                "core_control": core_control,
+                "path_mode": preflight_health.control.get("path_mode"),
+                "core_control": preflight_health.core_control,
+                "path_checks": {"preflight": preflight_checks},
             },
         )
         return 1
+    control = preflight_health.control
 
     history_path = root / "data/ru-history.json"
     history = (
@@ -1179,23 +1282,23 @@ async def run_generation(root: Path, core: str) -> int:
     }
     write_json(output_root / "stats.json", stats)
     write_json(output_root / "data/ru-history.json", history, compact=True)
-    postflight = await _bounded_preflight(interface, float(ru["preflight_timeout"]))
-    postflight_core = (
-        await _core_control(core, interface)
-        if postflight is not None
-        else {"success": False, "category": "POSTFLIGHT_TIMEOUT"}
+    postflight_health, postflight_checks = await _wait_for_healthy_path(
+        interface,
+        core,
+        float(ru["preflight_timeout"]),
+        recovery_attempts,
+        recovery_delay,
+        recovery_confirmations,
+        "postflight",
     )
+    postflight = postflight_health.preflight
+    postflight_core = postflight_health.core_control
     infrastructure_reasons = {"SPAWN_ERROR", "RESOURCE_ERROR", "LISTEN_TIMEOUT"}
     infrastructure_failures = sum(
         terminal_counts.get(reason, 0) for reason in infrastructure_reasons
     )
     infrastructure_collapse = len(results) >= 10 and infrastructure_failures / len(results) >= 0.6
-    complete = (
-        postflight is not None
-        and postflight.ok
-        and postflight_core["success"]
-        and not infrastructure_collapse
-    )
+    complete = postflight_health.healthy and not infrastructure_collapse
     write_json(
         publication / "result-manifest.json",
         {
@@ -1207,7 +1310,7 @@ async def run_generation(root: Path, core: str) -> int:
                 if infrastructure_collapse
                 else (
                     None
-                    if postflight is not None and postflight.ok and postflight_core["success"]
+                    if postflight_health.healthy
                     else ("RU_POSTFLIGHT_TIMEOUT" if postflight is None else "RU_POSTFLIGHT_FAILED")
                 )
             ),
@@ -1220,8 +1323,12 @@ async def run_generation(root: Path, core: str) -> int:
             "verifier_download_bytes": governor.bytes,
             "path_mode": control["path_mode"],
             "preflight_ok": True,
-            "postflight_ok": postflight is not None and postflight.ok,
+            "postflight_ok": postflight_health.healthy,
             "postflight_core": postflight_core,
+            "path_checks": {
+                "preflight": preflight_checks,
+                "postflight": postflight_checks,
+            },
             "performance": performance,
             "terminal_counts": dict(sorted(terminal_counts.items())),
         },
