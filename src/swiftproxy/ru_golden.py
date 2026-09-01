@@ -639,6 +639,18 @@ def _terminal(record: dict[str, Any], reason: str, passed: bool = False) -> dict
     return record
 
 
+def download_failure_reason(
+    attempt: dict[str, Any], round_name: str, *, check_speed: bool = True
+) -> str | None:
+    if not attempt["success"]:
+        return (
+            "STALLED" if attempt.get("category") == "STALLED" else f"DOWNLOAD_{round_name}_FAILED"
+        )
+    if check_speed and float(attempt.get("speed_kbps", 0)) < MIN_THROUGHPUT_KBPS:
+        return "TOO_SLOW"
+    return None
+
+
 async def run_generation(root: Path, core: str) -> int:
     generation_dir = root / "data/ru-generation"
     manifest = json.loads((generation_dir / "manifest.json").read_text())
@@ -782,7 +794,8 @@ async def run_generation(root: Path, core: str) -> int:
                     r1 = await _download(port, DOWNLOAD_URL_R1, governor.per_transfer_bps)
                     governor.bytes += int(r1.get("bytes", 0))
                     record["r1"] = r1
-                    if not r1["success"]:
+                    r1_reason = download_failure_reason(r1, "R1", check_speed=False)
+                    if r1_reason:
                         control_after = await governor.control(
                             float(ru["congestion_latency_factor"]),
                             float(ru["congestion_latency_floor_ms"]),
@@ -791,16 +804,14 @@ async def run_generation(root: Path, core: str) -> int:
                         if control_after["congested"]:
                             record["retry_recommended"] = True
                             return _terminal(record, "DEFER_LOCAL_CONGESTION")
-                        return _terminal(
-                            record,
-                            "STALLED" if r1["category"] == "STALLED" else "DOWNLOAD_R1_FAILED",
-                        )
+                        return _terminal(record, r1_reason)
                     r2 = await _download(port, DOWNLOAD_URL_R2, governor.per_transfer_bps)
                     governor.bytes += int(r2.get("bytes", 0))
                     record["r2"] = r2
             finally:
                 await _stop_process(process)
-        if not record["r2"]["success"]:
+        r2_reason = download_failure_reason(record["r2"], "R2", check_speed=False)
+        if r2_reason:
             control_after = await governor.control(
                 float(ru["congestion_latency_factor"]),
                 float(ru["congestion_latency_floor_ms"]),
@@ -809,9 +820,7 @@ async def run_generation(root: Path, core: str) -> int:
             if control_after["congested"]:
                 record["retry_recommended"] = True
                 return _terminal(record, "DEFER_LOCAL_CONGESTION")
-            return _terminal(
-                record, "STALLED" if record["r2"]["category"] == "STALLED" else "DOWNLOAD_R2_FAILED"
-            )
+            return _terminal(record, r2_reason)
         if min(record["r1"]["speed_kbps"], record["r2"]["speed_kbps"]) < MIN_THROUGHPUT_KBPS:
             control_after = await governor.control(
                 float(ru["congestion_latency_factor"]),

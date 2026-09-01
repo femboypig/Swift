@@ -14,6 +14,7 @@ from swiftproxy.output import happ_subscription, plain_subscription
 from swiftproxy.parsing import parse_uri, serialize_uri
 from swiftproxy.publication import PublicationError, validate_publication
 from swiftproxy.ru_golden import _http_probe, _https_session, endpoint_sanity, resolve_ru
+from swiftproxy.ru_golden import DownloadGovernor, _white_signal, download_failure_reason
 
 
 UUID_A = "11111111-1111-4111-8111-111111111111"
@@ -90,6 +91,28 @@ class GoldenHttpsTests(unittest.TestCase):
         records, _ = asyncio.run(_https_session(parse_uri(uri()), "core", 3, 2))
         self.assertEqual(len(records), 2)
         self.assertEqual(probe.await_count, 2)
+
+    def test_download_requirements_and_stall_taxonomy_are_unchanged(self) -> None:
+        self.assertEqual(
+            download_failure_reason(
+                {"success": False, "category": "STALLED", "speed_kbps": 0}, "R1"
+            ),
+            "STALLED",
+        )
+        self.assertEqual(
+            download_failure_reason({"success": True, "category": None, "speed_kbps": 63.99}, "R2"),
+            "TOO_SLOW",
+        )
+        self.assertIsNone(
+            download_failure_reason({"success": True, "category": None, "speed_kbps": 64.0}, "R2")
+        )
+
+    @patch("swiftproxy.ru_golden._direct_control", new_callable=AsyncMock)
+    def test_local_congestion_is_an_infrastructure_signal(self, control) -> None:
+        control.return_value = {"success": True, "latency_ms": 3000, "path_mode": "test"}
+        governor = DownloadGovernor(1, 131072, "wlan0", 100)
+        result = asyncio.run(governor.control(4.0, 2000))
+        self.assertTrue(result["congested"])
 
     @patch("swiftproxy.ru_golden._stop_process", new_callable=AsyncMock)
     @patch("swiftproxy.ru_golden._http_probe", new_callable=AsyncMock)
@@ -250,6 +273,12 @@ class WorkflowTests(unittest.TestCase):
         }
         self.assertEqual(history_tier(cloud, "fingerprint"), 1)
         self.assertEqual(history_tier({"vantage": "ru", "configs": {}}, "new"), 1)
+
+    def test_white_cidr_uses_the_selected_ru_address(self) -> None:
+        config = parse_uri(uri("proxy.example"))
+        evidence = {"networks": ["93.184.216.0/24"], "domains": []}
+        self.assertEqual(_white_signal(config, "93.184.216.34", evidence), "cidr")
+        self.assertIsNone(_white_signal(config, "1.1.1.1", evidence))
 
 
 if __name__ == "__main__":
