@@ -1,7 +1,3 @@
-vless://11af1c47-865a-47c6-92ff-118013655d78@51.15.56.211:8080?encryption=none&type=ws&security=none&sni=51.15.56.211#%F0%9F%87%B3%F0%9F%87%B1%20NL%20%C2%B7%20287
-vless://d3815c21-ef06-43e2-82e1-ca313962b489@app26.jarvestip.ru:443?encryption=none&type=tcp&security=reality&flow=xtls-rprx-vision&sni=app26.jarvestip.ru&fp=firefox&pbk=c5vsnqZ0Lr_bFoto-ES-3bVD63PwFeogqfc7xTj2rig&sid=3f7fb4ee#%F0%9F%87%B3%F0%9F%87%B1%20NL%20%C2%B7%20387
-hysteria2://gf1%3Agfhysteria2024@185.156.44.99:443?sni=vk.com&insecure=1&upmbps=10&downmbps=50#%F0%9F%87%B7%F0%9F%87%B4%20RO%20%C2%B7%20422
-vless://11af1c47-865a-47c6-92ff-118013655d78@51.158.236.122:8080?encryption=none&type=ws&security=none&sni=51.158.236.122#%F0%9F%87%B3%F0%9F%87%B1%20NL%20%C2%B7%20658
-hysteria2://Krab9Hyst2_Rk7pQ2xL@nl.vpn.legendaah.xyz:36723?sni=nl.vpn.legendaah.xyz&insecure=1#%F0%9F%87%B3%F0%9F%87%B1%20NL%20%C2%B7%20683
-hysteria2://gf1%3Agfhysteria2024@185.156.44.99:443?sni=css.rbxcdn.com&insecure=1&upmbps=10&downmbps=50#%F0%9F%87%B7%F0%9F%87%B4%20RO%20%C2%B7%20727
-vless://50414e45-4c5f-5a45-5553-48493148ec15@104.21.98.146:8443?encryption=none&type=ws&security=tls&sni=cgzdynepurqs.mercury061.workers.dev&fp=ios&path=%2Fstream%2FPANEL_ZEUS%2F48493148ec15&host=cgzdynepurqs.mercury061.workers.dev#%F0%9F%87%BA%F0%9F%87%B8%20US%20%C2%B7%20943
+hysteria2://gf1%3Agfhysteria2024@185.156.44.99:443?sni=google.com&insecure=1&upmbps=10&downmbps=50#%F0%9F%87%B7%F0%9F%87%B4%20RO%20%C2%B7%20468
+vless://50414e45-4c5f-5a45-5553-48493148ec15@104.21.98.146:8443?encryption=none&type=ws&security=tls&sni=cgzdynepurqs.mercury061.workers.dev&fp=ios&path=%2Fstream%2FPANEL_ZEUS%2F48493148ec15&host=cgzdynepurqs.mercury061.workers.dev#%F0%9F%87%BA%F0%9F%87%B8%20US%20%C2%B7%20683
+hysteria2://kVfzhSpshc@hys1.wba-pn.ru:443#%F0%9F%87%B3%F0%9F%87%B1%20NL%20%C2%B7%20894
