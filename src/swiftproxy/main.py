@@ -791,6 +791,11 @@ def cli(argv: list[str] | None = None) -> int:
     parser.add_argument("--root", default=".")
     parser.add_argument("--verbose", action="store_true")
     parser.add_argument("--check-output", action="store_true")
+    parser.add_argument(
+        "--legacy-cloud",
+        action="store_true",
+        help="run the retired non-production Cloud verifier for manual diagnostics",
+    )
     args = parser.parse_args(argv)
     logging.basicConfig(
         level=logging.DEBUG if args.verbose else logging.INFO,
@@ -805,6 +810,8 @@ def cli(argv: list[str] | None = None) -> int:
         check_outputs(root, int(settings["limits"]["main"]), int(settings["limits"]["white"]))
         LOGGER.info("output sanity checks passed")
         return 0
+    if not args.legacy_cloud:
+        parser.error("production collection uses swiftproxy.generation; Cloud traffic is retired")
     try:
         asyncio.run(run(root, config_path, args.core))
     except RunHeld as exc:
