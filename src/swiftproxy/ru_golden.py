@@ -15,6 +15,7 @@ import tempfile
 import time
 import tomllib
 from collections import Counter
+from collections.abc import Awaitable, Callable
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
@@ -651,6 +652,15 @@ def download_failure_reason(
     return None
 
 
+async def _run_admitted(
+    admission: asyncio.Semaphore,
+    operation: Callable[[], Awaitable[dict[str, Any]]],
+    timeout: float,
+) -> dict[str, Any]:
+    async with admission:
+        return await asyncio.wait_for(operation(), timeout)
+
+
 async def _bounded_preflight(interface: str, timeout: float) -> Any | None:
     try:
         return await asyncio.wait_for(_mac_preflight(interface), timeout)
@@ -729,6 +739,7 @@ async def run_generation(root: Path, core: str) -> int:
     initial_stage = StageLimiter(int(ru["https_concurrency"]))
     stability_stage = StageLimiter(int(ru["stability_concurrency"]))
     diagnostic_stage = StageLimiter(int(ru["diagnostic_concurrency"]))
+    candidate_admission = asyncio.Semaphore(sum(int(ru[key]) for key in positive))
     governor = DownloadGovernor(
         int(ru["download_concurrency"]),
         int(ru["download_bandwidth_bps"]),
@@ -867,8 +878,10 @@ async def run_generation(root: Path, core: str) -> int:
 
     async def bounded(item: dict[str, Any], retry: bool = False) -> dict[str, Any]:
         try:
-            return await asyncio.wait_for(
-                verify(item, retry=retry), float(ru["per_config_timeout"])
+            return await _run_admitted(
+                candidate_admission,
+                lambda: verify(item, retry=retry),
+                float(ru["per_config_timeout"]),
             )
         except ValueError:
             return {

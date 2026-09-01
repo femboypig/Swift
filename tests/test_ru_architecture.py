@@ -19,6 +19,7 @@ from swiftproxy.ru_golden import DOWNLOAD_BYTES, MIN_THROUGHPUT_KBPS
 from swiftproxy.ru_golden import (
     DownloadGovernor,
     _bounded_preflight,
+    _run_admitted,
     _white_signal,
     download_failure_reason,
 )
@@ -67,6 +68,19 @@ class ResolutionTests(unittest.TestCase):
 
 
 class GoldenHttpsTests(unittest.TestCase):
+    def test_queue_wait_does_not_consume_candidate_timeout(self) -> None:
+        async def scenario() -> dict:
+            admission = asyncio.Semaphore(1)
+            await admission.acquire()
+            task = asyncio.create_task(
+                _run_admitted(admission, lambda: asyncio.sleep(0, result={"ok": True}), 0.01)
+            )
+            await asyncio.sleep(0.03)
+            admission.release()
+            return await task
+
+        self.assertEqual(asyncio.run(scenario()), {"ok": True})
+
     def test_preflight_has_a_whole_stage_timeout(self) -> None:
         async def slow_preflight(_interface: str) -> None:
             await asyncio.sleep(1)
