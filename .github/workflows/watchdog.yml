@@ -2,7 +2,7 @@ name: Swift schedule watchdog
 
 on:
   schedule:
-    - cron: "2,32 * * * *"
+    - cron: "32 * * * *"
   workflow_dispatch:
 
 permissions:
@@ -20,19 +20,26 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          latest=$(gh api \
-            "repos/${GITHUB_REPOSITORY}/actions/workflows/update.yml/runs?per_page=1" \
-            --jq '.workflow_runs[0].created_at // ""')
+          runs=$(gh api \
+            "repos/${GITHUB_REPOSITORY}/actions/workflows/update.yml/runs?per_page=10")
+
+          active=$(jq '[.workflow_runs[] | select(.status == "queued" or .status == "in_progress" or .status == "waiting" or .status == "pending")] | length' <<<"$runs")
+          if (( active > 0 )); then
+            echo "A Swift update is already active; nothing to do."
+            exit 0
+          fi
+
+          latest=$(jq -r '.workflow_runs[0].created_at // ""' <<<"$runs")
 
           if [[ -n "$latest" ]]; then
             age=$(( $(date -u +%s) - $(date -u -d "$latest" +%s) ))
-            if (( age < 1500 )); then
+            if (( age < 4500 )); then
               echo "Swift update started ${age}s ago; nothing to do."
               exit 0
             fi
           fi
 
-          echo "No Swift update started in the last 25 minutes; dispatching one."
+          echo "No active Swift update and none started in the last 75 minutes; dispatching one."
           gh api --method POST \
             "repos/${GITHUB_REPOSITORY}/actions/workflows/update.yml/dispatches" \
             -f ref=main

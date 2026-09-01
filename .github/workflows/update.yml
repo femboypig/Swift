@@ -2,7 +2,9 @@ name: Swift update
 
 on:
   schedule:
-    - cron: "17,47 * * * *"
+    # Exhaustive RU verification takes roughly 50-60 minutes. A 30-minute
+    # schedule only builds a queue against the single home runner.
+    - cron: "17 * * * *"
   workflow_dispatch:
     inputs:
       generation_run_id:

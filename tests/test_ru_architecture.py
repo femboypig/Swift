@@ -366,6 +366,15 @@ class WorkflowTests(unittest.TestCase):
         self.assertIn("python3 -m swiftproxy.ru_golden", workflow)
         self.assertIn("runs-on: [self-hosted, Linux]", workflow)
 
+    def test_schedule_cannot_queue_faster_than_the_exhaustive_runner(self) -> None:
+        root = Path(__file__).parents[1]
+        update = (root / ".github/workflows/update.yml").read_text()
+        watchdog = (root / ".github/workflows/watchdog.yml").read_text()
+        self.assertIn('cron: "17 * * * *"', update)
+        self.assertNotIn('cron: "17,47 * * * *"', update)
+        self.assertIn('select(.status == "queued"', watchdog)
+        self.assertIn("age < 4500", watchdog)
+
     def test_legacy_cloud_history_cannot_gate_or_prioritize_ru(self) -> None:
         cloud = {
             "schema_version": 3,
