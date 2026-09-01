@@ -11,9 +11,9 @@ from unittest.mock import AsyncMock, patch
 
 from swiftproxy.generation import SCHEMA_VERSION, history_tier
 from swiftproxy.models import ProxyConfig
-from swiftproxy.output import happ_subscription, plain_subscription
+from swiftproxy.output import check_outputs, happ_subscription, plain_subscription
 from swiftproxy.parsing import parse_uri, serialize_uri
-from swiftproxy.publication import PublicationError, validate_publication
+from swiftproxy.publication import PublicationError, publish, validate_publication
 from swiftproxy.ru_golden import _http_probe, _https_session, endpoint_sanity, resolve_ru
 from swiftproxy.ru_golden import DOWNLOAD_BYTES, MIN_THROUGHPUT_KBPS
 from swiftproxy.ru_golden import (
@@ -158,6 +158,7 @@ class PublicationContractTests(unittest.TestCase):
         generation = root / "data/ru-generation"
         output = root / "data/ru-publication/output"
         (output / "sub/happ").mkdir(parents=True)
+        (output / "data").mkdir()
         generation.mkdir(parents=True)
         configs = [
             parse_uri(
@@ -225,6 +226,12 @@ class PublicationContractTests(unittest.TestCase):
         (output / "sub/happ/white.txt").write_text(
             happ_subscription(lines[:1], "Swift White", "repo")
         )
+        (output / "stats.json").write_text(
+            json.dumps({"production": {"main": count, "white": 1, "all": count}})
+        )
+        (output / "data/ru-history.json").write_text(
+            json.dumps({"schema_version": 1, "vantage": "ru", "configs": {}})
+        )
         return candidates, results
 
     def test_complete_exact_generation_is_accepted(self) -> None:
@@ -232,6 +239,16 @@ class PublicationContractTests(unittest.TestCase):
             root = Path(raw)
             self._tree(root)
             validate_publication(root, "head")
+
+    def test_publication_applies_required_stats_branding(self) -> None:
+        with tempfile.TemporaryDirectory() as raw:
+            root = Path(raw)
+            self._tree(root)
+            publish(root, "head")
+            check_outputs(root, 80, 200)
+            stats = json.loads((root / "stats.json").read_text())
+            self.assertEqual(stats["project"], "Swift")
+            self.assertEqual(stats["tagline"], "Filter the garbage. Keep what works.")
 
     def test_missing_duplicate_unknown_and_incomplete_are_rejected(self) -> None:
         mutations = ("missing", "duplicate", "unknown", "generation", "incomplete")

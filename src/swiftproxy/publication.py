@@ -121,6 +121,8 @@ def publish(root: Path, expected_head: str | None = None) -> dict[str, Any]:
         atomic_write(root / relative, source.read_text())
     stats_path = root / "stats.json"
     stats = json.loads(stats_path.read_text())
+    stats["project"] = "Swift"
+    stats["tagline"] = "Filter the garbage. Keep what works."
     stats["published"] = True
     stats["stage"] = "published"
     write_json(stats_path, stats)

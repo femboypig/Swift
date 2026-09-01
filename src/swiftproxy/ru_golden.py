@@ -1126,6 +1126,7 @@ async def run_generation(root: Path, core: str) -> int:
     )
     stats = {
         "project": "Swift",
+        "tagline": "Filter the garbage. Keep what works.",
         "updated_at": now,
         "collection_updated_at": manifest["collection_updated_at"],
         "publication_updated_at": now,
