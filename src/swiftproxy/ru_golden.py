@@ -489,7 +489,9 @@ class StageLimiter:
         return {"peak_active": self.peak, "total_candidate_ms": round(self.total_ms, 2)}
 
 
-async def _service_session(config: ProxyConfig, core: str, stage: StageLimiter) -> dict[str, Any]:
+async def _service_session(
+    config: ProxyConfig, core: str, stage: StageLimiter, geo_url: str | None
+) -> dict[str, Any]:
     async with stage.slot():
         with tempfile.TemporaryDirectory(prefix="swift-ru-diagnostics-") as raw:
             process, port, core_result = await _start_core(config, core, Path(raw))
@@ -499,9 +501,58 @@ async def _service_session(config: ProxyConfig, core: str, stage: StageLimiter) 
                 results = {
                     name: await _http_probe(port, url, 4.0) for name, url in SERVICE_PROBES.items()
                 }
-                return {"core": core_result, "results": results}
+                geo = await _geo_probe(port, geo_url) if geo_url else {}
+                return {"core": core_result, "results": results, "geo": geo}
             finally:
                 await _stop_process(process)
+
+
+async def _geo_probe(port: int, url: str) -> dict[str, Any]:
+    command = [
+        "curl",
+        "--silent",
+        "--show-error",
+        "--fail",
+        "--location",
+        "--proxy",
+        f"socks5h://127.0.0.1:{port}",
+        "--connect-timeout",
+        "3",
+        "--max-time",
+        "5",
+        "--max-filesize",
+        str(64 * 1024),
+        url,
+    ]
+    try:
+        process = await asyncio.create_subprocess_exec(
+            *command, stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.DEVNULL
+        )
+        stdout, _ = await process.communicate()
+    except OSError:
+        return {}
+    if process.returncode != 0 or len(stdout) > 64 * 1024:
+        return {}
+    try:
+        value = json.loads(stdout)
+    except json.JSONDecodeError:
+        value = {}
+        for line in stdout.decode(errors="ignore").splitlines():
+            key, separator, item = line.partition("=")
+            if separator:
+                value[key] = item
+    country = value.get("country") or value.get("loc")
+    provider = value.get("asOrganization") or value.get("colo")
+    try:
+        raw_asn = str(value.get("asn", "")).removeprefix("AS")
+        asn = int(raw_asn) if raw_asn else None
+    except (TypeError, ValueError):
+        asn = None
+    return {
+        "country": str(country).upper()[:2] if country else None,
+        "asn": asn,
+        "provider": str(provider)[:80] if provider else None,
+    }
 
 
 def _white_signal(config: ProxyConfig, selected_ip: str, evidence: dict[str, Any]) -> str | None:
@@ -712,7 +763,12 @@ async def run_generation(root: Path, core: str) -> int:
                 record["retry_recommended"] = True
                 return _terminal(record, "DEFER_LOCAL_CONGESTION")
             return _terminal(record, "TOO_SLOW")
-        record["services"] = await _service_session(config, core, diagnostic_stage)
+        record["services"] = await _service_session(
+            config,
+            core,
+            diagnostic_stage,
+            str(settings["testing"].get("geo_url") or ""),
+        )
         return _terminal(record, TERMINAL_PASS, True)
 
     async def bounded(item: dict[str, Any], retry: bool = False) -> dict[str, Any]:
@@ -882,6 +938,9 @@ async def run_generation(root: Path, core: str) -> int:
             p95_latency_ms=result["latency"]["p95_ms"],
             jitter_ms=result["latency"]["jitter_ms"],
             throughput_bps=min(result["r1"]["speed_kbps"], result["r2"]["speed_kbps"]) * 1024,
+            country=result.get("services", {}).get("geo", {}).get("country"),
+            asn=result.get("services", {}).get("geo", {}).get("asn"),
+            provider=result.get("services", {}).get("geo", {}).get("provider"),
         )
         ranked_items.append(RankedConfig(config, "main", test_result, score(result), "active", 1.0))
     limits = settings["limits"]
