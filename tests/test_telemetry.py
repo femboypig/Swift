@@ -161,6 +161,19 @@ class TelemetryTests(unittest.TestCase):
             [item.config.fingerprint for item in observed],
         )
 
+    def test_workflow_retains_forensics_outside_git_publication(self) -> None:
+        root = Path(__file__).resolve().parents[1]
+        workflow = (root / ".github/workflows/update.yml").read_text()
+        gitignore = (root / ".gitignore").read_text().splitlines()
+        self.assertIn("swift-forensics-${{ github.run_id }}", workflow)
+        self.assertIn("retention-days: 7", workflow)
+        self.assertIn("if: ${{ always() }}", workflow)
+        self.assertGreaterEqual(workflow.count("include-hidden-files: true"), 2)
+        self.assertIn("/.swift-forensics/", gitignore)
+        commit_block = workflow.split("- name: Commit changed data", 1)[1]
+        commit_block = commit_block.split("- name:", 1)[0]
+        self.assertNotIn(".swift-forensics", commit_block)
+
 
 if __name__ == "__main__":
     unittest.main()

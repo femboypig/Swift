@@ -120,6 +120,8 @@ jobs:
             Telegram
             data
             stats.json
+            .swift-forensics
+          include-hidden-files: true
           retention-days: 1
 
   ru-verify:
@@ -180,6 +182,16 @@ jobs:
         shell: bash
         run: |
           python3 -m swiftproxy.ru_verify --concurrency 6
+
+      - name: Upload forensic telemetry
+        if: ${{ always() }}
+        uses: actions/upload-artifact@4cec3d8aa04e39d1a68397de0c4cd6fb9dce8ec1 # v4.6.1
+        with:
+          name: swift-forensics-${{ github.run_id }}
+          path: .swift-forensics
+          if-no-files-found: warn
+          include-hidden-files: true
+          retention-days: 7
 
       - name: Check generated subscriptions
         run: python3 -m swiftproxy.main --check-output
