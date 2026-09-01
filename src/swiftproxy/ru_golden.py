@@ -443,7 +443,7 @@ async def _download(port: int, url: str, limit_bps: int) -> dict[str, Any]:
             "speed_kbps": 0.0,
             "duration_ms": round((time.monotonic() - started) * 1000, 2),
         }
-    success = status in {200, 204, 206} and size >= DOWNLOAD_BYTES * 0.9
+    success = status in {200, 204, 206} and size >= DOWNLOAD_BYTES
     return {
         "success": success,
         "status": status,

@@ -14,6 +14,7 @@ from swiftproxy.output import happ_subscription, plain_subscription
 from swiftproxy.parsing import parse_uri, serialize_uri
 from swiftproxy.publication import PublicationError, validate_publication
 from swiftproxy.ru_golden import _http_probe, _https_session, endpoint_sanity, resolve_ru
+from swiftproxy.ru_golden import DOWNLOAD_BYTES, MIN_THROUGHPUT_KBPS
 from swiftproxy.ru_golden import DownloadGovernor, _white_signal, download_failure_reason
 
 
@@ -93,6 +94,8 @@ class GoldenHttpsTests(unittest.TestCase):
         self.assertEqual(probe.await_count, 2)
 
     def test_download_requirements_and_stall_taxonomy_are_unchanged(self) -> None:
+        self.assertEqual(DOWNLOAD_BYTES, 256 * 1024)
+        self.assertEqual(MIN_THROUGHPUT_KBPS, 64.0)
         self.assertEqual(
             download_failure_reason(
                 {"success": False, "category": "STALLED", "speed_kbps": 0}, "R1"
