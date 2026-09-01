@@ -48,6 +48,8 @@ def validate_publication(root: Path, expected_head: str | None = None) -> dict[s
         raise PublicationError("invalid candidate population")
     if len(actual) != len(set(actual)):
         raise PublicationError("duplicate RU result")
+    if any(item.get("generation_id") != generation["generation_id"] for item in results):
+        raise PublicationError("RU result generation mismatch")
     if set(actual) != set(expected):
         missing = set(expected) - set(actual)
         unknown = set(actual) - set(expected)

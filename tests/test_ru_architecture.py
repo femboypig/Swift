@@ -186,7 +186,7 @@ class PublicationContractTests(unittest.TestCase):
             validate_publication(root, "head")
 
     def test_missing_duplicate_unknown_and_incomplete_are_rejected(self) -> None:
-        mutations = ("missing", "duplicate", "unknown", "incomplete")
+        mutations = ("missing", "duplicate", "unknown", "generation", "incomplete")
         for mutation in mutations:
             with self.subTest(mutation=mutation), tempfile.TemporaryDirectory() as raw:
                 root = Path(raw)
@@ -198,6 +198,8 @@ class PublicationContractTests(unittest.TestCase):
                     results.append(results[0])
                 elif mutation == "unknown":
                     results[-1]["fingerprint"] = "f" * 64
+                elif mutation == "generation":
+                    results[-1]["generation_id"] = "stale-generation"
                 else:
                     manifest_path = root / "data/ru-publication/result-manifest.json"
                     manifest = json.loads(manifest_path.read_text())
