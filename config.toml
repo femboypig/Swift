@@ -77,6 +77,26 @@ white_probe_urls = [
   "https://cp.cloudflare.com/generate_204",
 ]
 
+[ru]
+# Conservative defaults for a shared household connection. These are stage
+# limits, not candidate caps: every candidate is still accounted for.
+resolution_concurrency = 40
+resolution_timeout = 8
+endpoint_concurrency = 16
+endpoint_timeout = 5
+https_concurrency = 10
+stability_concurrency = 4
+download_concurrency = 1
+diagnostic_concurrency = 1
+download_bandwidth_bps = 131072
+per_config_timeout = 90
+# Leaves ten minutes for cancellation, telemetry upload, and artifact cleanup
+# before the 180-minute runner job limit.
+run_deadline_seconds = 10200
+retry_delay_seconds = 15
+congestion_latency_factor = 4.0
+congestion_latency_floor_ms = 2000
+
 [history]
 window = 16
 
