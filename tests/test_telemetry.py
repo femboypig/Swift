@@ -165,14 +165,15 @@ class TelemetryTests(unittest.TestCase):
         root = Path(__file__).resolve().parents[1]
         workflow = (root / ".github/workflows/update.yml").read_text()
         gitignore = (root / ".gitignore").read_text().splitlines()
-        self.assertIn("swift-forensics-${{ github.run_id }}", workflow)
+        self.assertIn("swift-ru-publication", workflow)
         self.assertIn("retention-days: 7", workflow)
         self.assertIn("if: ${{ always() }}", workflow)
-        self.assertGreaterEqual(workflow.count("include-hidden-files: true"), 2)
+        self.assertIn("include-hidden-files: true", workflow)
         self.assertIn("/.swift-forensics/", gitignore)
-        commit_block = workflow.split("- name: Commit changed data", 1)[1]
+        self.assertIn("/data/ru-publication/", gitignore)
+        commit_block = workflow.split("- name: Commit one complete generation", 1)[1]
         commit_block = commit_block.split("- name:", 1)[0]
-        self.assertNotIn(".swift-forensics", commit_block)
+        self.assertNotIn("data/ru-publication", commit_block)
 
 
 if __name__ == "__main__":
