@@ -8,7 +8,7 @@ import unittest
 from pathlib import Path
 from unittest.mock import AsyncMock, patch
 
-from swiftproxy.generation import SCHEMA_VERSION
+from swiftproxy.generation import SCHEMA_VERSION, history_tier
 from swiftproxy.models import ProxyConfig
 from swiftproxy.output import happ_subscription, plain_subscription
 from swiftproxy.parsing import parse_uri, serialize_uri
@@ -239,6 +239,14 @@ class WorkflowTests(unittest.TestCase):
         self.assertIn("python -m swiftproxy.generation", workflow)
         self.assertIn("python3 -m swiftproxy.ru_golden", workflow)
         self.assertIn("runs-on: [self-hosted, Linux]", workflow)
+
+    def test_legacy_cloud_history_cannot_gate_or_prioritize_ru(self) -> None:
+        cloud = {
+            "schema_version": 3,
+            "configs": {"fingerprint": {"observations": [{"passed": True}]}},
+        }
+        self.assertEqual(history_tier(cloud, "fingerprint"), 1)
+        self.assertEqual(history_tier({"vantage": "ru", "configs": {}}, "new"), 1)
 
 
 if __name__ == "__main__":

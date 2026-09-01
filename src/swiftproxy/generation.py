@@ -43,6 +43,18 @@ def read_jsonl(path: Path) -> list[dict[str, Any]]:
     return [json.loads(line) for line in path.read_text().splitlines() if line.strip()]
 
 
+def history_tier(history: dict[str, Any], fingerprint: str) -> int:
+    if history.get("vantage") != "ru":
+        return 1
+    record = history.get("configs", {}).get(fingerprint)
+    if not record:
+        return 1
+    observations = record.get("observations", [])
+    if observations and observations[-1].get("passed"):
+        return 0
+    return 2 if any(item.get("passed") for item in observations[-3:]) else 3
+
+
 async def collect_generation(root: Path, config_path: Path) -> dict[str, Any]:
     settings = load_settings(config_path)
     specs = source_specs(settings)
@@ -79,16 +91,6 @@ async def collect_generation(root: Path, config_path: Path) -> dict[str, Any]:
     if ru_history.get("vantage") != "ru":
         ru_history = {"schema_version": 1, "vantage": "ru", "configs": {}}
 
-    def scheduling_tier(fingerprint: str) -> int:
-        record = ru_history.get("configs", {}).get(fingerprint)
-        if not record:
-            return 1
-        observations = record.get("observations", [])
-        if observations and observations[-1].get("passed"):
-            return 0
-        recent = observations[-3:]
-        return 2 if any(item.get("passed") for item in recent) else 3
-
     records: list[dict[str, Any]] = []
     static_rejected = 0
     for config in sorted(unique, key=lambda item: item.fingerprint):
@@ -111,7 +113,7 @@ async def collect_generation(root: Path, config_path: Path) -> dict[str, Any]:
                 "present_in_current_sources": config.fingerprint in current_sources,
                 "retained": config.fingerprint not in current_sources,
                 "upstream_white_label": "white" in current_lanes.get(config.fingerprint, set()),
-                "scheduling_tier": scheduling_tier(config.fingerprint),
+                "scheduling_tier": history_tier(ru_history, config.fingerprint),
             }
         )
 
