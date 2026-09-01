@@ -631,8 +631,10 @@ async def run_generation(root: Path, core: str) -> int:
     history = (
         json.loads(history_path.read_text())
         if history_path.exists()
-        else {"schema_version": 1, "configs": {}}
+        else {"schema_version": 1, "vantage": "ru", "configs": {}}
     )
+    if history.get("vantage") != "ru":
+        history = {"schema_version": 1, "vantage": "ru", "configs": {}}
     resolution_stage = StageLimiter(int(ru["resolution_concurrency"]))
     endpoint_stage = StageLimiter(int(ru["endpoint_concurrency"]))
     initial_stage = StageLimiter(int(ru["https_concurrency"]))
@@ -909,6 +911,21 @@ async def run_generation(root: Path, core: str) -> int:
         rec["last_seen"] = now
         if passed:
             rec["last_pass"] = now
+        observations = rec["observations"]
+        recent = observations[-4:]
+        rec["availability"] = round(
+            sum(item["passed"] for item in observations) / len(observations), 4
+        )
+        rec["recent_availability"] = round(sum(item["passed"] for item in recent) / len(recent), 4)
+        rec["consecutive_pass"] = 0
+        rec["consecutive_fail"] = 0
+        for item in reversed(observations):
+            key = "consecutive_pass" if item["passed"] else "consecutive_fail"
+            opposite = "consecutive_fail" if item["passed"] else "consecutive_pass"
+            if rec[opposite]:
+                break
+            rec[key] += 1
+        rec["confidence"] = round(min(1.0, len(observations) / 8), 4)
 
     candidate_map = {item["fingerprint"]: item for item in candidates}
     passed = [result for result in results if result["final"]["passed"]]

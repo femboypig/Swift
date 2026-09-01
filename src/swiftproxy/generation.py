@@ -74,8 +74,10 @@ async def collect_generation(root: Path, config_path: Path) -> dict[str, Any]:
     ru_history = (
         json.loads(ru_history_path.read_text())
         if ru_history_path.exists()
-        else {"schema_version": 1, "configs": {}}
+        else {"schema_version": 1, "vantage": "ru", "configs": {}}
     )
+    if ru_history.get("vantage") != "ru":
+        ru_history = {"schema_version": 1, "vantage": "ru", "configs": {}}
 
     def scheduling_tier(fingerprint: str) -> int:
         record = ru_history.get("configs", {}).get(fingerprint)
