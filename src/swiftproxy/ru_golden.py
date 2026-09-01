@@ -3,6 +3,7 @@ from __future__ import annotations
 import argparse
 import asyncio
 import contextlib
+import errno
 import ipaddress
 import json
 import logging
@@ -269,13 +270,18 @@ async def _start_core(
             stderr=asyncio.subprocess.DEVNULL,
             start_new_session=True,
         )
-    except OSError:
+    except OSError as exc:
+        category = (
+            "RESOURCE_ERROR"
+            if exc.errno in {errno.EAGAIN, errno.EMFILE, errno.ENFILE, errno.ENOMEM}
+            else "SPAWN_ERROR"
+        )
         return (
             None,
             port,
             {
                 "success": False,
-                "category": "SPAWN_ERROR",
+                "category": category,
                 "duration_ms": round((time.monotonic() - started) * 1000, 2),
             },
         )
@@ -301,6 +307,52 @@ async def _start_core(
             "duration_ms": round((time.monotonic() - started) * 1000, 2),
         },
     )
+
+
+async def _core_control(core: str, interface: str) -> dict[str, Any]:
+    port = _free_port()
+    direct_socks = _direct_socks_address()
+    if direct_socks:
+        outbound: dict[str, Any] = {
+            "type": "socks",
+            "tag": "control",
+            "server": direct_socks[0],
+            "server_port": direct_socks[1],
+            "version": "5",
+        }
+    else:
+        outbound = {"type": "direct", "tag": "control", "bind_interface": interface}
+    value = {
+        "log": {"level": "warn", "timestamp": False},
+        "inbounds": [
+            {"type": "socks", "tag": "socks-in", "listen": "127.0.0.1", "listen_port": port}
+        ],
+        "outbounds": [outbound],
+        "route": {"final": "control", "auto_detect_interface": False},
+    }
+    with tempfile.TemporaryDirectory(prefix="swift-ru-core-control-") as raw:
+        path = Path(raw) / "config.json"
+        path.write_text(json.dumps(value, separators=(",", ":")))
+        path.chmod(0o600)
+        try:
+            process = await asyncio.create_subprocess_exec(
+                core,
+                "run",
+                "-c",
+                str(path),
+                stdout=asyncio.subprocess.DEVNULL,
+                stderr=asyncio.subprocess.DEVNULL,
+                start_new_session=True,
+            )
+        except OSError:
+            return {"success": False, "category": "SPAWN_ERROR"}
+        try:
+            if not await _wait_for_core(process, port):
+                return {"success": False, "category": "CORE_EXITED"}
+            probe = await _http_probe(port, PROBE_URLS[0], 5.0)
+            return {"success": bool(probe["success"]), "category": probe.get("failure")}
+        finally:
+            await _stop_process(process)
 
 
 async def _https_session(
@@ -615,8 +667,9 @@ async def run_generation(root: Path, core: str) -> int:
         raise RuntimeError("SWIFT_BIND_INTERFACE is required")
     preflight = await _mac_preflight(interface)
     control = await _direct_control(interface)
+    core_control = await _core_control(core, interface)
     publication = root / "data/ru-publication"
-    if not preflight.ok or not control["success"]:
+    if not preflight.ok or not control["success"] or not core_control["success"]:
         write_json(
             publication / "result-manifest.json",
             {
@@ -625,6 +678,7 @@ async def run_generation(root: Path, core: str) -> int:
                 "state": "HELD",
                 "reason": "RU_PREFLIGHT_FAILED",
                 "path_mode": control["path_mode"],
+                "core_control": core_control,
             },
         )
         return 1
@@ -1053,13 +1107,26 @@ async def run_generation(root: Path, core: str) -> int:
     write_json(output_root / "stats.json", stats)
     write_json(output_root / "data/ru-history.json", history, compact=True)
     postflight = await _mac_preflight(interface)
-    complete = postflight.ok
+    postflight_core = await _core_control(core, interface)
+    infrastructure_reasons = {"SPAWN_ERROR", "RESOURCE_ERROR", "LISTEN_TIMEOUT"}
+    infrastructure_failures = sum(
+        terminal_counts.get(reason, 0) for reason in infrastructure_reasons
+    )
+    infrastructure_collapse = len(results) >= 10 and infrastructure_failures / len(results) >= 0.6
+    complete = postflight.ok and postflight_core["success"] and not infrastructure_collapse
     write_json(
         publication / "result-manifest.json",
         {
             **manifest,
             "complete": complete,
             "state": "RU_COMPLETE" if complete else "HELD",
+            "hold_reason": (
+                "RU_CORE_INFRASTRUCTURE_COLLAPSE"
+                if infrastructure_collapse
+                else (
+                    None if postflight.ok and postflight_core["success"] else "RU_POSTFLIGHT_FAILED"
+                )
+            ),
             "accounted_terminal": len(results),
             "untested": 0,
             "ru_pass": len(ranked_items),
@@ -1070,6 +1137,7 @@ async def run_generation(root: Path, core: str) -> int:
             "path_mode": control["path_mode"],
             "preflight_ok": True,
             "postflight_ok": postflight.ok,
+            "postflight_core": postflight_core,
             "performance": performance,
             "terminal_counts": dict(sorted(terminal_counts.items())),
         },
