@@ -765,12 +765,18 @@ async def run_generation(root: Path, core: str) -> int:
                 record["retry_recommended"] = True
                 return _terminal(record, "DEFER_LOCAL_CONGESTION")
             return _terminal(record, "TOO_SLOW")
-        record["services"] = await _service_session(
-            config,
-            core,
-            diagnostic_stage,
-            str(settings["testing"].get("geo_url") or ""),
-        )
+        try:
+            record["services"] = await asyncio.wait_for(
+                _service_session(
+                    config,
+                    core,
+                    diagnostic_stage,
+                    str(settings["testing"].get("geo_url") or ""),
+                ),
+                12.0,
+            )
+        except TimeoutError:
+            record["services"] = {"category": "DIAGNOSTIC_TIMEOUT", "results": {}}
         return _terminal(record, TERMINAL_PASS, True)
 
     async def bounded(item: dict[str, Any], retry: bool = False) -> dict[str, Any]:

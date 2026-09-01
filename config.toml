@@ -89,7 +89,7 @@ stability_concurrency = 4
 download_concurrency = 1
 diagnostic_concurrency = 1
 download_bandwidth_bps = 131072
-per_config_timeout = 90
+per_config_timeout = 120
 # Leaves ten minutes for cancellation, telemetry upload, and artifact cleanup
 # before the 180-minute runner job limit.
 run_deadline_seconds = 10200
