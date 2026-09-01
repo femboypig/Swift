@@ -16,6 +16,7 @@ from swiftproxy.output import (
     HAPP_PROTOCOLS,
     PIPELINE_VERSION,
     alive_for_all,
+    build_stats,
     check_outputs,
     display_name,
     happ_subscription,
@@ -680,6 +681,24 @@ class ScoringAndHistoryTests(unittest.TestCase):
 
 
 class OutputTests(unittest.TestCase):
+    def test_cloud_stats_timestamp_semantics(self) -> None:
+        stats = build_stats(
+            updated_at="2026-08-31T16:00:00Z",
+            collected=0,
+            parsed=0,
+            unique=0,
+            tested=0,
+            alive=[],
+            main=[],
+            white=[],
+            failures=Counter(),
+            source_status={},
+            published=False,
+        )
+        self.assertEqual(stats["updated_at"], "2026-08-31T16:00:00Z")
+        self.assertEqual(stats["collection_updated_at"], "2026-08-31T16:00:00Z")
+        self.assertIsNone(stats["publication_updated_at"])
+
     def test_previous_subscriptions_are_kept_as_candidates(self) -> None:
         config = parse_uri(vless_uri())
         config.sources.add("source-a")

@@ -599,6 +599,7 @@ class TestExhaustiveValidationPipeline(unittest.TestCase):
             parsed_candidate = parse_uri(serialize_uri(candidate))
             (root / "sub/main.txt").write_text(serialize_uri(old_cfg) + "\n")
             (root / "sub/white.txt").write_text("")
+            (root / "sub/all.txt").write_text(serialize_uri(candidate) + "\n")
             (root / "sub/happ/main.txt").write_text("#profile-title: Swift Main\n")
             (root / "sub/happ/white.txt").write_text("#profile-title: Swift White\n")
             (root / "data/mac-candidates/main.txt").write_text(serialize_uri(candidate) + "\n")
@@ -611,6 +612,9 @@ class TestExhaustiveValidationPipeline(unittest.TestCase):
                         "tagline": "Filter the garbage. Keep what works.",
                         "published": False,
                         "stage": "cloud_prepared",
+                        "updated_at": "2026-08-31T16:00:00Z",
+                        "collection_updated_at": "2026-08-31T16:00:00Z",
+                        "publication_updated_at": None,
                         "production": {"main": 1, "white": 0},
                     }
                 )
@@ -628,7 +632,10 @@ class TestExhaustiveValidationPipeline(unittest.TestCase):
                     https_passed=3,
                 )
 
-            with patch("swiftproxy.ru_verify._verify_single", side_effect=fake_verify_single):
+            with (
+                patch("swiftproxy.ru_verify._verify_single", side_effect=fake_verify_single),
+                patch("swiftproxy.ru_verify._now", return_value="2026-08-31T17:00:00Z"),
+            ):
                 from swiftproxy.ru_verify import main as ru_verify_main
 
                 exit_code = ru_verify_main(["--root", str(root), "--core", str(core)])
@@ -641,6 +648,10 @@ class TestExhaustiveValidationPipeline(unittest.TestCase):
             stats = json.loads((root / "stats.json").read_text())
             self.assertTrue(stats["published"])
             self.assertEqual(stats["stage"], "production")
+            self.assertEqual(stats["production"]["all"], 1)
+            self.assertEqual(stats["collection_updated_at"], "2026-08-31T16:00:00Z")
+            self.assertEqual(stats["publication_updated_at"], "2026-08-31T17:00:00Z")
+            self.assertEqual(stats["updated_at"], stats["publication_updated_at"])
 
     @patch.dict("os.environ", {"SWIFT_BIND_INTERFACE": "wlan0"})
     @patch(

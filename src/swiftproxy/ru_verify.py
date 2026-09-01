@@ -14,6 +14,7 @@ import time
 import tomllib
 from collections import Counter
 from dataclasses import dataclass, field
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 from urllib.parse import urlsplit
@@ -50,6 +51,10 @@ SERVICE_PROBES = {
     "ozon": "https://ozon.ru",
     "telegram_api": "https://api.telegram.org",
 }
+
+
+def _now() -> str:
+    return datetime.now(UTC).replace(microsecond=0).isoformat().replace("+00:00", "Z")
 
 
 @dataclass(slots=True)
@@ -1025,11 +1030,23 @@ async def run_ru_verify(
             stats = json.loads(stats_file.read_text())
             final_main_count = len(verified_main_lines)
             final_white_count = len(verified_white_lines)
+            all_path = root / "sub/all.txt"
+            all_lines = (
+                validated_proxy_lines(all_path.read_text().splitlines(), "sub/all.txt")
+                if all_path.exists()
+                else []
+            )
+            publication_updated_at = _now()
 
             stats.setdefault("production", {})["main"] = final_main_count
             stats["main"] = final_main_count
             stats.setdefault("production", {})["white"] = final_white_count
             stats["white"] = final_white_count
+            stats.setdefault("production", {})["all"] = len(all_lines)
+            stats.setdefault("collection_updated_at", stats.get("updated_at"))
+            stats["publication_updated_at"] = publication_updated_at
+            # updated_at remains the user-facing timestamp and means final publication time.
+            stats["updated_at"] = publication_updated_at
             stats["published"] = True
             stats["stage"] = "production"
 

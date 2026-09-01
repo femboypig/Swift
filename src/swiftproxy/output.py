@@ -177,6 +177,8 @@ def build_stats(
         "tagline": "Filter the garbage. Keep what works.",
         "pipeline_version": PIPELINE_VERSION,
         "updated_at": updated_at,
+        "collection_updated_at": updated_at,
+        "publication_updated_at": None,
         "published": published,
         "collected": collected,
         "parsed": parsed,
