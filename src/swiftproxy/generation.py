@@ -69,6 +69,7 @@ async def collect_generation(root: Path, config_path: Path) -> dict[str, Any]:
         raise RuntimeError("all proxy sources failed")
     evidence = build_evidence(evidence_results)
     parsed, failures, collected = parse_sources(source_results)
+    parsed_count = len(parsed)
     current_sources: dict[str, set[str]] = {}
     current_lanes: dict[str, set[str]] = {}
     for config in parsed:
@@ -141,6 +142,7 @@ async def collect_generation(root: Path, config_path: Path) -> dict[str, Any]:
         "white_membership": sum("white" in record["lanes"] for record in records),
         "shared_membership": sum({"main", "white"}.issubset(record["lanes"]) for record in records),
         "collected": collected,
+        "parsed": parsed_count,
         "parse_failures": dict(sorted(failures.items())),
         "duplicates": duplicates,
         "static_rejected": static_rejected,

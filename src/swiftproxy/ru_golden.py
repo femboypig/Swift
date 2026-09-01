@@ -14,6 +14,7 @@ import statistics
 import tempfile
 import time
 import tomllib
+from collections import Counter
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
@@ -1089,18 +1090,47 @@ async def run_generation(root: Path, core: str) -> int:
     from .output import atomic_write, plain_subscription
 
     atomic_write(output_root / "sub/all.txt", plain_subscription(all_lines))
+    latencies = sorted(
+        item.result.median_latency_ms
+        for item in ranked_items
+        if item.result.median_latency_ms is not None
+    )
     stats = {
         "project": "Swift",
         "updated_at": now,
         "collection_updated_at": manifest["collection_updated_at"],
         "publication_updated_at": now,
         "generation_id": manifest["generation_id"],
+        "collected": manifest.get("collected", 0),
+        "parsed": manifest.get("parsed", 0),
         "unique": len(candidates),
         "tested": len(results),
         "alive": len(ranked_items),
         "main": len(main),
         "white": len(white),
         "production": {"main": len(main), "white": len(white), "all": len(ranked_items)},
+        "protocols": dict(sorted(Counter(item.config.protocol for item in ranked_items).items())),
+        "sources": dict(
+            sorted(
+                Counter(
+                    source for result in passed for source in result.get("candidate_sources", [])
+                ).items()
+            )
+        ),
+        "countries": dict(
+            sorted(
+                Counter(item.result.country for item in ranked_items if item.result.country).items()
+            )
+        ),
+        "median_latency_ms": (round(statistics.median(latencies), 2) if latencies else None),
+        "failure_reasons": dict(sorted(terminal_counts.items())),
+        "funnel": {
+            "ru_expected": len(candidates),
+            "ru_accounted": len(results),
+            "ru_pass": len(ranked_items),
+            "main_published": len(main),
+            "white_published": len(white),
+        },
         "published": False,
         "stage": "ru_complete",
     }
