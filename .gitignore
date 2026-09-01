@@ -9,3 +9,5 @@ __pycache__/
 venv/
 /data/mac-candidates/
 /.swift-forensics/
+/data/ru-generation/
+/data/ru-publication/
