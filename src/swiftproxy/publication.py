@@ -3,6 +3,7 @@ from __future__ import annotations
 import argparse
 import json
 import os
+import tomllib
 from pathlib import Path
 from typing import Any
 
@@ -85,7 +86,8 @@ def validate_publication(root: Path, expected_head: str | None = None) -> dict[s
         for fp in sets["white"]
     ):
         raise PublicationError("White lacks lane membership or RU endpoint evidence")
-    if len(sets["main"]) > 80 or len(sets["white"]) > 200:
+    limits = tomllib.loads((root / "config.toml").read_text())["limits"]
+    if len(sets["main"]) > int(limits["main"]) or len(sets["white"]) > int(limits["white"]):
         raise PublicationError("publication cap exceeded")
 
     for lane in ("main", "white"):

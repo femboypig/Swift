@@ -106,6 +106,7 @@ class GoldenHttpsTests(unittest.TestCase):
 
 class PublicationContractTests(unittest.TestCase):
     def _tree(self, root: Path, count: int = 2) -> tuple[list[dict], list[dict]]:
+        (root / "config.toml").write_text("[limits]\nmain = 80\nwhite = 200\n")
         generation = root / "data/ru-generation"
         output = root / "data/ru-publication/output"
         (output / "sub/happ").mkdir(parents=True)
