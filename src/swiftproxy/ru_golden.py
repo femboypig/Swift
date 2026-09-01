@@ -784,13 +784,13 @@ async def run_generation(root: Path, core: str) -> int:
             record["infrastructure"]["congestion"] = True
             record["retry_recommended"] = True
             return _terminal(record, "DEFER_LOCAL_CONGESTION")
-        with tempfile.TemporaryDirectory(prefix="swift-ru-download-") as raw:
-            process, port, download_core = await _start_core(config, core, Path(raw))
-            record["core"]["download"] = download_core
-            if process is None:
-                return _terminal(record, download_core.get("category") or "CORE_START_FAILED")
-            try:
-                async with governor.slot():
+        async with governor.slot():
+            with tempfile.TemporaryDirectory(prefix="swift-ru-download-") as raw:
+                process, port, download_core = await _start_core(config, core, Path(raw))
+                record["core"]["download"] = download_core
+                if process is None:
+                    return _terminal(record, download_core.get("category") or "CORE_START_FAILED")
+                try:
                     r1 = await _download(port, DOWNLOAD_URL_R1, governor.per_transfer_bps)
                     governor.bytes += int(r1.get("bytes", 0))
                     record["r1"] = r1
@@ -808,8 +808,8 @@ async def run_generation(root: Path, core: str) -> int:
                     r2 = await _download(port, DOWNLOAD_URL_R2, governor.per_transfer_bps)
                     governor.bytes += int(r2.get("bytes", 0))
                     record["r2"] = r2
-            finally:
-                await _stop_process(process)
+                finally:
+                    await _stop_process(process)
         r2_reason = download_failure_reason(record["r2"], "R2", check_speed=False)
         if r2_reason:
             control_after = await governor.control(

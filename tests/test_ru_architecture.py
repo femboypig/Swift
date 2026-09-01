@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import asyncio
+import inspect
 import json
 import socket
 import tempfile
@@ -16,6 +17,7 @@ from swiftproxy.publication import PublicationError, validate_publication
 from swiftproxy.ru_golden import _http_probe, _https_session, endpoint_sanity, resolve_ru
 from swiftproxy.ru_golden import DOWNLOAD_BYTES, MIN_THROUGHPUT_KBPS
 from swiftproxy.ru_golden import DownloadGovernor, _white_signal, download_failure_reason
+from swiftproxy.ru_golden import run_generation
 
 
 UUID_A = "11111111-1111-4111-8111-111111111111"
@@ -116,6 +118,12 @@ class GoldenHttpsTests(unittest.TestCase):
         governor = DownloadGovernor(1, 131072, "wlan0", 100)
         result = asyncio.run(governor.control(4.0, 2000))
         self.assertTrue(result["congested"])
+
+    def test_download_slot_is_acquired_before_core_process_starts(self) -> None:
+        source = inspect.getsource(run_generation)
+        admission = source.index("async with governor.slot()")
+        core_directory = source.index('TemporaryDirectory(prefix="swift-ru-download-")', admission)
+        self.assertLess(admission, core_directory)
 
     @patch("swiftproxy.ru_golden._stop_process", new_callable=AsyncMock)
     @patch("swiftproxy.ru_golden._http_probe", new_callable=AsyncMock)
