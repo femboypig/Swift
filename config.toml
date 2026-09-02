@@ -154,7 +154,7 @@ connect_timeout = 3
 response_timeout = 4
 global_timeout = 900
 control_timeout = 5
-probe_chunk_size = 5
+probe_chunk_size = 1
 probe_concurrency = 6
 control_endpoints = [
   "149.154.175.50:443",

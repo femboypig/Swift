@@ -384,6 +384,7 @@ class TelegramPublisherTests(unittest.TestCase):
         )
         self.assertIn("Latest proxy check failed", text)
         self.assertIn("previous verified set is being kept", text)
+        self.assertIn("Latest attempt:", text)
         self.assertIn("Last verified: 29.08.2026 · 00:10 MSK", text)
         self.assertEqual(markup, {"inline_keyboard": []})
 

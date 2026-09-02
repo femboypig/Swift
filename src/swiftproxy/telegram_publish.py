@@ -40,6 +40,7 @@ def message_payload(status: dict[str, Any]) -> tuple[str, dict[str, Any]]:
             "Latest proxy check failed.\n"
             "The previous verified set is being kept.\n\n"
             "Swift will retry automatically.\n"
+            f"Latest attempt: {updated}\n"
             f"Last verified: {last_good}"
         )
         return text, {"inline_keyboard": []}
