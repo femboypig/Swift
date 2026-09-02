@@ -1,14 +1,15 @@
 {
-  "control_ok": false,
-  "failure_reason": "TELEGRAM_CONTROL_FAILED",
+  "control_ok": true,
+  "failure_reason": "GLOBAL_TIMEOUT",
   "failure_reasons": {
-    "CONNECT_TIMEOUT": 85,
-    "DUPLICATE": 773,
-    "MALFORMED_SECRET": 6,
-    "NETWORK_ERROR": 3,
-    "PROTOCOL_ERROR": 5,
-    "RESPONSE_TIMEOUT": 311,
-    "UNSTABLE": 2,
+    "DUPLICATE": 764,
+    "MALFORMED_SECRET": 7,
+    "NetworkCheckError: [Errno -2] Name or service not known": 23,
+    "NetworkCheckError: [Errno 104] Connection reset by peer": 1,
+    "NetworkCheckError: [Errno 111] Connection refused": 3,
+    "NetworkCheckError: timed out": 227,
+    "ProtocolError: FakeTLS server random HMAC mismatch": 6,
+    "ProtocolError: connection closed while reading 4 bytes, got 0": 1,
     "UNSUPPORTED_SECRET": 7
   },
   "fastest": 20,
@@ -26,31 +27,31 @@
       "fetched": 236,
       "status": "OK",
       "unique": 230,
-      "working": 4
+      "working": 15
     },
     "klondike": {
       "fetched": 243,
       "status": "OK",
       "unique": 237,
-      "working": 2
+      "working": 8
     },
     "shablin": {
-      "fetched": 294,
+      "fetched": 290,
       "status": "OK",
-      "unique": 289,
-      "working": 3
+      "unique": 284,
+      "working": 18
     },
     "solispirit": {
       "fetched": 248,
       "status": "OK",
       "unique": 240,
-      "working": 2
+      "working": 9
     }
   },
   "stable": 50,
   "suspicious_streak": 0,
   "tagline": "Filter the garbage. Keep what works.",
-  "tested": 408,
-  "updated_at": "2026-09-02T14:04:24Z",
-  "working": 4
+  "tested": 287,
+  "updated_at": "2026-09-02T14:48:28Z",
+  "working": 26
 }
