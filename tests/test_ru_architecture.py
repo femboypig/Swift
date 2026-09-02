@@ -400,7 +400,9 @@ class WorkflowTests(unittest.TestCase):
 
     def test_recovery_publish_uses_authoritative_ru_result(self) -> None:
         workflow = (Path(__file__).parents[1] / ".github/workflows/update.yml").read_text()
-        self.assertIn("always() && needs.ru-verify.result == 'success'", workflow)
+        self.assertIn("needs.ru-verify.outputs.publishable == 'true'", workflow)
+        self.assertIn('elif [[ "$code" -eq 2 ]]', workflow)
+        self.assertIn("keeping the last known-good publication", workflow)
         self.assertIn("steps.upload_ru.outcome == 'failure'", workflow)
         self.assertIn("overwrite: true", workflow)
 

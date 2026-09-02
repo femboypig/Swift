@@ -65,6 +65,8 @@ jobs:
     permissions:
       actions: read
       contents: read
+    outputs:
+      publishable: ${{ steps.ru_result.outputs.publishable }}
     env:
       SWIFT_BIND_INTERFACE: wlan0
       SWIFT_DIRECT_SOCKS: 127.0.0.1:3065
@@ -94,8 +96,23 @@ jobs:
           tar -xzf "$RUNNER_TEMP/swift-core/$archive" -C "$RUNNER_TEMP/swift-core" "sing-box-${SING_BOX_VERSION}-linux-amd64/sing-box"
           install -m 0755 "$RUNNER_TEMP/swift-core/sing-box-${SING_BOX_VERSION}-linux-amd64/sing-box" "$SWIFT_SING_BOX"
       - name: Run golden RU verifier
-        run: python3 -m swiftproxy.ru_golden
+        id: ru_result
+        shell: bash
+        run: |
+          set +e
+          python3 -m swiftproxy.ru_golden
+          code=$?
+          set -e
+          if [[ "$code" -eq 0 ]]; then
+            echo "publishable=true" >> "$GITHUB_OUTPUT"
+          elif [[ "$code" -eq 2 ]]; then
+            echo "publishable=false" >> "$GITHUB_OUTPUT"
+            echo "::warning::RU path is unhealthy; keeping the last known-good publication"
+          else
+            exit "$code"
+          fi
       - name: Test Telegram proxies from RU
+        if: ${{ steps.ru_result.outputs.publishable == 'true' }}
         shell: bash
         run: |
           set +e
@@ -141,7 +158,7 @@ jobs:
     needs: ru-verify
     # Recovery dispatches skip collect. Test the verifier result explicitly;
     # success() also sees the skipped transitive collect dependency.
-    if: ${{ always() && needs.ru-verify.result == 'success' }}
+    if: ${{ always() && needs.ru-verify.result == 'success' && needs.ru-verify.outputs.publishable == 'true' }}
     runs-on: ubuntu-24.04
     timeout-minutes: 15
     permissions:
