@@ -279,17 +279,22 @@ class TelegramPipelineTests(unittest.IsolatedAsyncioTestCase):
         }
         with patch("swiftproxy.telegram_main.probe_ru_targets", return_value=response) as probe:
             results, control_ok = await _test_with_ru_probe(
-                [first, second], {"probe_chunk_size": 5, "probe_concurrency": 6}
+                [first, second],
+                {"probe_chunk_size": 1, "probe_concurrency": 6, "probe_attempts": 3},
             )
 
-        sent = probe.call_args.args[0]
+        sent = probe.call_args_list[0].args[0]
         self.assertEqual({item["id"] for item in sent}, {first.fingerprint, second.fingerprint})
-        self.assertEqual(probe.call_args.kwargs["chunk_size"], 5)
+        self.assertEqual(probe.call_args.kwargs["chunk_size"], 1)
         self.assertEqual(probe.call_args.kwargs["request_concurrency"], 6)
+        self.assertEqual(probe.call_count, 3)
         self.assertTrue(control_ok)
         self.assertTrue(results[first.fingerprint].working)
+        self.assertEqual(results[first.fingerprint].attempts, 3)
+        self.assertEqual(results[first.fingerprint].successes, 3)
         self.assertEqual(results[first.fingerprint].median_rtt, 120)
         self.assertFalse(results[second.fingerprint].working)
+        self.assertEqual(results[second.fingerprint].attempts, 1)
         self.assertEqual(results[second.fingerprint].reason, "TIMEOUT")
 
     async def test_suspicious_zero_run_preserves_previous_files(self) -> None:

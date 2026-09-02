@@ -71,7 +71,7 @@ def _write_proxy_file(path: Path, items: list[RankedTelegram]) -> None:
     atomic_write(path, content + ("\n" if content else ""))
 
 
-async def _test_with_ru_probe(
+async def _probe_round(
     candidates: list[TelegramProxy], testing: dict[str, Any]
 ) -> tuple[dict[str, TelegramResult], bool]:
     targets = [
@@ -110,6 +110,33 @@ async def _test_with_ru_probe(
             reason=None if ok else str(item.get("error") or "PROTOCOL_ERROR")[:64],
         )
     return results, bool(probe_results)
+
+
+async def _test_with_ru_probe(
+    candidates: list[TelegramProxy], testing: dict[str, Any]
+) -> tuple[dict[str, TelegramResult], bool]:
+    results, control_ok = await _probe_round(candidates, testing)
+    qualifiers = [proxy for proxy in candidates if results.get(proxy.fingerprint, None)]
+    qualifiers = [proxy for proxy in qualifiers if results[proxy.fingerprint].working]
+    for _ in range(max(0, int(testing["probe_attempts"]) - 1)):
+        repeated, _ = await _probe_round(qualifiers, testing)
+        for proxy in qualifiers:
+            extra = repeated.get(proxy.fingerprint)
+            if extra is None:
+                continue
+            result = results[proxy.fingerprint]
+            result.attempts += extra.attempts
+            result.successes += extra.successes
+            result.rtts_ms.extend(extra.rtts_ms)
+            if extra.reason:
+                result.reason = extra.reason
+    for proxy in qualifiers:
+        result = results[proxy.fingerprint]
+        if result.successes == result.attempts:
+            result.reason = None
+        elif result.working:
+            result.reason = "UNSTABLE"
+    return results, control_ok
 
 
 async def run(root: Path, settings: dict[str, Any]) -> int:
