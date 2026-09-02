@@ -1,58 +1,73 @@
 {
   "control_ok": true,
   "failure_reasons": {
-    "DUPLICATE": 764,
+    "DUPLICATE": 708,
     "MALFORMED_SECRET": 7,
     "NetworkCheckError: [Errno -2] Name or service not known": 24,
-    "NetworkCheckError: [Errno 104] Connection reset by peer": 1,
-    "NetworkCheckError: [Errno 111] Connection refused": 4,
-    "NetworkCheckError: timed out": 311,
-    "ProtocolError: FakeTLS server random HMAC mismatch": 7,
+    "NetworkCheckError: [Errno 111] Connection refused": 3,
+    "NetworkCheckError: timed out": 309,
+    "ProtocolError: FakeTLS server random HMAC mismatch": 6,
     "ProtocolError: connection closed while reading 4 bytes, got 0": 1,
-    "ProtocolError: connection closed while reading 5 bytes, got 0": 1,
     "ProtocolError: expected FakeTLS ServerHello, got record 0x15": 1,
+    "UNSTABLE": 2,
     "UNSUPPORTED_SECRET": 7
   },
   "fastest": 20,
   "healthy_run": true,
-  "last_successful_set": "2026-09-02T14:53:59Z",
+  "last_successful_set": "2026-09-02T15:03:23Z",
   "production": {
     "fastest": 20,
     "stable": 50,
-    "working": 35
+    "working": 29
   },
   "project": "Swift",
-  "selected": {},
+  "selected": {
+    "backup": {
+      "median_rtt_ms": 374.3,
+      "score": 96.16,
+      "url": "https://t.me/proxy?server=global.mtjlpoto.fit&port=443&secret=eeef7017f26c9ecb71ed8d7609992943186d2e6265626f6f2e7275"
+    },
+    "fastest": {
+      "median_rtt_ms": 245.3,
+      "score": 94.77,
+      "url": "https://t.me/proxy?server=t.meow-network.com&port=443&secret=ee5622e11fff3e49bcc85280197a6106b5742e6d656f772d6e6574776f726b2e636f6d"
+    },
+    "stable": {
+      "median_rtt_ms": 267.8,
+      "score": 89.98,
+      "url": "https://t.me/proxy?server=72.56.25.212&port=443&secret=ee7d026761b388c46302df84b4b812aef0706574726f766963682e7275"
+    }
+  },
   "sources": {
     "argh94": {
       "fetched": 236,
       "status": "OK",
       "unique": 230,
-      "working": 21
+      "working": 16
     },
     "klondike": {
       "fetched": 243,
       "status": "OK",
       "unique": 237,
-      "working": 9
+      "working": 5
     },
     "shablin": {
       "fetched": 290,
       "status": "OK",
       "unique": 284,
-      "working": 25
+      "working": 23
     },
     "solispirit": {
       "fetched": 248,
       "status": "OK",
       "unique": 240,
-      "working": 15
+      "working": 12
     }
   },
   "stable": 50,
   "suspicious_streak": 0,
   "tagline": "Filter the garbage. Keep what works.",
-  "tested": 385,
-  "updated_at": "2026-09-02T14:53:59Z",
-  "working": 35
+  "tested": 373,
+  "updated_at": "2026-09-02T15:03:23Z",
+  "working": 29
 }
