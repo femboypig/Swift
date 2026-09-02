@@ -4,9 +4,10 @@ import base64
 import json
 import tempfile
 import unittest
+from collections import deque
 from pathlib import Path
 from typing import Self
-from unittest.mock import patch
+from unittest.mock import Mock, patch
 
 from swiftproxy.models import SourceResult, SourceSpec
 from swiftproxy.telegram import (
@@ -24,6 +25,7 @@ from swiftproxy.telegram import (
 )
 from swiftproxy.telegram_main import run
 from swiftproxy.telegram_publish import message_payload, publish_status
+from swiftproxy.telegram_testing import _connect, _direct_socks
 
 PUBLIC_V4 = "93.184.216.34"
 PUBLIC_V6 = "2606:4700:4700::1111"
@@ -89,6 +91,63 @@ class TelegramParsingTests(unittest.TestCase):
         unique, duplicates = deduplicate([first, second])
         self.assertEqual(duplicates, 1)
         self.assertEqual(unique[0].sources, {"one", "two"})
+
+
+class TelegramDirectPathTests(unittest.TestCase):
+    class FakeSocket:
+        def __init__(self) -> None:
+            self.responses = deque(
+                (
+                    b"\x05\x00",
+                    b"\x05\x00\x00\x01",
+                    b"\x00\x00\x00\x00",
+                    b"\x00\x00",
+                )
+            )
+            self.sent: list[bytes] = []
+            self.closed = False
+
+        def settimeout(self, _timeout: float) -> None:
+            pass
+
+        def sendall(self, value: bytes) -> None:
+            self.sent.append(value)
+
+        def recv(self, length: int) -> bytes:
+            value = self.responses.popleft()
+            self.assert_length(value, length)
+            return value
+
+        @staticmethod
+        def assert_length(value: bytes, length: int) -> None:
+            if len(value) != length:
+                raise AssertionError(f"fake SOCKS response length {len(value)} != {length}")
+
+        def close(self) -> None:
+            self.closed = True
+
+    @patch.dict("os.environ", {"SWIFT_DIRECT_SOCKS": "127.0.0.1:3065"})
+    @patch("swiftproxy.telegram_testing.socket.create_connection")
+    def test_mtproto_socket_uses_ru_direct_socks(self, create_connection: Mock) -> None:
+        fake = self.FakeSocket()
+        create_connection.return_value = fake
+        proxy = parse_proxy_url(proxy_url())
+        proxy.resolved_ip = PUBLIC_V4
+
+        self.assertIs(_connect(proxy, 3), fake)
+        create_connection.assert_called_once_with(("127.0.0.1", 3065), timeout=3)
+        self.assertEqual(fake.sent[0], b"\x05\x01\x00")
+        self.assertEqual(fake.sent[1][-2:], (443).to_bytes(2, "big"))
+        self.assertIn(bytes(map(int, PUBLIC_V4.split("."))), fake.sent[1])
+
+    def test_direct_socks_rejects_non_loopback_and_bad_ports(self) -> None:
+        for value in ("192.0.2.1:3065", "127.0.0.1:0", "127.0.0.1:not-a-port"):
+            with (
+                self.subTest(value=value),
+                patch.dict("os.environ", {"SWIFT_DIRECT_SOCKS": value}),
+                self.assertRaises(ValueError),
+            ):
+                _direct_socks()
 
 
 class TelegramScoringTests(unittest.TestCase):
