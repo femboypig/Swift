@@ -21,7 +21,7 @@ def display_name(
     prefix: str,
 ) -> str:
     country = (result.country or "??").upper()
-    flag = "🏳️"
+    flag = "🏴‍☠️"
     if len(country) == 2 and country.isalpha():
         flag = "".join(chr(ord(character) + 127397) for character in country)
     return f"{flag} {country} · {prefix}{index:03d}"
@@ -33,6 +33,17 @@ def subscription_lines(items: Iterable[RankedConfig], prefix: str) -> list[str]:
         name = display_name(item.result, index, prefix)
         lines.append(serialize_uri(item.config, name))
     return lines
+
+
+def country_ordered(items: Iterable[RankedConfig]) -> list[RankedConfig]:
+    return sorted(
+        items,
+        key=lambda item: (
+            (item.result.country or "ZZ").upper(),
+            -item.score,
+            item.config.fingerprint,
+        ),
+    )
 
 
 def happ_subscription(lines: list[str], title: str, repository: str) -> str:

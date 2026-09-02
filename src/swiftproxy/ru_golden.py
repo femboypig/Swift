@@ -564,7 +564,7 @@ async def _service_session(
                 await _stop_process(process)
 
 
-async def _geo_probe(port: int, url: str) -> dict[str, Any]:
+async def _geo_probe_once(port: int, url: str) -> dict[str, Any]:
     command = [
         "curl",
         "--silent",
@@ -598,7 +598,7 @@ async def _geo_probe(port: int, url: str) -> dict[str, Any]:
             key, separator, item = line.partition("=")
             if separator:
                 value[key] = item
-    country = value.get("country") or value.get("loc")
+    country = value.get("country_code") or value.get("country") or value.get("loc")
     provider = value.get("asOrganization") or value.get("colo")
     try:
         raw_asn = str(value.get("asn", "")).removeprefix("AS")
@@ -610,6 +610,16 @@ async def _geo_probe(port: int, url: str) -> dict[str, Any]:
         "asn": asn,
         "provider": str(provider)[:80] if provider else None,
     }
+
+
+async def _geo_probe(port: int, url: str) -> dict[str, Any]:
+    # Geo enrichment is optional. A second small endpoint avoids turning a
+    # transient Cloudflare trace failure into hundreds of unknown labels.
+    for candidate in dict.fromkeys((url, "https://speed.cloudflare.com/meta", "https://ipwho.is/")):
+        result = await _geo_probe_once(port, candidate)
+        if result.get("country"):
+            return result
+    return {}
 
 
 def _white_signal(config: ProxyConfig, selected_ip: str, evidence: dict[str, Any]) -> str | None:
@@ -1225,6 +1235,10 @@ async def run_generation(root: Path, core: str) -> int:
         int(diversity["asn"]),
     )
     output_root = publication / "output"
+    from .output import country_ordered
+
+    main = country_ordered(main)
+    white = country_ordered(white)
     write_final_subscriptions(
         output_root,
         subscription_lines(main, ""),

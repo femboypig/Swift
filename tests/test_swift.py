@@ -18,6 +18,7 @@ from swiftproxy.output import (
     alive_for_all,
     build_stats,
     check_outputs,
+    country_ordered,
     display_name,
     happ_subscription,
     plain_subscription,
@@ -794,7 +795,26 @@ class OutputTests(unittest.TestCase):
         self.assertEqual(display_name(result, 1, ""), "🇩🇪 DE · 001")
         self.assertEqual(display_name(result, 7, "W"), "🇩🇪 DE · W007")
         result.country = None
-        self.assertEqual(display_name(result, 2, ""), "🏳️ ?? · 002")
+        self.assertEqual(display_name(result, 2, ""), "🏴‍☠️ ?? · 002")
+
+    def test_country_ordering_precedes_sequential_numbering(self) -> None:
+        configs = [
+            parse_uri(vless_uri(uuid=uuid))
+            for uuid in (UUID_A, UUID_B, "33333333-3333-4333-8333-333333333333")
+        ]
+        countries = ("FI", None, "DE")
+        ranked = []
+        for config, country in zip(configs, countries, strict=True):
+            result = successful_result(config)
+            result.country = country
+            ranked.append(RankedConfig(config, "main", result, 90, "active", 1.0))
+
+        ordered = country_ordered(ranked)
+        self.assertEqual([item.result.country for item in ordered], ["DE", "FI", None])
+        names = [
+            display_name(item.result, index, "") for index, item in enumerate(ordered, start=1)
+        ]
+        self.assertEqual(names, ["🇩🇪 DE · 001", "🇫🇮 FI · 002", "🏴‍☠️ ?? · 003"])
 
     def test_plain_and_happ_subscriptions(self) -> None:
         lines = [vless_uri()]
