@@ -42,7 +42,7 @@ def _send_probe_chunk(
         host = target_info.get("host")
         port = target_info.get("port")
         if host and port is not None:
-            key_id = f"{host}:{port}"
+            key_id = str(target_info.get("id") or f"{host}:{port}")
             chunk_map[key_id] = {
                 "ok": bool(item.get("ok")),
                 "latency_ms": item.get("latency_ms"),

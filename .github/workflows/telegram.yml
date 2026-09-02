@@ -1,0 +1,101 @@
+name: Swift Telegram update
+
+on:
+  schedule:
+    - cron: "47 * * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pages: write
+  id-token: write
+
+concurrency:
+  group: swift-subscription-update
+  cancel-in-progress: false
+
+env:
+  PYTHONPATH: src
+
+jobs:
+  update:
+    name: Validate MTProto through Yandex RU probe
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: pyproject.toml
+      - run: python -m pip install --disable-pip-version-check .
+      - name: Test Telegram proxies
+        env:
+          SWIFT_RU_PROBE_URL: ${{ secrets.SWIFT_RU_PROBE_URL }}
+          SWIFT_RU_PROBE_KEY: ${{ secrets.SWIFT_RU_PROBE_KEY }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ -z "$SWIFT_RU_PROBE_URL" ]]; then
+            echo "Yandex RU probe is not configured" >&2
+            exit 1
+          fi
+          set +e
+          python -m swiftproxy.telegram_main
+          code=$?
+          set -e
+          if [[ "$code" -ne 0 && "$code" -ne 2 ]]; then exit "$code"; fi
+      - name: Validate Telegram outputs
+        run: python -m swiftproxy.telegram_main --check-output
+      - name: Commit Telegram generation
+        shell: bash
+        run: |
+          set -euo pipefail
+          git add Telegram data/telegram-history.json
+          if git diff --cached --quiet; then exit 0; fi
+          git config user.name "femboyPig"
+          git config user.email "harimassaa@gmail.com"
+          git commit -m "Update Swift Telegram proxies"
+          git push
+      - name: Update Telegram status message
+        continue-on-error: true
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          TELEGRAM_MESSAGE_ID: ${{ secrets.TELEGRAM_MESSAGE_ID }}
+        run: python -m swiftproxy.telegram_publish
+      - name: Prepare Pages artifact
+        shell: bash
+        run: |
+          mkdir -p "$RUNNER_TEMP/swift-pages/Telegram"
+          cp -a sub/. "$RUNNER_TEMP/swift-pages/"
+          cp -a Telegram/. "$RUNNER_TEMP/swift-pages/Telegram/"
+      - uses: actions/upload-artifact@4cec3d8aa04e39d1a68397de0c4cd6fb9dce8ec1 # v4.6.1
+        with:
+          name: swift-telegram-pages
+          path: ${{ runner.temp }}/swift-pages
+          retention-days: 1
+
+  pages:
+    name: Deploy Telegram subscriptions
+    needs: update
+    runs-on: ubuntu-24.04
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/configure-pages@45bfe0192ca1faeb007ade9deae92b16b8254a0d # v6.0.0
+      - uses: actions/download-artifact@cc203385981b70ca67e1cc392babf9cc229d5806 # v4.1.9
+        with:
+          name: swift-telegram-pages
+          path: ${{ runner.temp }}/swift-pages
+      - uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9 # v5.0.0
+        with:
+          path: ${{ runner.temp }}/swift-pages
+      - name: Deploy subscriptions
+        id: deployment
+        uses: actions/deploy-pages@cd2ce8fcbc39b97be8ca5fce6e763baed58fa128 # v5.0.0

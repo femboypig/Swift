@@ -532,6 +532,8 @@ def assess_run(
         return True, None, 0
     if not control_ok:
         return False, "TELEGRAM_CONTROL_FAILED", previous_streak
+    if working > 0:
+        return True, None, 0
     streak = previous_streak + 1
     if streak <= hold_runs:
         return False, "MASS_FAILURE", streak

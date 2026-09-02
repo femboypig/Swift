@@ -18,6 +18,7 @@ from .sources import fetch_sources
 from .telegram import (
     LOGGER,
     RankedTelegram,
+    TelegramProxy,
     TelegramResult,
     add_observation,
     assess_run,
@@ -70,6 +71,41 @@ def _write_proxy_file(path: Path, items: list[RankedTelegram]) -> None:
     atomic_write(path, content + ("\n" if content else ""))
 
 
+async def _test_with_ru_probe(
+    candidates: list[TelegramProxy],
+) -> tuple[dict[str, TelegramResult], bool]:
+    targets = [
+        {
+            "id": proxy.fingerprint,
+            "host": proxy.host,
+            "port": proxy.port,
+            "secret": proxy.secret,
+        }
+        for proxy in candidates
+    ]
+    probe_results = await asyncio.to_thread(probe_ru_targets, targets, "mtproto")
+    timestamp = utc_now()
+    results: dict[str, TelegramResult] = {}
+    for proxy in candidates:
+        item = probe_results.get(proxy.fingerprint)
+        if item is None:
+            # Older deployed probe versions may not echo the opaque id yet.
+            item = probe_results.get(f"{proxy.host}:{proxy.port}")
+        if item is None:
+            continue
+        latency = item.get("latency_ms")
+        ok = bool(item.get("ok"))
+        results[proxy.fingerprint] = TelegramResult(
+            proxy.fingerprint,
+            timestamp,
+            attempts=1,
+            successes=1 if ok else 0,
+            rtts_ms=[float(latency)] if ok and latency is not None else [],
+            reason=None if ok else str(item.get("error") or "PROTOCOL_ERROR")[:64],
+        )
+    return results, bool(probe_results)
+
+
 async def run(root: Path, settings: dict[str, Any]) -> int:
     telegram = settings["telegram"]
     paths = telegram["paths"]
@@ -94,18 +130,23 @@ async def run(root: Path, settings: dict[str, Any]) -> int:
         int(telegram["testing"]["candidate_limit"]),
         seed,
     )
-    resolved, resolution_failures = await resolve_proxies(candidates)
-    failures.update(resolution_failures.values())
-    tested = await test_proxies(resolved, telegram["testing"])
-    results = {result.fingerprint: result for result in tested}
-    timestamp = utc_now()
-    for proxy in candidates:
-        if proxy.fingerprint in results:
-            continue
-        reason = resolution_failures.get(proxy.fingerprint)
-        if reason:
-            results[proxy.fingerprint] = TelegramResult(proxy.fingerprint, timestamp, reason=reason)
-    control_ok = await telegram_control(telegram["testing"])
+    if os.environ.get("SWIFT_RU_PROBE_URL"):
+        results, control_ok = await _test_with_ru_probe(candidates)
+    else:
+        resolved, resolution_failures = await resolve_proxies(candidates)
+        failures.update(resolution_failures.values())
+        tested = await test_proxies(resolved, telegram["testing"])
+        results = {result.fingerprint: result for result in tested}
+        timestamp = utc_now()
+        for proxy in candidates:
+            if proxy.fingerprint in results:
+                continue
+            reason = resolution_failures.get(proxy.fingerprint)
+            if reason:
+                results[proxy.fingerprint] = TelegramResult(
+                    proxy.fingerprint, timestamp, reason=reason
+                )
+        control_ok = await telegram_control(telegram["testing"])
     validation_complete = len(results) >= len(candidates) * 0.8
 
     temp_history = copy.deepcopy(history)
@@ -117,47 +158,6 @@ async def run(root: Path, settings: dict[str, Any]) -> int:
 
     previous_order = _previous_order(root, "all.txt")
     working, stable_candidates = rank_proxies(candidates, results, temp_history, previous_order)
-    if working and os.environ.get("SWIFT_RU_PROBE_URL"):
-        top_telegram = working[: min(len(working), 50)]
-        probe_targets = [
-            {
-                "host": item.proxy.resolved_ip or item.proxy.host,
-                "port": item.proxy.port,
-                "secret": item.proxy.secret,
-            }
-            for item in top_telegram
-        ]
-        ru_results = probe_ru_targets(probe_targets, check_type="mtproto")
-        if ru_results:
-            passed_count = sum(bool(r.get("ok")) for r in ru_results.values())
-            passed_ratio = passed_count / len(ru_results)
-            if len(ru_results) >= 10 and passed_ratio < 0.10:
-                LOGGER.warning(
-                    "RU_PROBE_OUTAGE_SUSPECTED telegram total=%d passed=%d ratio=%.2f -> preserving runner MTProto rankings",
-                    len(ru_results),
-                    passed_count,
-                    passed_ratio,
-                )
-            else:
-                passed_working = []
-                for item in working:
-                    key_id = f"{item.proxy.resolved_ip or item.proxy.host}:{item.proxy.port}"
-                    status_item = ru_results.get(key_id)
-                    if status_item is not None:
-                        if status_item.get("ok"):
-                            passed_working.append(item)
-                    else:
-                        passed_working.append(item)
-                if passed_working:
-                    LOGGER.info(
-                        "telegram ru_probe filtered passed=%d dropped=%d",
-                        len(passed_working),
-                        len(working) - len(passed_working),
-                    )
-                    working = passed_working
-                    stable_candidates = [
-                        item for item in stable_candidates if item in passed_working
-                    ]
     stable = [
         item
         for item in stable_candidates

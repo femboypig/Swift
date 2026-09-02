@@ -28,7 +28,7 @@ class TestRuProbe(unittest.TestCase):
         mock_data = {
             "results": [
                 {
-                    "target": {"host": "1.2.3.4", "port": 443},
+                    "target": {"id": "proxy-a", "host": "1.2.3.4", "port": 443},
                     "ok": True,
                     "latency_ms": 42,
                     "error": None,
@@ -53,8 +53,8 @@ class TestRuProbe(unittest.TestCase):
             targets, probe_url="https://example.com/probe", probe_key="secret123"
         )
         self.assertEqual(len(res), 2)
-        self.assertTrue(res["1.2.3.4:443"]["ok"])
-        self.assertEqual(res["1.2.3.4:443"]["latency_ms"], 42)
+        self.assertTrue(res["proxy-a"]["ok"])
+        self.assertEqual(res["proxy-a"]["latency_ms"], 42)
         self.assertFalse(res["5.6.7.8:8443"]["ok"])
 
     @patch("urllib.request.urlopen")

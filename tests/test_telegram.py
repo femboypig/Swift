@@ -23,7 +23,7 @@ from swiftproxy.telegram import (
     score_proxy,
     select_message_targets,
 )
-from swiftproxy.telegram_main import run
+from swiftproxy.telegram_main import _test_with_ru_probe, run
 from swiftproxy.telegram_publish import message_payload, publish_status
 from swiftproxy.telegram_testing import _connect, _direct_socks
 
@@ -253,8 +253,41 @@ class TelegramScoringTests(unittest.TestCase):
         self.assertIsNone(reason)
         self.assertEqual(streak, 0)
 
+    def test_nonzero_probe_verified_set_replaces_stale_larger_set(self) -> None:
+        healthy, reason, streak = assess_run(
+            {"production": {"working": 100}, "suspicious_streak": 0},
+            successful_sources=4,
+            expected=400,
+            completed=400,
+            working=4,
+            control_ok=True,
+            collapse_ratio=0.2,
+            hold_runs=2,
+        )
+        self.assertTrue(healthy)
+        self.assertIsNone(reason)
+        self.assertEqual(streak, 0)
+
 
 class TelegramPipelineTests(unittest.IsolatedAsyncioTestCase):
+    async def test_yandex_probe_is_authoritative_for_all_candidates(self) -> None:
+        first = parse_proxy_url(proxy_url(secret=RAW_SECRET))
+        second = parse_proxy_url(proxy_url(secret=DD_SECRET))
+        response = {
+            first.fingerprint: {"ok": True, "latency_ms": 120, "error": None},
+            second.fingerprint: {"ok": False, "latency_ms": None, "error": "TIMEOUT"},
+        }
+        with patch("swiftproxy.telegram_main.probe_ru_targets", return_value=response) as probe:
+            results, control_ok = await _test_with_ru_probe([first, second])
+
+        sent = probe.call_args.args[0]
+        self.assertEqual({item["id"] for item in sent}, {first.fingerprint, second.fingerprint})
+        self.assertTrue(control_ok)
+        self.assertTrue(results[first.fingerprint].working)
+        self.assertEqual(results[first.fingerprint].median_rtt, 120)
+        self.assertFalse(results[second.fingerprint].working)
+        self.assertEqual(results[second.fingerprint].reason, "TIMEOUT")
+
     async def test_suspicious_zero_run_preserves_previous_files(self) -> None:
         source = SourceSpec("source", "source", "https://example.com/feed", {"telegram"})
         settings = {

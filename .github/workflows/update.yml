@@ -111,15 +111,6 @@ jobs:
           else
             exit "$code"
           fi
-      - name: Test Telegram proxies from RU
-        if: ${{ steps.ru_result.outputs.publishable == 'true' }}
-        shell: bash
-        run: |
-          set +e
-          python3 -m swiftproxy.telegram_main
-          code=$?
-          set -e
-          if [[ "$code" -ne 0 && "$code" -ne 2 ]]; then exit "$code"; fi
       - name: Upload completed RU artifact and telemetry
         id: upload_ru
         if: ${{ always() }}
@@ -130,8 +121,6 @@ jobs:
           path: |
             data/ru-generation
             data/ru-publication
-            data/telegram-history.json
-            Telegram
           if-no-files-found: error
           include-hidden-files: true
           retention-days: 7
@@ -146,8 +135,6 @@ jobs:
           path: |
             data/ru-generation
             data/ru-publication
-            data/telegram-history.json
-            Telegram
           if-no-files-found: error
           include-hidden-files: true
           overwrite: true

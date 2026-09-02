@@ -389,6 +389,15 @@ class WorkflowTests(unittest.TestCase):
         self.assertIn("python3 -m swiftproxy.ru_golden", workflow)
         self.assertIn("runs-on: [self-hosted, Linux]", workflow)
 
+    def test_telegram_uses_yandex_probe_without_mommy(self) -> None:
+        root = Path(__file__).parents[1]
+        workflow = (root / ".github/workflows/telegram.yml").read_text()
+        self.assertIn("SWIFT_RU_PROBE_URL", workflow)
+        self.assertIn("python -m swiftproxy.telegram_main", workflow)
+        self.assertIn("runs-on: ubuntu-24.04", workflow)
+        self.assertNotIn("runs-on: [self-hosted, Linux]", workflow)
+        self.assertNotIn("SWIFT_DIRECT_SOCKS", workflow)
+
     def test_schedule_cannot_queue_faster_than_the_exhaustive_runner(self) -> None:
         root = Path(__file__).parents[1]
         update = (root / ".github/workflows/update.yml").read_text()
