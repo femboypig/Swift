@@ -4,6 +4,7 @@ import asyncio
 import inspect
 import json
 import socket
+import shutil
 import tempfile
 import unittest
 from pathlib import Path
@@ -18,6 +19,7 @@ from swiftproxy.ru_golden import _http_probe, _https_session, endpoint_sanity, r
 from swiftproxy.ru_golden import DOWNLOAD_BYTES, MIN_THROUGHPUT_KBPS
 from swiftproxy.ru_golden import (
     DownloadGovernor,
+    HELD_EXIT_CODE,
     PathHealth,
     _bounded_preflight,
     _run_admitted,
@@ -111,6 +113,27 @@ class GoldenHttpsTests(unittest.TestCase):
         self.assertFalse(health.healthy)
         self.assertEqual(len(records), 3)
         self.assertEqual(records[-1]["core_control"], {"success": False, "category": "CURL_28"})
+
+    @patch("swiftproxy.ru_golden._wait_for_healthy_path", new_callable=AsyncMock)
+    def test_unhealthy_preflight_is_a_held_generation(self, health_check) -> None:
+        health_check.return_value = (self.path_health(False, "CURL_28"), [{"healthy": False}])
+        with tempfile.TemporaryDirectory() as raw:
+            root = Path(raw)
+            generation = root / "data/ru-generation"
+            generation.mkdir(parents=True)
+            (generation / "manifest.json").write_text(
+                json.dumps({"generation_id": "held", "ru_expected": 0})
+            )
+            (generation / "candidates.jsonl").write_text("")
+            (generation / "white-evidence.json").write_text("{}")
+            shutil.copy(Path(__file__).parents[1] / "config.toml", root / "config.toml")
+            with patch.dict("os.environ", {"SWIFT_BIND_INTERFACE": "wlan0"}):
+                code = asyncio.run(run_generation(root, "sing-box"))
+
+            self.assertEqual(code, HELD_EXIT_CODE)
+            result = json.loads((root / "data/ru-publication/result-manifest.json").read_text())
+            self.assertEqual(result["state"], "HELD")
+            self.assertFalse(result["complete"])
 
     def test_queue_wait_does_not_consume_candidate_timeout(self) -> None:
         async def scenario() -> dict:

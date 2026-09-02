@@ -47,6 +47,7 @@ from .testing import (
 
 
 RESULT_SCHEMA_VERSION = 1
+HELD_EXIT_CODE = 2
 TCP_PROTOCOLS = {"vless", "vmess", "trojan", "ss"}
 TERMINAL_PASS = "PASS"
 LOGGER = logging.getLogger("swift.ru_golden")
@@ -803,10 +804,13 @@ async def run_generation(root: Path, core: str) -> int:
     recovery_attempts = int(ru["path_recovery_attempts"])
     recovery_delay = float(ru["path_recovery_delay_seconds"])
     recovery_confirmations = int(ru["path_recovery_confirmations"])
+    path_check_interval = int(ru["path_check_interval"])
     if recovery_attempts < 1 or recovery_delay < 0 or recovery_confirmations < 1:
         raise ValueError("RU path recovery settings are invalid")
     if recovery_confirmations > recovery_attempts:
         raise ValueError("RU path confirmations cannot exceed recovery attempts")
+    if path_check_interval < 1:
+        raise ValueError("RU path check interval must be positive")
     per_transfer_bps = int(ru["download_bandwidth_bps"]) // int(ru["download_concurrency"])
     if per_transfer_bps <= MIN_THROUGHPUT_KBPS * 1024:
         raise ValueError("RU download budget must stay above the quality threshold")
@@ -836,7 +840,7 @@ async def run_generation(root: Path, core: str) -> int:
                 "path_checks": {"preflight": preflight_checks},
             },
         )
-        return 1
+        return HELD_EXIT_CODE
     control = preflight_health.control
 
     history_path = root / "data/ru-history.json"
@@ -1030,10 +1034,11 @@ async def run_generation(root: Path, core: str) -> int:
             }
 
     deadline_at = time.monotonic() + float(ru["run_deadline_seconds"])
-    tasks = [asyncio.create_task(bounded(item)) for item in candidates]
+    tasks: list[asyncio.Task[dict[str, Any]]] = []
     results: list[dict[str, Any]] = []
     complete = True
     run_failure: str | None = None
+    running_path_checks: list[dict[str, Any]] = []
     run_started = time.monotonic()
     last_progress = run_started
     LOGGER.info(
@@ -1044,21 +1049,40 @@ async def run_generation(root: Path, core: str) -> int:
     )
     try:
         async with asyncio.timeout(max(0.0, deadline_at - time.monotonic())):
-            for task in asyncio.as_completed(tasks):
-                results.append(await task)
-                now_mono = time.monotonic()
-                if len(results) % 25 == 0 or now_mono - last_progress >= 30:
-                    elapsed = max(0.001, now_mono - run_started)
-                    rate = len(results) / elapsed
-                    remaining = len(candidates) - len(results)
-                    LOGGER.info(
-                        "RU progress=%d/%d rate=%.2f/s eta=%.0fs",
-                        len(results),
-                        len(candidates),
-                        rate,
-                        remaining / rate if rate else 0,
+            for offset in range(0, len(candidates), path_check_interval):
+                if offset:
+                    health, checks = await _wait_for_healthy_path(
+                        interface,
+                        core,
+                        float(ru["preflight_timeout"]),
+                        recovery_attempts,
+                        recovery_delay,
+                        recovery_confirmations,
+                        f"running-{offset}",
                     )
-                    last_progress = now_mono
+                    running_path_checks.extend(checks)
+                    if not health.healthy:
+                        complete = False
+                        run_failure = "RU_PATH_UNHEALTHY"
+                        break
+                batch = candidates[offset : offset + path_check_interval]
+                tasks = [asyncio.create_task(bounded(item)) for item in batch]
+                for task in asyncio.as_completed(tasks):
+                    results.append(await task)
+                    now_mono = time.monotonic()
+                    if len(results) % 25 == 0 or now_mono - last_progress >= 30:
+                        elapsed = max(0.001, now_mono - run_started)
+                        rate = len(results) / elapsed
+                        remaining = len(candidates) - len(results)
+                        LOGGER.info(
+                            "RU progress=%d/%d rate=%.2f/s eta=%.0fs",
+                            len(results),
+                            len(candidates),
+                            rate,
+                            remaining / rate if rate else 0,
+                        )
+                        last_progress = now_mono
+                tasks = []
     except TimeoutError:
         complete = False
         run_failure = "RUN_DEADLINE"
@@ -1132,10 +1156,14 @@ async def run_generation(root: Path, core: str) -> int:
                 "path_mode": control["path_mode"],
                 "performance": performance,
                 "run_failure": run_failure,
+                "path_checks": {
+                    "preflight": preflight_checks,
+                    "running": running_path_checks,
+                },
                 "terminal_counts": dict(sorted(terminal_counts.items())),
             },
         )
-        return 1
+        return HELD_EXIT_CODE if run_failure == "RU_PATH_UNHEALTHY" else 1
 
     now = _now()
     configs_history = history.setdefault("configs", {})
@@ -1347,7 +1375,7 @@ async def run_generation(root: Path, core: str) -> int:
             "terminal_counts": dict(sorted(terminal_counts.items())),
         },
     )
-    return 0 if complete else 1
+    return 0 if complete else HELD_EXIT_CODE
 
 
 def cli(argv: list[str] | None = None) -> int:

@@ -87,6 +87,9 @@ preflight_timeout = 60
 path_recovery_attempts = 8
 path_recovery_delay_seconds = 60
 path_recovery_confirmations = 2
+# Stop admitting new candidates periodically and verify that Karing's direct
+# path has not collapsed under cumulative connection churn.
+path_check_interval = 250
 resolution_concurrency = 40
 resolution_timeout = 8
 endpoint_concurrency = 8
