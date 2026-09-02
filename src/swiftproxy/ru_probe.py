@@ -5,6 +5,7 @@ import logging
 import os
 import urllib.error
 import urllib.request
+from concurrent.futures import ThreadPoolExecutor
 from typing import Any
 
 LOGGER = logging.getLogger("swift")
@@ -58,6 +59,7 @@ def probe_ru_targets(
     probe_key: str | None = None,
     timeout: float = 25.0,
     chunk_size: int = 25,
+    request_concurrency: int = 1,
 ) -> dict[str, dict[str, Any]]:
     url = os.environ.get("SWIFT_RU_PROBE_URL", "") if probe_url is None else probe_url
     key = os.environ.get("SWIFT_RU_PROBE_KEY", "") if probe_key is None else probe_key
@@ -65,11 +67,17 @@ def probe_ru_targets(
     if not url or not targets:
         return {}
 
-    results_map: dict[str, dict[str, Any]] = {}
-    for start in range(0, len(targets), max(1, chunk_size)):
-        chunk = targets[start : start + chunk_size]
-        chunk_results = _send_probe_chunk(chunk, check_type, url, key, timeout)
-        results_map.update(chunk_results)
+    chunks = [
+        targets[start : start + max(1, chunk_size)]
+        for start in range(0, len(targets), max(1, chunk_size))
+    ]
+    with ThreadPoolExecutor(max_workers=max(1, request_concurrency)) as executor:
+        responses = executor.map(
+            lambda chunk: _send_probe_chunk(chunk, check_type, url, key, timeout), chunks
+        )
+        results_map = {
+            result_key: value for response in responses for result_key, value in response.items()
+        }
 
     LOGGER.info(
         "ru_probe type=%s sent=%d responded=%d passed=%d",

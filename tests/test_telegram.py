@@ -278,10 +278,14 @@ class TelegramPipelineTests(unittest.IsolatedAsyncioTestCase):
             second.fingerprint: {"ok": False, "latency_ms": None, "error": "TIMEOUT"},
         }
         with patch("swiftproxy.telegram_main.probe_ru_targets", return_value=response) as probe:
-            results, control_ok = await _test_with_ru_probe([first, second])
+            results, control_ok = await _test_with_ru_probe(
+                [first, second], {"probe_chunk_size": 5, "probe_concurrency": 6}
+            )
 
         sent = probe.call_args.args[0]
         self.assertEqual({item["id"] for item in sent}, {first.fingerprint, second.fingerprint})
+        self.assertEqual(probe.call_args.kwargs["chunk_size"], 5)
+        self.assertEqual(probe.call_args.kwargs["request_concurrency"], 6)
         self.assertTrue(control_ok)
         self.assertTrue(results[first.fingerprint].working)
         self.assertEqual(results[first.fingerprint].median_rtt, 120)

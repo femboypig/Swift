@@ -72,7 +72,7 @@ def _write_proxy_file(path: Path, items: list[RankedTelegram]) -> None:
 
 
 async def _test_with_ru_probe(
-    candidates: list[TelegramProxy],
+    candidates: list[TelegramProxy], testing: dict[str, Any]
 ) -> tuple[dict[str, TelegramResult], bool]:
     targets = [
         {
@@ -83,7 +83,13 @@ async def _test_with_ru_probe(
         }
         for proxy in candidates
     ]
-    probe_results = await asyncio.to_thread(probe_ru_targets, targets, "mtproto")
+    probe_results = await asyncio.to_thread(
+        probe_ru_targets,
+        targets,
+        "mtproto",
+        chunk_size=int(testing["probe_chunk_size"]),
+        request_concurrency=int(testing["probe_concurrency"]),
+    )
     timestamp = utc_now()
     results: dict[str, TelegramResult] = {}
     for proxy in candidates:
@@ -130,14 +136,14 @@ async def run(root: Path, settings: dict[str, Any]) -> int:
         int(telegram["testing"]["candidate_limit"]),
         seed,
     )
+    timestamp = utc_now()
     if os.environ.get("SWIFT_RU_PROBE_URL"):
-        results, control_ok = await _test_with_ru_probe(candidates)
+        results, control_ok = await _test_with_ru_probe(candidates, telegram["testing"])
     else:
         resolved, resolution_failures = await resolve_proxies(candidates)
         failures.update(resolution_failures.values())
         tested = await test_proxies(resolved, telegram["testing"])
         results = {result.fingerprint: result for result in tested}
-        timestamp = utc_now()
         for proxy in candidates:
             if proxy.fingerprint in results:
                 continue
