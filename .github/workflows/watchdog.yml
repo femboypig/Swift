@@ -2,7 +2,7 @@ name: Swift schedule watchdog
 
 on:
   schedule:
-    - cron: "32 * * * *"
+    - cron: "47 * * * *"
   workflow_dispatch:
 
 permissions:
@@ -33,13 +33,13 @@ jobs:
 
           if [[ -n "$latest" ]]; then
             age=$(( $(date -u +%s) - $(date -u -d "$latest" +%s) ))
-            if (( age < 4500 )); then
+            if (( age < 18000 )); then
               echo "Swift update started ${age}s ago; nothing to do."
               exit 0
             fi
           fi
 
-          echo "No active Swift update and none started in the last 75 minutes; dispatching one."
+          echo "No active Swift update and none started in the last five hours; dispatching one."
           gh api --method POST \
             "repos/${GITHUB_REPOSITORY}/actions/workflows/update.yml/dispatches" \
             -f ref=main

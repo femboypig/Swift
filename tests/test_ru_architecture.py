@@ -370,10 +370,16 @@ class WorkflowTests(unittest.TestCase):
         root = Path(__file__).parents[1]
         update = (root / ".github/workflows/update.yml").read_text()
         watchdog = (root / ".github/workflows/watchdog.yml").read_text()
-        self.assertIn('cron: "17 * * * *"', update)
+        self.assertIn('cron: "17 */4 * * *"', update)
         self.assertNotIn('cron: "17,47 * * * *"', update)
         self.assertIn('select(.status == "queued"', watchdog)
-        self.assertIn("age < 4500", watchdog)
+        self.assertIn("age < 18000", watchdog)
+
+    def test_recovery_publish_uses_authoritative_ru_result(self) -> None:
+        workflow = (Path(__file__).parents[1] / ".github/workflows/update.yml").read_text()
+        self.assertIn("always() && needs.ru-verify.result == 'success'", workflow)
+        self.assertIn("steps.upload_ru.outcome == 'failure'", workflow)
+        self.assertIn("overwrite: true", workflow)
 
     def test_legacy_cloud_history_cannot_gate_or_prioritize_ru(self) -> None:
         cloud = {

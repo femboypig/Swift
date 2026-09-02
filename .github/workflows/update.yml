@@ -2,9 +2,9 @@ name: Swift update
 
 on:
   schedule:
-    # Exhaustive RU verification takes roughly 50-60 minutes. A 30-minute
-    # schedule only builds a queue against the single home runner.
-    - cron: "17 * * * *"
+    # The exhaustive verifier shares a home connection and Karing's direct
+    # dialer. Back-to-back hourly runs have exhausted that dialer in practice.
+    - cron: "17 */4 * * *"
   workflow_dispatch:
     inputs:
       generation_run_id:
@@ -104,7 +104,9 @@ jobs:
           set -e
           if [[ "$code" -ne 0 && "$code" -ne 2 ]]; then exit "$code"; fi
       - name: Upload completed RU artifact and telemetry
+        id: upload_ru
         if: ${{ always() }}
+        continue-on-error: true
         uses: actions/upload-artifact@4cec3d8aa04e39d1a68397de0c4cd6fb9dce8ec1 # v4.6.1
         with:
           name: swift-ru-publication
@@ -116,10 +118,30 @@ jobs:
           if-no-files-found: error
           include-hidden-files: true
           retention-days: 7
+      - name: Wait before artifact upload retry
+        if: ${{ always() && steps.upload_ru.outcome == 'failure' }}
+        run: sleep 30
+      - name: Retry completed RU artifact and telemetry upload
+        if: ${{ always() && steps.upload_ru.outcome == 'failure' }}
+        uses: actions/upload-artifact@4cec3d8aa04e39d1a68397de0c4cd6fb9dce8ec1 # v4.6.1
+        with:
+          name: swift-ru-publication
+          path: |
+            data/ru-generation
+            data/ru-publication
+            data/telegram-history.json
+            Telegram
+          if-no-files-found: error
+          include-hidden-files: true
+          overwrite: true
+          retention-days: 7
 
   publish:
     name: Validate and publish generation
     needs: ru-verify
+    # Recovery dispatches skip collect. Test the verifier result explicitly;
+    # success() also sees the skipped transitive collect dependency.
+    if: ${{ always() && needs.ru-verify.result == 'success' }}
     runs-on: ubuntu-24.04
     timeout-minutes: 15
     permissions:
