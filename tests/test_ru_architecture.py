@@ -415,6 +415,11 @@ class WorkflowTests(unittest.TestCase):
         self.assertIn("steps.upload_ru.outcome == 'failure'", workflow)
         self.assertIn("overwrite: true", workflow)
 
+    def test_ru_publication_artifact_download_restores_data_layout(self) -> None:
+        workflow = (Path(__file__).parents[1] / ".github/workflows/update.yml").read_text()
+        marker = "name: swift-ru-publication\n          path: data"
+        self.assertIn(marker, workflow)
+
     def test_legacy_cloud_history_cannot_gate_or_prioritize_ru(self) -> None:
         cloud = {
             "schema_version": 3,

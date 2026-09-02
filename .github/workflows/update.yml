@@ -160,6 +160,7 @@ jobs:
       - uses: actions/download-artifact@cc203385981b70ca67e1cc392babf9cc229d5806 # v4.1.9
         with:
           name: swift-ru-publication
+          path: data
       - name: Verify generation and stage publication
         run: python -m swiftproxy.publication
       - name: Validate generated outputs
