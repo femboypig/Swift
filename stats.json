@@ -1,68 +1,64 @@
 {
-  "alive": 31,
-  "collected": 6898,
-  "collection_updated_at": "2026-09-01T14:20:18Z",
+  "alive": 55,
+  "collected": 6621,
+  "collection_updated_at": "2026-09-01T20:07:00Z",
   "countries": {
-    "DE": 3,
     "FR": 1,
-    "GB": 3,
-    "NL": 5,
-    "RO": 1,
-    "RU": 1,
-    "TR": 1,
-    "US": 2
+    "KZ": 2,
+    "NL": 2,
+    "RO": 4,
+    "RU": 2,
+    "US": 1
   },
   "failure_reasons": {
-    "CORE_EXITED": 13,
-    "DNS_TIMEOUT": 7,
-    "HTTPS_FAILED": 5320,
-    "PASS": 31,
-    "STALLED": 23,
+    "CORE_EXITED": 12,
+    "DNS_TIMEOUT": 15,
+    "DOWNLOAD_R1_FAILED": 2,
+    "DOWNLOAD_R2_FAILED": 2,
+    "HTTPS_FAILED": 5136,
+    "PASS": 55,
+    "STALLED": 33,
     "TOO_SLOW": 15,
-    "UNSTABLE": 4
+    "UNSTABLE": 3
   },
   "funnel": {
-    "main_published": 31,
-    "ru_accounted": 5413,
-    "ru_expected": 5413,
-    "ru_pass": 31,
-    "white_published": 7
+    "main_published": 55,
+    "ru_accounted": 5273,
+    "ru_expected": 5273,
+    "ru_pass": 55,
+    "white_published": 18
   },
-  "generation_id": "6aff224fdf57173feb6173d4b154828563183baab7123761bf5edcbc93500fb4",
-  "main": 31,
-  "median_latency_ms": 989.9,
-  "parsed": 6399,
+  "generation_id": "5d7e20fd0e7558058995ca418e8481dc2846b3ff7081ea1bc3922ecf63651a94",
+  "main": 55,
+  "median_latency_ms": 1061.45,
+  "parsed": 6100,
   "production": {
-    "all": 31,
-    "main": 31,
-    "white": 7
+    "all": 55,
+    "main": 55,
+    "white": 18
   },
   "project": "Swift",
   "protocols": {
-    "hysteria2": 10,
-    "trojan": 5,
-    "vless": 13,
-    "vmess": 3
+    "hysteria2": 7,
+    "ss": 1,
+    "trojan": 6,
+    "vless": 31,
+    "vmess": 10
   },
-  "publication_updated_at": "2026-09-01T15:18:08Z",
+  "publication_updated_at": "2026-09-01T21:23:21Z",
   "published": true,
   "sources": {
-    "0xRadikal": 9,
-    "aetris": 2,
-    "airlink": 1,
-    "akres": 1,
-    "igareck": 11,
-    "kizyak": 2,
-    "matryoshka": 2,
-    "rjsxrd": 4,
-    "rkp": 8,
-    "vovaplusexp": 1,
-    "zieng2": 1
+    "0xRadikal": 11,
+    "aetris": 1,
+    "akres": 4,
+    "igareck": 30,
+    "rjsxrd": 14,
+    "rkp": 4
   },
   "stage": "published",
   "tagline": "Filter the garbage. Keep what works.",
-  "tested": 5413,
-  "unique": 5413,
-  "updated_at": "2026-09-01T15:18:08Z",
-  "white": 7
+  "tested": 5273,
+  "unique": 5273,
+  "updated_at": "2026-09-01T21:23:21Z",
+  "white": 18
 }
