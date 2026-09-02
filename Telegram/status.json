@@ -1,24 +1,25 @@
 {
   "control_ok": true,
-  "failure_reason": "GLOBAL_TIMEOUT",
   "failure_reasons": {
     "DUPLICATE": 764,
     "MALFORMED_SECRET": 7,
-    "NetworkCheckError: [Errno -2] Name or service not known": 23,
+    "NetworkCheckError: [Errno -2] Name or service not known": 24,
     "NetworkCheckError: [Errno 104] Connection reset by peer": 1,
-    "NetworkCheckError: [Errno 111] Connection refused": 3,
-    "NetworkCheckError: timed out": 227,
-    "ProtocolError: FakeTLS server random HMAC mismatch": 6,
+    "NetworkCheckError: [Errno 111] Connection refused": 4,
+    "NetworkCheckError: timed out": 311,
+    "ProtocolError: FakeTLS server random HMAC mismatch": 7,
     "ProtocolError: connection closed while reading 4 bytes, got 0": 1,
+    "ProtocolError: connection closed while reading 5 bytes, got 0": 1,
+    "ProtocolError: expected FakeTLS ServerHello, got record 0x15": 1,
     "UNSUPPORTED_SECRET": 7
   },
   "fastest": 20,
-  "healthy_run": false,
-  "last_successful_set": "2026-09-02T04:39:27Z",
+  "healthy_run": true,
+  "last_successful_set": "2026-09-02T14:53:59Z",
   "production": {
     "fastest": 20,
     "stable": 50,
-    "working": 103
+    "working": 35
   },
   "project": "Swift",
   "selected": {},
@@ -27,31 +28,31 @@
       "fetched": 236,
       "status": "OK",
       "unique": 230,
-      "working": 15
+      "working": 21
     },
     "klondike": {
       "fetched": 243,
       "status": "OK",
       "unique": 237,
-      "working": 8
+      "working": 9
     },
     "shablin": {
       "fetched": 290,
       "status": "OK",
       "unique": 284,
-      "working": 18
+      "working": 25
     },
     "solispirit": {
       "fetched": 248,
       "status": "OK",
       "unique": 240,
-      "working": 9
+      "working": 15
     }
   },
   "stable": 50,
   "suspicious_streak": 0,
   "tagline": "Filter the garbage. Keep what works.",
-  "tested": 287,
-  "updated_at": "2026-09-02T14:48:28Z",
-  "working": 26
+  "tested": 385,
+  "updated_at": "2026-09-02T14:53:59Z",
+  "working": 35
 }
