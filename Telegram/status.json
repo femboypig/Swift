@@ -1,42 +1,40 @@
 {
   "control_ok": true,
   "failure_reasons": {
-    "DUPLICATE": 693,
+    "DUPLICATE": 689,
     "MALFORMED_SECRET": 6,
-    "NetworkCheckError: [Errno -2] Name or service not known": 21,
+    "NetworkCheckError: [Errno -2] Name or service not known": 22,
     "NetworkCheckError: [Errno 104] Connection reset by peer": 3,
-    "NetworkCheckError: [Errno 111] Connection refused": 2,
-    "NetworkCheckError: timed out": 309,
+    "NetworkCheckError: [Errno 111] Connection refused": 5,
+    "NetworkCheckError: timed out": 308,
     "ProtocolError: FakeTLS server random HMAC mismatch": 7,
-    "ProtocolError: connection closed while reading 5 bytes, got 0": 1,
-    "ProtocolError: expected FakeTLS ServerHello, got record 0x15": 1,
-    "UNSTABLE": 10,
+    "UNSTABLE": 5,
     "UNSUPPORTED_SECRET": 6
   },
   "fastest": 20,
   "healthy_run": true,
-  "last_successful_set": "2026-09-02T23:35:34Z",
+  "last_successful_set": "2026-09-03T01:31:04Z",
   "production": {
     "fastest": 20,
-    "stable": 24,
+    "stable": 34,
     "working": 40
   },
   "project": "Swift",
   "selected": {
     "backup": {
-      "median_rtt_ms": 181.5,
-      "score": 99.52,
-      "url": "https://t.me/proxy?server=31.128.46.8&port=443&secret=eedddddddddddddddddddddddddddddddd6d2e6265626f6f2e7275"
+      "median_rtt_ms": 213.1,
+      "score": 99.21,
+      "url": "https://t.me/proxy?server=mkima.davay.click&port=443&secret=ee39300be14c4d54704c92416d555fa7026d6b696d612e64617661792e636c69636b"
     },
     "fastest": {
-      "median_rtt_ms": 205.7,
-      "score": 99.3,
-      "url": "https://t.me/proxy?server=max.kimt.click&port=443&secret=ee1b153cf06dbd43c6085c359a6702eb936d61782e6b696d742e636c69636b"
+      "median_rtt_ms": 217.1,
+      "score": 81.36,
+      "url": "https://t.me/proxy?server=media5.happtg.org&port=443&secret=ee2c46ee89b4f2c79c1d8325d13091e580706574726f766963682e7275"
     },
     "stable": {
-      "median_rtt_ms": 347.7,
-      "score": 89.48,
-      "url": "https://t.me/proxy?server=pulse.lovely.lat&port=443&secret=ee6f8c7d9193585ada7d22acf074ad6d976d2e6265626f6f2e7275"
+      "median_rtt_ms": 174.2,
+      "score": 99.59,
+      "url": "https://t.me/proxy?server=31.128.46.8&port=443&secret=eedddddddddddddddddddddddddddddddd6d2e6265626f6f2e7275"
     }
   },
   "sources": {
@@ -50,25 +48,25 @@
       "fetched": 238,
       "status": "OK",
       "unique": 232,
-      "working": 7
+      "working": 9
     },
     "shablin": {
       "fetched": 299,
       "status": "OK",
       "unique": 295,
-      "working": 18
+      "working": 21
     },
     "solispirit": {
       "fetched": 254,
       "status": "OK",
       "unique": 247,
-      "working": 7
+      "working": 9
     }
   },
-  "stable": 24,
+  "stable": 34,
   "suspicious_streak": 0,
   "tagline": "Filter the garbage. Keep what works.",
-  "tested": 384,
-  "updated_at": "2026-09-02T23:35:34Z",
+  "tested": 385,
+  "updated_at": "2026-09-03T01:31:04Z",
   "working": 40
 }
