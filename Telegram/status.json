@@ -1,72 +1,74 @@
 {
   "control_ok": true,
   "failure_reasons": {
-    "DUPLICATE": 689,
+    "DUPLICATE": 699,
     "MALFORMED_SECRET": 6,
     "NetworkCheckError: [Errno -2] Name or service not known": 22,
-    "NetworkCheckError: [Errno 104] Connection reset by peer": 3,
-    "NetworkCheckError: [Errno 111] Connection refused": 5,
-    "NetworkCheckError: timed out": 308,
-    "ProtocolError: FakeTLS server random HMAC mismatch": 7,
-    "UNSTABLE": 5,
-    "UNSUPPORTED_SECRET": 6
+    "NetworkCheckError: [Errno 104] Connection reset by peer": 2,
+    "NetworkCheckError: [Errno 111] Connection refused": 3,
+    "NetworkCheckError: timed out": 302,
+    "ProtocolError: FakeTLS server random HMAC mismatch": 10,
+    "ProtocolError: connection closed while reading 4 bytes, got 0": 3,
+    "ProtocolError: connection closed while reading 5 bytes, got 0": 1,
+    "UNSTABLE": 6,
+    "UNSUPPORTED_SECRET": 5
   },
   "fastest": 20,
   "healthy_run": true,
-  "last_successful_set": "2026-09-03T01:31:04Z",
+  "last_successful_set": "2026-09-03T12:07:01Z",
   "production": {
     "fastest": 20,
     "stable": 34,
-    "working": 40
+    "working": 43
   },
   "project": "Swift",
   "selected": {
     "backup": {
-      "median_rtt_ms": 213.1,
-      "score": 99.21,
-      "url": "https://t.me/proxy?server=mkima.davay.click&port=443&secret=ee39300be14c4d54704c92416d555fa7026d6b696d612e64617661792e636c69636b"
+      "median_rtt_ms": 162.4,
+      "score": 99.68,
+      "url": "https://t.me/proxy?server=31.128.46.8&port=443&secret=eedddddddddddddddddddddddddddddddd6d2e6265626f6f2e7275"
     },
     "fastest": {
-      "median_rtt_ms": 217.1,
-      "score": 81.36,
-      "url": "https://t.me/proxy?server=media5.happtg.org&port=443&secret=ee2c46ee89b4f2c79c1d8325d13091e580706574726f766963682e7275"
+      "median_rtt_ms": 229.5,
+      "score": 96.73,
+      "url": "https://t.me/proxy?server=72.56.25.212&port=443&secret=ee7d026761b388c46302df84b4b812aef0706574726f766963682e7275"
     },
     "stable": {
-      "median_rtt_ms": 174.2,
-      "score": 99.59,
-      "url": "https://t.me/proxy?server=31.128.46.8&port=443&secret=eedddddddddddddddddddddddddddddddd6d2e6265626f6f2e7275"
+      "median_rtt_ms": 486.3,
+      "score": 91.5,
+      "url": "https://t.me/proxy?server=api.lovely.lat&port=443&secret=ee499cbaa63a17e5071d5babf1ccba89f36d2e6265626f6f2e7275"
     }
   },
   "sources": {
     "argh94": {
-      "fetched": 235,
+      "fetched": 249,
       "status": "OK",
-      "unique": 225,
-      "working": 24
+      "unique": 239,
+      "working": 25
     },
     "klondike": {
-      "fetched": 238,
+      "fetched": 244,
       "status": "OK",
-      "unique": 232,
-      "working": 9
+      "unique": 239,
+      "working": 6
     },
     "shablin": {
-      "fetched": 299,
+      "fetched": 282,
       "status": "OK",
-      "unique": 295,
-      "working": 21
+      "unique": 278,
+      "working": 19
     },
     "solispirit": {
-      "fetched": 254,
+      "fetched": 251,
       "status": "OK",
-      "unique": 247,
-      "working": 9
+      "unique": 246,
+      "working": 11
     }
   },
   "stable": 34,
   "suspicious_streak": 0,
   "tagline": "Filter the garbage. Keep what works.",
-  "tested": 385,
-  "updated_at": "2026-09-03T01:31:04Z",
-  "working": 40
+  "tested": 386,
+  "updated_at": "2026-09-03T12:07:01Z",
+  "working": 43
 }
