@@ -1213,9 +1213,18 @@ async def run_generation(root: Path, core: str) -> int:
         )
 
     ranked = sorted(passed, key=lambda result: (-math.floor(score(result)), result["fingerprint"]))
-    ranked_items: list[RankedConfig] = []
+    from .output import extract_country_from_remark
+
     for result in ranked:
-        config = parse_uri(candidate_map[result["fingerprint"]]["uri"])
+        raw_uri = candidate_map[result["fingerprint"]]["uri"]
+        config = parse_uri(raw_uri)
+        fragment = urllib.parse.unquote(raw_uri.split("#")[-1]) if "#" in raw_uri else ""
+        geo_country = result.get("services", {}).get("geo", {}).get("country")
+        country = (
+            geo_country
+            if (geo_country and len(geo_country) == 2 and geo_country.isalpha())
+            else extract_country_from_remark(fragment)
+        )
         test_result = TestResult(
             config.fingerprint,
             "main",
@@ -1227,7 +1236,7 @@ async def run_generation(root: Path, core: str) -> int:
             p95_latency_ms=result["latency"]["p95_ms"],
             jitter_ms=result["latency"]["jitter_ms"],
             throughput_bps=min(result["r1"]["speed_kbps"], result["r2"]["speed_kbps"]) * 1024,
-            country=result.get("services", {}).get("geo", {}).get("country"),
+            country=country,
             asn=result.get("services", {}).get("geo", {}).get("asn"),
             provider=result.get("services", {}).get("geo", {}).get("provider"),
         )

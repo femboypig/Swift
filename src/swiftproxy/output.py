@@ -15,6 +15,24 @@ HAPP_PROTOCOLS = {"vless", "vmess", "trojan", "ss", "hysteria2"}
 PIPELINE_VERSION = 4
 
 
+import re
+import urllib.parse
+
+
+def extract_country_from_remark(remark: str | None) -> str | None:
+    if not remark:
+        return None
+    for match in re.finditer(r"[\U0001F1E6-\U0001F1FF]{2}", remark):
+        chars = match.group(0)
+        c = "".join(chr(ord(ch) - 127397) for ch in chars)
+        if len(c) == 2 and c.isalpha():
+            return c.upper()
+    for word in re.findall(r"\b[A-Z]{2}\b", remark):
+        if word not in ("VL", "VM", "TR", "SS", "HY", "BL", "OK", "TG", "IP", "BS"):
+            return word
+    return None
+
+
 def display_name(
     result: TestResult,
     index: int,
@@ -22,7 +40,7 @@ def display_name(
 ) -> str:
     country = (result.country or "??").upper()
     flag = "🏴‍☠️"
-    if len(country) == 2 and country.isalpha():
+    if len(country) == 2 and country.isalpha() and country != "??":
         flag = "".join(chr(ord(character) + 127397) for character in country)
     return f"{flag} {country} · {prefix}{index:03d}"
 
