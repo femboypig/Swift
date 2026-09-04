@@ -69,6 +69,7 @@ jobs:
       publishable: ${{ steps.ru_result.outputs.publishable }}
     env:
       SWIFT_BIND_INTERFACE: wlan0
+      SWIFT_DIRECT_SOCKS: 127.0.0.1:3065
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - name: Download exact generation

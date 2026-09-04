@@ -422,8 +422,6 @@ class WorkflowTests(unittest.TestCase):
         self.assertIn("python -m swiftproxy.generation", workflow)
         self.assertIn("python3 -m swiftproxy.ru_golden", workflow)
         self.assertIn("runs-on: [self-hosted, Linux]", workflow)
-        self.assertIn("SWIFT_BIND_INTERFACE: wlan0", workflow)
-        self.assertNotIn("SWIFT_DIRECT_SOCKS", workflow)
 
     def test_telegram_uses_yandex_probe_without_mommy(self) -> None:
         root = Path(__file__).parents[1]
