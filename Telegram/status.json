@@ -1,43 +1,43 @@
 {
   "control_ok": true,
   "failure_reasons": {
-    "DUPLICATE": 704,
-    "MALFORMED_SECRET": 5,
-    "NetworkCheckError: [Errno -2] Name or service not known": 18,
-    "NetworkCheckError: [Errno -5] No address associated with hostnam": 2,
-    "NetworkCheckError: [Errno 104] Connection reset by peer": 4,
+    "DUPLICATE": 750,
+    "MALFORMED_SECRET": 4,
+    "NetworkCheckError: [Errno -2] Name or service not known": 19,
+    "NetworkCheckError: [Errno -5] No address associated with hostnam": 3,
+    "NetworkCheckError: [Errno 104] Connection reset by peer": 14,
     "NetworkCheckError: [Errno 111] Connection refused": 1,
-    "NetworkCheckError: timed out": 314,
+    "NetworkCheckError: timed out": 323,
     "ProtocolError: FakeTLS server random HMAC mismatch": 5,
     "ProtocolError: bad FakeTLS server dummy ChangeCipherSpec": 1,
-    "ProtocolError: connection closed while reading 4 bytes, got 0": 3,
-    "ProtocolError: expected FakeTLS ServerHello, got record 0x15": 2,
-    "UNSTABLE": 17,
+    "ProtocolError: connection closed while reading 5 bytes, got 0": 2,
+    "ProtocolError: expected FakeTLS ServerHello, got record 0x15": 1,
+    "UNSTABLE": 4,
     "UNSUPPORTED_SECRET": 4
   },
   "fastest": 20,
   "healthy_run": true,
-  "last_successful_set": "2026-09-04T21:03:54Z",
+  "last_successful_set": "2026-09-04T23:23:01Z",
   "production": {
     "fastest": 20,
-    "stable": 50,
-    "working": 73
+    "stable": 41,
+    "working": 30
   },
   "project": "Swift",
   "selected": {
     "backup": {
-      "median_rtt_ms": 339.5,
-      "score": 93.0,
-      "url": "https://t.me/proxy?server=anchor.lovely.lat&port=443&secret=eeaadd88aa9facd454936d0c42dc128e77616e63686f722e6c6f76656c792e6c6174"
+      "median_rtt_ms": 228.6,
+      "score": 90.93,
+      "url": "https://t.me/proxy?server=s4.assetflux.org&port=443&secret=eed9cf709eb48bb5a37471fba84864bd7e766b2e7275"
     },
     "fastest": {
-      "median_rtt_ms": 206.2,
-      "score": 83.48,
-      "url": "https://t.me/proxy?server=as.mkim.click&port=443&secret=ee2dfa3526fc70b7abd7a09eade6ccea1f61732e6d6b696d2e636c69636b"
+      "median_rtt_ms": 153.9,
+      "score": 99.74,
+      "url": "https://t.me/proxy?server=31.128.46.8&port=443&secret=eedddddddddddddddddddddddddddddddd6d2e6265626f6f2e7275"
     },
     "stable": {
-      "median_rtt_ms": 227.9,
-      "score": 97.99,
+      "median_rtt_ms": 233.0,
+      "score": 98.08,
       "url": "https://t.me/proxy?server=72.56.25.212&port=443&secret=ee7d026761b388c46302df84b4b812aef0706574726f766963682e7275"
     }
   },
@@ -46,31 +46,31 @@
       "fetched": 245,
       "status": "OK",
       "unique": 239,
-      "working": 44
+      "working": 9
     },
     "klondike": {
       "fetched": 250,
       "status": "OK",
       "unique": 246,
-      "working": 38
+      "working": 5
     },
     "shablin": {
-      "fetched": 294,
+      "fetched": 298,
       "status": "OK",
-      "unique": 290,
-      "working": 46
+      "unique": 292,
+      "working": 10
     },
     "solispirit": {
       "fetched": 253,
       "status": "OK",
       "unique": 246,
-      "working": 29
+      "working": 1
     }
   },
-  "stable": 50,
+  "stable": 41,
   "suspicious_streak": 0,
   "tagline": "Filter the garbage. Keep what works.",
-  "tested": 423,
-  "updated_at": "2026-09-04T21:03:54Z",
-  "working": 73
+  "tested": 399,
+  "updated_at": "2026-09-04T23:23:01Z",
+  "working": 30
 }
