@@ -37,7 +37,7 @@ def _b64decode(value: str) -> bytes:
 
 
 def _clean_text(value: str, limit: int = 1024) -> str:
-    value = unquote(value).strip()
+    value = value.strip()
     if CONTROL_RE.search(value) or len(value) > limit:
         raise ValueError("control character or oversized value")
     return value
@@ -410,7 +410,7 @@ def parse_tuic(uri: str) -> ProxyConfig:
 
 
 def _fragment(parts: Any) -> str:
-    return _clean_text(parts.fragment, 256) if parts.fragment else ""
+    return _clean_text(unquote(parts.fragment), 256) if parts.fragment else ""
 
 
 def parse_uri(uri: str) -> ProxyConfig:

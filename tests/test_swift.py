@@ -98,6 +98,15 @@ class ParsingTests(unittest.TestCase):
         self.assertEqual(config.options["spider_x"], "/")
         self.assertEqual(config.fingerprint, parse_uri(serialize_uri(config)).fingerprint)
 
+    def test_query_values_are_decoded_once_and_round_trip(self) -> None:
+        uri = (
+            f"vless://{UUID_A}@{PUBLIC_V4}:443?encryption=none&type=ws&security=tls"
+            "&sni=example.com&host=example.com&path=%2Ftoken%25253D"
+        )
+        config = parse_uri(uri)
+        self.assertEqual(config.options["path"], "/token%253D")
+        self.assertEqual(config.fingerprint, parse_uri(serialize_uri(config)).fingerprint)
+
     def test_parameter_order_and_remark_do_not_change_fingerprint(self) -> None:
         first = parse_uri(vless_uri(remark="one"))
         second = parse_uri(
