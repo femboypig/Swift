@@ -20,7 +20,7 @@ from dataclasses import dataclass
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
-from urllib.parse import urlsplit
+from urllib.parse import unquote, urlsplit
 
 from .generation import read_jsonl
 from .models import ProxyConfig, RankedConfig, TestResult
@@ -866,10 +866,12 @@ async def run_generation(root: Path, core: str) -> int:
 
     async def verify(item: dict[str, Any], retry: bool = False) -> dict[str, Any]:
         config = parse_uri(item["uri"])
+        if config.fingerprint != item["fingerprint"]:
+            raise ValueError("candidate fingerprint does not match its serialized config")
         record: dict[str, Any] = {
             "schema_version": RESULT_SCHEMA_VERSION,
             "generation_id": manifest["generation_id"],
-            "fingerprint": config.fingerprint,
+            "fingerprint": item["fingerprint"],
             "protocol": config.protocol,
             "sources": item["sources"],
             "candidate_sources": item["candidate_sources"],
@@ -1215,10 +1217,11 @@ async def run_generation(root: Path, core: str) -> int:
     ranked = sorted(passed, key=lambda result: (-math.floor(score(result)), result["fingerprint"]))
     from .output import extract_country_from_remark
 
+    ranked_items: list[RankedConfig] = []
     for result in ranked:
         raw_uri = candidate_map[result["fingerprint"]]["uri"]
         config = parse_uri(raw_uri)
-        fragment = urllib.parse.unquote(raw_uri.split("#")[-1]) if "#" in raw_uri else ""
+        fragment = unquote(raw_uri.split("#")[-1]) if "#" in raw_uri else ""
         geo_country = result.get("services", {}).get("geo", {}).get("country")
         country = (
             geo_country

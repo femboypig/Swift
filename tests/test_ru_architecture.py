@@ -135,6 +135,40 @@ class GoldenHttpsTests(unittest.TestCase):
             self.assertEqual(result["state"], "HELD")
             self.assertFalse(result["complete"])
 
+    @patch("swiftproxy.ru_golden._wait_for_healthy_path", new_callable=AsyncMock)
+    def test_complete_generation_reaches_finalization(self, health_check) -> None:
+        health_check.return_value = (self.path_health(True), [{"healthy": True}])
+        with tempfile.TemporaryDirectory() as raw:
+            root = Path(raw)
+            generation = root / "data/ru-generation"
+            generation.mkdir(parents=True)
+            (generation / "manifest.json").write_text(
+                json.dumps(
+                    {
+                        "schema_version": 1,
+                        "generation_id": "complete",
+                        "head_sha": "head",
+                        "collection_updated_at": "2026-09-04T00:00:00Z",
+                        "ru_expected": 0,
+                        "main_membership": 0,
+                        "white_membership": 0,
+                        "shared_membership": 0,
+                    }
+                )
+            )
+            (generation / "candidates.jsonl").write_text("")
+            (generation / "white-evidence.json").write_text("{}")
+            shutil.copy(Path(__file__).parents[1] / "config.toml", root / "config.toml")
+
+            with patch.dict("os.environ", {"SWIFT_BIND_INTERFACE": "wlan0"}):
+                code = asyncio.run(run_generation(root, "sing-box"))
+
+            self.assertEqual(code, 0)
+            result = json.loads((root / "data/ru-publication/result-manifest.json").read_text())
+            self.assertEqual(result["state"], "RU_COMPLETE")
+            self.assertTrue(result["complete"])
+            self.assertEqual((root / "data/ru-publication/output/sub/main.txt").read_text(), "")
+
     def test_queue_wait_does_not_consume_candidate_timeout(self) -> None:
         async def scenario() -> dict:
             admission = asyncio.Semaphore(1)

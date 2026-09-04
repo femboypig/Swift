@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 import os
+import re
 import tempfile
 from collections import Counter
 from pathlib import Path
@@ -13,10 +14,6 @@ from .parsing import SUPPORTED_PROXY_SCHEMES, parse_uri, serialize_uri
 
 HAPP_PROTOCOLS = {"vless", "vmess", "trojan", "ss", "hysteria2"}
 PIPELINE_VERSION = 4
-
-
-import re
-import urllib.parse
 
 
 def extract_country_from_remark(remark: str | None) -> str | None:
