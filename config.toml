@@ -290,6 +290,18 @@ url = "https://raw.githubusercontent.com/whoahaow/rjsxrd/main/githubmirror/bypas
 lanes = ["main", "white"]
 
 [[sources]]
+id = "etoneya-white"
+name = "EtoNeYa"
+url = "https://etoneya.su/whitelist"
+lanes = ["main", "white"]
+
+[[sources]]
+id = "hardvpn-white-good"
+name = "HardVPN"
+url = "https://raw.githubusercontent.com/ksenkovsolo/HardVPN-bypass-WhiteLists-/main/vpn-lte/good_keys.txt"
+lanes = ["main", "white"]
+
+[[sources]]
 id = "mifa-world"
 name = "mifa.world"
 url = "https://mifa.world/"

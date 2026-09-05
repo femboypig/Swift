@@ -184,6 +184,9 @@ The default config uses:
   configs for Main;
 - [VovaplusEXP/Secure-configs](https://github.com/VovaplusEXP/Secure-configs), using secure VLESS feeds for Main;
 - [FLEXIY0/matryoshka](https://github.com/FLEXIY0/matryoshka), using whitelist configs for Main and White;
+- [EtoNeYa](https://etoneya.su/whitelist), using its actively maintained whitelist feed;
+- [HardVPN](https://github.com/ksenkovsolo/HardVPN-bypass-WhiteLists-), using only its small
+  post-check `good_keys` feed;
 - [AirLinkVPN](https://github.com/AirLinkVPN1/AirLinkVPN),
   [bywarm/rser](https://gitverse.ru/bywarm/rser),
   [AetrisVPN](https://github.com/flaafix/AetrisVPN-white-list-lite),
