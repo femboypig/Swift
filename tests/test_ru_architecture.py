@@ -15,7 +15,16 @@ from swiftproxy.models import ProxyConfig
 from swiftproxy.output import check_outputs, happ_subscription, plain_subscription
 from swiftproxy.parsing import parse_uri, serialize_uri
 from swiftproxy.publication import PublicationError, publish, validate_publication
-from swiftproxy.ru_golden import _http_probe, _https_session, endpoint_sanity, resolve_ru
+from swiftproxy.ru_golden import (
+    _apply_freshness,
+    _freshness_check,
+    _http_probe,
+    _https_session,
+    _white_publishable,
+    endpoint_sanity,
+    resolve_ru,
+    ru_quality_score,
+)
 from swiftproxy.ru_golden import DOWNLOAD_BYTES, MIN_THROUGHPUT_KBPS
 from swiftproxy.ru_golden import (
     DownloadGovernor,
@@ -241,6 +250,49 @@ class GoldenHttpsTests(unittest.TestCase):
             download_failure_reason({"success": True, "category": None, "speed_kbps": 64.0}, "R2")
         )
 
+    @patch("swiftproxy.ru_golden._https_session", new_callable=AsyncMock)
+    def test_freshness_requires_two_distinct_targets(self, session) -> None:
+        session.return_value = (
+            [
+                {"target": "one", "success": True},
+                {"target": "two", "success": False},
+                {"target": "three", "success": False},
+            ],
+            {"success": True},
+        )
+        result = asyncio.run(_freshness_check(parse_uri(uri()), "core"))
+        self.assertFalse(result["passed"])
+        self.assertEqual(result["distinct_successes"], 1)
+
+    def test_ru_score_does_not_treat_one_observation_as_perfect_history(self) -> None:
+        result = {
+            "latency": {"median_ms": 500},
+            "r1": {"speed_kbps": 200},
+            "r2": {"speed_kbps": 200},
+        }
+        new_score = ru_quality_score(result, [{"passed": True}])
+        stable_score = ru_quality_score(result, [{"passed": True}] * 3)
+        self.assertGreater(stable_score, new_score)
+
+    def test_failed_freshness_revokes_provisional_pass(self) -> None:
+        result = {
+            "final": {
+                "terminal_state": "PASS",
+                "reason": "PASS",
+                "passed": True,
+                "accounted_for": True,
+            }
+        }
+        _apply_freshness(result, {"passed": False, "attempts": []})
+        self.assertEqual(result["final"]["reason"], "FRESHNESS_FAILED")
+        self.assertFalse(result["final"]["passed"])
+        self.assertTrue(result["final"]["accounted_for"])
+
+    def test_upstream_label_alone_is_not_white_evidence(self) -> None:
+        self.assertFalse(_white_publishable({"upstream_label": True, "evidence": None}))
+        self.assertFalse(_white_publishable({"upstream_label": True, "evidence": "sni"}))
+        self.assertTrue(_white_publishable({"upstream_label": False, "evidence": "cidr"}))
+
     @patch("swiftproxy.ru_golden._direct_control", new_callable=AsyncMock)
     def test_local_congestion_is_an_infrastructure_signal(self, control) -> None:
         control.return_value = {"success": True, "latency_ms": 3000, "path_mode": "test"}
@@ -354,6 +406,17 @@ class PublicationContractTests(unittest.TestCase):
             root = Path(raw)
             self._tree(root)
             validate_publication(root, "head")
+
+    def test_white_requires_selected_endpoint_cidr_evidence(self) -> None:
+        for evidence in (None, "sni"):
+            with self.subTest(evidence=evidence), tempfile.TemporaryDirectory() as raw:
+                root = Path(raw)
+                _, results = self._tree(root)
+                results[0]["white"] = {"upstream_label": True, "evidence": evidence}
+                result_path = root / "data/ru-publication/ru-results.jsonl"
+                result_path.write_text("".join(json.dumps(item) + "\n" for item in results))
+                with self.assertRaises(PublicationError):
+                    validate_publication(root, "head")
 
     def test_publication_applies_required_stats_branding(self) -> None:
         with tempfile.TemporaryDirectory() as raw:

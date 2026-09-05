@@ -522,6 +522,17 @@ class WhiteEvidenceTests(unittest.TestCase):
         self.assertEqual(evidence.cidr_source, "mirror")
         self.assertEqual(results[0].error, "INVALID_CIDR_FEED")
 
+    def test_valid_evidence_feeds_are_merged(self) -> None:
+        first = SourceSpec("first", "first", "https://example.com/first", set(), "white-cidr")
+        second = SourceSpec("second", "second", "https://example.com/second", set(), "white-cidr")
+        second_feed = "\n".join(f"46.20.{index}.0/24" for index in range(100))
+        evidence = build_evidence(
+            [SourceResult(first, self.cidr_feed()), SourceResult(second, second_feed)]
+        )
+        self.assertEqual(evidence.cidr_sources, ("first", "second"))
+        self.assertTrue(evidence.contains("93.184.216.1"))
+        self.assertTrue(evidence.contains("46.20.50.1"))
+
     def test_domain_match_does_not_accept_lookalike_suffixes(self) -> None:
         cidr = SourceSpec("cidr", "cidr", "https://example.com/cidr", set(), "white-cidr")
         domains = SourceSpec(

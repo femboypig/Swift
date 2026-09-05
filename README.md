@@ -20,11 +20,11 @@ The normal list. It contains at most 80 configs.
 
 ### White
 
-Configs intended for the Russian whitelist/restricted-network case. Swift records community CIDR,
-TLS SNI, and upstream White labels as evidence. CIDR matching uses the endpoint actually selected
-by RU resolution. Every candidate still has to carry real proxy traffic and pass the same Russian
-sustained verifier. Evidence is not proof that a config will work during a real whitelist-only
-shutdown.
+Configs intended for the Russian whitelist/restricted-network case. Publication requires the IP
+actually selected by RU resolution to be present in a current community CIDR feed. TLS SNI and
+upstream White labels are retained as telemetry, but aren't enough on their own. Every candidate
+still has to carry real proxy traffic and pass the same Russian sustained verifier. This is stronger
+evidence, not proof that a config will work during a real whitelist-only shutdown.
 
 `https://sub.femboypig.ru/white.txt`
 
@@ -100,7 +100,7 @@ config is worse than an honest rejection.
 
 ## What the test does
 
-The Actions workflow runs this pipeline every 30 minutes:
+The Actions workflow is scheduled every four hours and runs this pipeline:
 
 1. Fetch each source independently.
 2. Extract supported URIs, validate them, and calculate canonical fingerprints.
@@ -115,9 +115,11 @@ The Actions workflow runs this pipeline every 30 minutes:
 8. Start sing-box and require acceptable HTTP responses from two distinct neutral HTTPS targets.
    Repeat that rule in a fresh core session for stability.
 9. Complete two 256 KiB downloads. Both must avoid stalls and sustain at least 64 KiB/s.
-10. Account for every expected fingerprint. Missing, duplicate, unknown, cancelled, or deferred
+10. Near publication, recheck every provisional PASS through a fresh sing-box session and two
+    distinct HTTPS targets. This keeps an early result from sitting stale for most of a long run.
+11. Account for every expected fingerprint. Missing, duplicate, unknown, cancelled, or deferred
     work makes the generation incomplete.
-11. Build proposed Main, White, All, and Happ files on the RU runner. A GitHub job independently
+12. Build proposed Main, White, All, and Happ files on the RU runner. A GitHub job independently
     checks the generation identity, accounting, RU PASS population, caps, and syntax before one
     complete generation is committed.
 
@@ -205,8 +207,9 @@ White endpoint evidence comes from
 Its CIDR file is built from addresses observed as reachable during restrictions across different
 operators and regions. The actively maintained
 [artembsk mirror](https://github.com/artembsk/russia-mobile-internet-whitelist) and
-[escapingworm/russia-whitelist](https://github.com/escapingworm/russia-whitelist) are fetched as
-fallbacks. Swift uses the CIDR feed rather than treating each entry in `ipwhitelist.txt` as an
+[escapingworm/russia-whitelist](https://github.com/escapingworm/russia-whitelist) are merged when
+their feeds pass validation. Swift uses CIDR feeds rather than treating each entry in
+`ipwhitelist.txt` as an
 exact `/32`: that file intentionally contains one sampled address per `/24`.
 
 Adding a plain/Base64 URI source is one `[[sources]]` entry in `config.toml`. A failed upstream
@@ -252,14 +255,14 @@ The same applies to MTProto RTT in `Telegram/fastest.txt`.
 The White lane is independent, but the RU runner is not placed in a forced carrier whitelist mode.
 Public lists combine observations from different operators, regions, towers,
 and dates. Some operators check only SNI, some check IP and SNI together, and a total shutdown may
-pass almost nothing. In Swift, White means the endpoint currently matches a published whitelist
-CIDR or uses an allowed visible SNI, and the config carried ordinary proxy traffic through
-sing-box and passed Russian live sustained verification. None of these checks proves that a config works
+pass almost nothing. In Swift, White means the RU-selected endpoint currently matches a published
+whitelist CIDR, and the config carried ordinary proxy traffic through sing-box and passed Russian
+live sustained verification. None of these checks proves that a config works
 during a shutdown for your SIM. That requires a probe from the affected carrier and region.
 
-An address or SNI missing from the community lists is not necessarily blocked; the data is
-incomplete. An explicit upstream White label remains evidence, but never replaces the RU traffic
-test and is not proof of whitelist-mode connectivity.
+An address missing from the community lists is not necessarily blocked; the data is incomplete.
+SNI matches and explicit upstream White labels remain telemetry, but they no longer make a config
+publishable in White and are not proof of whitelist-mode connectivity.
 
 ## License
 

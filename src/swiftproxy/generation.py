@@ -166,6 +166,8 @@ async def collect_generation(root: Path, config_path: Path) -> dict[str, Any]:
             "domains": sorted(evidence.domains),
             "cidr_source": evidence.cidr_source,
             "domain_source": evidence.domain_source,
+            "cidr_sources": list(evidence.cidr_sources),
+            "domain_sources": list(evidence.domain_sources),
         },
         compact=True,
     )

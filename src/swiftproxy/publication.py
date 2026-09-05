@@ -81,13 +81,10 @@ def validate_publication(root: Path, expected_head: str | None = None) -> dict[s
         raise PublicationError("Main contains a non-Main candidate")
     if any(
         "white" not in candidate_by_fp[fp]["lanes"]
-        or not (
-            result_by_fp[fp].get("white", {}).get("evidence")
-            or result_by_fp[fp].get("white", {}).get("upstream_label")
-        )
+        or result_by_fp[fp].get("white", {}).get("evidence") not in {"cidr", "cidr+sni"}
         for fp in sets["white"]
     ):
-        raise PublicationError("White lacks lane membership or RU endpoint evidence")
+        raise PublicationError("White lacks lane membership or RU-selected CIDR evidence")
     limits = tomllib.loads((root / "config.toml").read_text())["limits"]
     if len(sets["main"]) > int(limits["main"]) or len(sets["white"]) > int(limits["white"]):
         raise PublicationError("publication cap exceeded")

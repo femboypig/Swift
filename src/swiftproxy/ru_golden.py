@@ -664,6 +664,54 @@ def download_failure_reason(
     return None
 
 
+def ru_quality_score(result: dict[str, Any], observations: list[dict[str, Any]]) -> float:
+    passes = sum(bool(item.get("passed")) for item in observations)
+    availability = (passes + 1) / (len(observations) + 2)
+    consecutive_passes = 0
+    for item in reversed(observations):
+        if not item.get("passed"):
+            break
+        consecutive_passes += 1
+    latency = float(result.get("latency", {}).get("median_ms") or 2000)
+    speed = min(float(result["r1"]["speed_kbps"]), float(result["r2"]["speed_kbps"]))
+    return round(
+        50 * availability
+        + 5 * min(1.0, len(observations) / 3)
+        + 5 * min(1.0, consecutive_passes / 2)
+        + 15 * max(0.0, 1 - latency / 2000)
+        + 20 * min(1.0, speed / 512)
+        + 5,
+        2,
+    )
+
+
+async def _freshness_check(config: ProxyConfig, core: str) -> dict[str, Any]:
+    attempts, core_start = await _https_session(config, core, 3, 2)
+    successes = {attempt["target"] for attempt in attempts if attempt["success"]}
+    return {
+        "attempts": attempts,
+        "core": core_start,
+        "distinct_successes": len(successes),
+        "passed": len(successes) >= 2,
+    }
+
+
+def _white_publishable(result: dict[str, Any]) -> bool:
+    return result.get("evidence") in {"cidr", "cidr+sni"}
+
+
+def _apply_freshness(result: dict[str, Any], freshness: dict[str, Any]) -> None:
+    result["freshness"] = freshness
+    if freshness["passed"]:
+        return
+    result["final"] = {
+        "terminal_state": "FAIL",
+        "reason": "FRESHNESS_FAILED",
+        "passed": False,
+        "accounted_for": True,
+    }
+
+
 async def _run_admitted(
     admission: asyncio.Semaphore,
     operation: Callable[[], Awaitable[dict[str, Any]]],
@@ -1115,6 +1163,51 @@ async def run_generation(root: Path, core: str) -> int:
         else:
             retry_map = {result["fingerprint"]: result for result in retry_results}
             results = [retry_map.get(result["fingerprint"], result) for result in results]
+
+    candidate_by_fingerprint = {item["fingerprint"]: item for item in candidates}
+    freshness_candidates = [result for result in results if result["final"]["passed"]]
+    if complete and freshness_candidates:
+        health, checks = await _wait_for_healthy_path(
+            interface,
+            core,
+            float(ru["preflight_timeout"]),
+            recovery_attempts,
+            recovery_delay,
+            recovery_confirmations,
+            "freshness",
+        )
+        running_path_checks.extend(checks)
+        if not health.healthy:
+            complete = False
+            run_failure = "RU_PATH_UNHEALTHY"
+        else:
+
+            async def revalidate(result: dict[str, Any]) -> None:
+                item = candidate_by_fingerprint[result["fingerprint"]]
+                config = parse_uri(item["uri"])
+                config.resolved_ip = result["resolution"]["selected_ip"]
+                async with stability_stage.slot():
+                    freshness = await _freshness_check(config, core)
+                _apply_freshness(result, freshness)
+
+            freshness_tasks = [
+                asyncio.create_task(revalidate(result)) for result in freshness_candidates
+            ]
+            try:
+                async with asyncio.timeout(max(0.0, deadline_at - time.monotonic())):
+                    await asyncio.gather(*freshness_tasks)
+            except TimeoutError:
+                complete = False
+                run_failure = "RUN_DEADLINE"
+                for task in freshness_tasks:
+                    task.cancel()
+                await asyncio.gather(*freshness_tasks, return_exceptions=True)
+            except BaseException as exc:
+                complete = False
+                run_failure = type(exc).__name__.upper()
+                for task in freshness_tasks:
+                    task.cancel()
+                await asyncio.gather(*freshness_tasks, return_exceptions=True)
     deferred = [
         result
         for result in results
@@ -1141,6 +1234,9 @@ async def run_generation(root: Path, core: str) -> int:
     for result in results:
         reason = str(result.get("final", {}).get("reason", "INCOMPLETE"))
         terminal_counts[reason] = terminal_counts.get(reason, 0) + 1
+    freshness_passed = sum(
+        bool(result.get("freshness", {}).get("passed")) for result in freshness_candidates
+    )
 
     write_jsonl(
         publication / "ru-results.jsonl", sorted(results, key=lambda item: item["fingerprint"])
@@ -1163,6 +1259,11 @@ async def run_generation(root: Path, core: str) -> int:
                     "running": running_path_checks,
                 },
                 "terminal_counts": dict(sorted(terminal_counts.items())),
+                "freshness": {
+                    "expected": len(freshness_candidates),
+                    "passed": freshness_passed,
+                    "failed": len(freshness_candidates) - freshness_passed,
+                },
             },
         )
         return HELD_EXIT_CODE if run_failure == "RU_PATH_UNHEALTHY" else 1
@@ -1205,14 +1306,7 @@ async def run_generation(root: Path, core: str) -> int:
     passed = [result for result in results if result["final"]["passed"]]
 
     def score(result: dict[str, Any]) -> float:
-        obs = configs_history[result["fingerprint"]]["observations"]
-        availability = sum(item["passed"] for item in obs) / len(obs)
-        latency = float(result.get("latency", {}).get("median_ms") or 2000)
-        speed = min(float(result["r1"]["speed_kbps"]), float(result["r2"]["speed_kbps"]))
-        return round(
-            55 * availability + 15 * max(0.0, 1 - latency / 2000) + 20 * min(1.0, speed / 512) + 10,
-            2,
-        )
+        return ru_quality_score(result, configs_history[result["fingerprint"]]["observations"])
 
     ranked = sorted(passed, key=lambda result: (-math.floor(score(result)), result["fingerprint"]))
     from .output import extract_country_from_remark
@@ -1258,7 +1352,7 @@ async def run_generation(root: Path, core: str) -> int:
                 result for result in results if result["fingerprint"] == item.config.fingerprint
             ).get("white", {})
         )
-        and (white.get("evidence") or white.get("upstream_label"))
+        and _white_publishable(white)
     ]
     main = diverse_selection(
         main_pool,
@@ -1324,6 +1418,20 @@ async def run_generation(root: Path, core: str) -> int:
         ),
         "median_latency_ms": (round(statistics.median(latencies), 2) if latencies else None),
         "failure_reasons": dict(sorted(terminal_counts.items())),
+        "freshness": {
+            "expected": len(freshness_candidates),
+            "passed": freshness_passed,
+            "failed": len(freshness_candidates) - freshness_passed,
+        },
+        "white_evidence": dict(
+            sorted(
+                Counter(
+                    result.get("white", {}).get("evidence") or "upstream-only"
+                    for result in passed
+                    if "white" in candidate_map[result["fingerprint"]]["lanes"]
+                ).items()
+            )
+        ),
         "funnel": {
             "ru_expected": len(candidates),
             "ru_accounted": len(results),
@@ -1381,10 +1489,16 @@ async def run_generation(root: Path, core: str) -> int:
             "postflight_core": postflight_core,
             "path_checks": {
                 "preflight": preflight_checks,
+                "running": running_path_checks,
                 "postflight": postflight_checks,
             },
             "performance": performance,
             "terminal_counts": dict(sorted(terminal_counts.items())),
+            "freshness": {
+                "expected": len(freshness_candidates),
+                "passed": freshness_passed,
+                "failed": len(freshness_candidates) - freshness_passed,
+            },
         },
     )
     return 0 if complete else HELD_EXIT_CODE

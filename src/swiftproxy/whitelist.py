@@ -22,6 +22,8 @@ class WhiteEvidence:
     domains: frozenset[str]
     cidr_source: str
     domain_source: str | None
+    cidr_sources: tuple[str, ...] = ()
+    domain_sources: tuple[str, ...] = ()
 
     def contains(self, value: str) -> bool:
         try:
@@ -60,23 +62,25 @@ def evidence_specs(config: dict[str, Any]) -> list[SourceSpec]:
 
 
 def build_evidence(results: list[SourceResult]) -> WhiteEvidence:
-    cidr_source = None
-    networks: tuple[ipaddress.IPv4Network, ...] = ()
+    cidr_sources: list[str] = []
+    network_sets: list[ipaddress.IPv4Network] = []
     for result in results:
         if result.source.content_type != "white-cidr" or result.error or not result.content.strip():
             continue
         try:
-            networks = _networks(result.content)
+            network_sets.extend(_networks(result.content))
         except ValueError:
             result.error = "INVALID_CIDR_FEED"
             continue
-        cidr_source = result.source.source_id
-        break
-    if cidr_source is None:
+        cidr_sources.append(result.source.source_id)
+    if not cidr_sources:
+        raise ValueError("WHITE_EVIDENCE_FAILED")
+    networks = tuple(ipaddress.collapse_addresses(network_sets))
+    if sum(network.num_addresses for network in networks) / 2**32 > 0.05:
         raise ValueError("WHITE_EVIDENCE_FAILED")
 
-    domains: frozenset[str] = frozenset()
-    domain_source = None
+    domains_set: set[str] = set()
+    domain_sources: list[str] = []
     for result in results:
         if (
             result.source.content_type != "white-domains"
@@ -90,16 +94,18 @@ def build_evidence(results: list[SourceResult]) -> WhiteEvidence:
         if len(parsed) < 50:
             result.error = "INVALID_DOMAIN_FEED"
             continue
-        domains = parsed
-        domain_source = result.source.source_id
-        break
+        domains_set.update(parsed)
+        domain_sources.append(result.source.source_id)
+    domains = frozenset(domains_set)
 
     return WhiteEvidence(
         networks=networks,
         starts=tuple(int(network.network_address) for network in networks),
         domains=domains,
-        cidr_source=cidr_source,
-        domain_source=domain_source,
+        cidr_source=cidr_sources[0],
+        domain_source=domain_sources[0] if domain_sources else None,
+        cidr_sources=tuple(cidr_sources),
+        domain_sources=tuple(domain_sources),
     )
 
 
