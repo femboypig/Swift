@@ -290,10 +290,20 @@ class GoldenHttpsTests(unittest.TestCase):
         self.assertTrue(result["final"]["accounted_for"])
 
     def test_path_correlated_population_collapse_holds_publication(self) -> None:
-        unstable = [{"healthy": True}, {"healthy": False}, {"healthy": True}]
-        self.assertTrue(_hold_population_collapse(292, 2, unstable))
+        unstable_finalization = [
+            {"healthy": False},
+            {"healthy": True},
+            {"healthy": True},
+        ]
+        self.assertTrue(_hold_population_collapse(292, 2, unstable_finalization))
         self.assertFalse(_hold_population_collapse(292, 2, [{"healthy": True}]))
-        self.assertFalse(_hold_population_collapse(292, 40, unstable))
+        self.assertFalse(_hold_population_collapse(292, 40, unstable_finalization))
+
+    def test_recovered_running_checkpoint_does_not_hold_healthy_finalization(self) -> None:
+        running_checks = [{"healthy": False}, {"healthy": True}, {"healthy": True}]
+        finalization_checks = [{"healthy": True}, {"healthy": True}]
+        self.assertTrue(any(not check["healthy"] for check in running_checks))
+        self.assertFalse(_hold_population_collapse(292, 12, finalization_checks))
 
     def test_small_previous_generation_does_not_create_a_permanent_floor(self) -> None:
         self.assertFalse(_hold_population_collapse(2, 0, [{"healthy": False}]))

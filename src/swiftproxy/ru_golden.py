@@ -715,13 +715,15 @@ def _apply_freshness(result: dict[str, Any], freshness: dict[str, Any]) -> None:
 def _hold_population_collapse(
     previous_pass: int,
     current_pass: int,
-    path_checks: list[dict[str, Any]],
+    finalization_checks: list[dict[str, Any]],
 ) -> bool:
     if previous_pass < 20:
         return False
     collapsed = current_pass < max(3, math.ceil(previous_pass * 0.10))
-    path_was_unstable = any(not check.get("healthy", False) for check in path_checks)
-    return collapsed and path_was_unstable
+    finalization_was_unstable = any(
+        not check.get("healthy", False) for check in finalization_checks
+    )
+    return collapsed and finalization_was_unstable
 
 
 async def _run_admitted(
@@ -1105,6 +1107,7 @@ async def run_generation(root: Path, core: str) -> int:
     complete = True
     run_failure: str | None = None
     running_path_checks: list[dict[str, Any]] = []
+    freshness_path_checks: list[dict[str, Any]] = []
     run_started = time.monotonic()
     last_progress = run_started
     LOGGER.info(
@@ -1192,7 +1195,7 @@ async def run_generation(root: Path, core: str) -> int:
             recovery_confirmations,
             "freshness",
         )
-        running_path_checks.extend(checks)
+        freshness_path_checks.extend(checks)
         if not health.healthy:
             complete = False
             run_failure = "RU_PATH_UNHEALTHY"
@@ -1273,6 +1276,7 @@ async def run_generation(root: Path, core: str) -> int:
                 "path_checks": {
                     "preflight": preflight_checks,
                     "running": running_path_checks,
+                    "freshness": freshness_path_checks,
                 },
                 "terminal_counts": dict(sorted(terminal_counts.items())),
                 "freshness": {
@@ -1476,11 +1480,10 @@ async def run_generation(root: Path, core: str) -> int:
         terminal_counts.get(reason, 0) for reason in infrastructure_reasons
     )
     infrastructure_collapse = len(results) >= 10 and infrastructure_failures / len(results) >= 0.6
-    all_path_checks = [*preflight_checks, *running_path_checks, *postflight_checks]
     population_collapse = _hold_population_collapse(
         int(previous_stats.get("production", {}).get("all", 0)),
         len(ranked_items),
-        all_path_checks,
+        [*freshness_path_checks, *postflight_checks],
     )
     complete = postflight_health.healthy and not infrastructure_collapse and not population_collapse
     write_json(
@@ -1520,6 +1523,7 @@ async def run_generation(root: Path, core: str) -> int:
             "path_checks": {
                 "preflight": preflight_checks,
                 "running": running_path_checks,
+                "freshness": freshness_path_checks,
                 "postflight": postflight_checks,
             },
             "performance": performance,
