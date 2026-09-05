@@ -18,6 +18,7 @@ from swiftproxy.publication import PublicationError, publish, validate_publicati
 from swiftproxy.ru_golden import (
     _apply_freshness,
     _freshness_check,
+    _hold_population_collapse,
     _http_probe,
     _https_session,
     _white_publishable,
@@ -287,6 +288,15 @@ class GoldenHttpsTests(unittest.TestCase):
         self.assertEqual(result["final"]["reason"], "FRESHNESS_FAILED")
         self.assertFalse(result["final"]["passed"])
         self.assertTrue(result["final"]["accounted_for"])
+
+    def test_path_correlated_population_collapse_holds_publication(self) -> None:
+        unstable = [{"healthy": True}, {"healthy": False}, {"healthy": True}]
+        self.assertTrue(_hold_population_collapse(292, 2, unstable))
+        self.assertFalse(_hold_population_collapse(292, 2, [{"healthy": True}]))
+        self.assertFalse(_hold_population_collapse(292, 40, unstable))
+
+    def test_small_previous_generation_does_not_create_a_permanent_floor(self) -> None:
+        self.assertFalse(_hold_population_collapse(2, 0, [{"healthy": False}]))
 
     def test_upstream_label_alone_is_not_white_evidence(self) -> None:
         self.assertFalse(_white_publishable({"upstream_label": True, "evidence": None}))

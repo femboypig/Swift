@@ -712,6 +712,18 @@ def _apply_freshness(result: dict[str, Any], freshness: dict[str, Any]) -> None:
     }
 
 
+def _hold_population_collapse(
+    previous_pass: int,
+    current_pass: int,
+    path_checks: list[dict[str, Any]],
+) -> bool:
+    if previous_pass < 20:
+        return False
+    collapsed = current_pass < max(3, math.ceil(previous_pass * 0.10))
+    path_was_unstable = any(not check.get("healthy", False) for check in path_checks)
+    return collapsed and path_was_unstable
+
+
 async def _run_admitted(
     admission: asyncio.Semaphore,
     operation: Callable[[], Awaitable[dict[str, Any]]],
@@ -836,6 +848,10 @@ async def run_generation(root: Path, core: str) -> int:
     ) != len(candidates):
         raise RuntimeError("invalid collected generation")
     settings = tomllib.loads((root / "config.toml").read_text())
+    try:
+        previous_stats = json.loads((root / "stats.json").read_text())
+    except FileNotFoundError:
+        previous_stats = {}
     ru = settings["ru"]
     positive = (
         "resolution_concurrency",
@@ -1460,7 +1476,13 @@ async def run_generation(root: Path, core: str) -> int:
         terminal_counts.get(reason, 0) for reason in infrastructure_reasons
     )
     infrastructure_collapse = len(results) >= 10 and infrastructure_failures / len(results) >= 0.6
-    complete = postflight_health.healthy and not infrastructure_collapse
+    all_path_checks = [*preflight_checks, *running_path_checks, *postflight_checks]
+    population_collapse = _hold_population_collapse(
+        int(previous_stats.get("production", {}).get("all", 0)),
+        len(ranked_items),
+        all_path_checks,
+    )
+    complete = postflight_health.healthy and not infrastructure_collapse and not population_collapse
     write_json(
         publication / "result-manifest.json",
         {
@@ -1471,9 +1493,17 @@ async def run_generation(root: Path, core: str) -> int:
                 "RU_CORE_INFRASTRUCTURE_COLLAPSE"
                 if infrastructure_collapse
                 else (
-                    None
-                    if postflight_health.healthy
-                    else ("RU_POSTFLIGHT_TIMEOUT" if postflight is None else "RU_POSTFLIGHT_FAILED")
+                    "RU_PATH_CORRELATED_POPULATION_COLLAPSE"
+                    if population_collapse
+                    else (
+                        None
+                        if postflight_health.healthy
+                        else (
+                            "RU_POSTFLIGHT_TIMEOUT"
+                            if postflight is None
+                            else "RU_POSTFLIGHT_FAILED"
+                        )
+                    )
                 )
             ),
             "accounted_terminal": len(results),
