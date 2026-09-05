@@ -1,95 +1,60 @@
 {
-  "alive": 292,
-  "collected": 8897,
-  "collection_updated_at": "2026-09-05T04:36:29Z",
+  "alive": 2,
+  "collected": 7684,
+  "collection_updated_at": "2026-09-05T11:55:28Z",
   "countries": {
-    "AM": 1,
-    "CA": 10,
-    "CH": 3,
-    "CO": 1,
-    "DE": 52,
-    "EE": 1,
-    "FI": 6,
-    "FR": 5,
-    "GB": 5,
-    "GR": 1,
-    "HK": 5,
-    "ID": 1,
-    "JP": 53,
-    "KG": 1,
-    "KR": 9,
-    "LT": 2,
-    "LV": 4,
-    "MX": 1,
-    "NL": 45,
-    "PL": 8,
-    "RO": 4,
-    "RU": 9,
-    "SE": 16,
-    "SG": 4,
-    "TW": 3,
-    "US": 20,
-    "UZ": 1,
-    "VN": 2,
-    "XX": 1,
-    "ZA": 1
+    "HK": 1,
+    "RO": 1
   },
   "failure_reasons": {
-    "CONFIG_TIMEOUT": 7,
-    "CORE_EXITED": 192,
-    "DNS_TIMEOUT": 164,
-    "DOWNLOAD_R1_FAILED": 39,
-    "DOWNLOAD_R2_FAILED": 3,
-    "HTTPS_FAILED": 6233,
-    "PASS": 292,
-    "STALLED": 174,
-    "TOO_SLOW": 50,
-    "UNSTABLE": 10
+    "CORE_EXITED": 157,
+    "DNS_TIMEOUT": 157,
+    "DOWNLOAD_R1_FAILED": 1,
+    "FRESHNESS_FAILED": 7,
+    "HTTPS_FAILED": 5860,
+    "PASS": 2,
+    "STALLED": 15,
+    "TOO_SLOW": 6,
+    "UNSTABLE": 1
+  },
+  "freshness": {
+    "expected": 9,
+    "failed": 7,
+    "passed": 2
   },
   "funnel": {
-    "main_published": 80,
-    "ru_accounted": 7164,
-    "ru_expected": 7164,
-    "ru_pass": 292,
-    "white_published": 146
+    "main_published": 2,
+    "ru_accounted": 6206,
+    "ru_expected": 6206,
+    "ru_pass": 2,
+    "white_published": 0
   },
-  "generation_id": "de65a2a9e5fa06a4b35e3868f3a4a57d535212e69577453d9e345736da824f9d",
-  "main": 80,
-  "median_latency_ms": 829.18,
-  "parsed": 8229,
+  "generation_id": "b3bbefcff0b8d5a877285a591886c0b43a7c58f463a1c0b508d43b03af8174f1",
+  "main": 2,
+  "median_latency_ms": 1996.78,
+  "parsed": 6935,
   "production": {
-    "all": 292,
-    "main": 80,
-    "white": 146
+    "all": 2,
+    "main": 2,
+    "white": 0
   },
   "project": "Swift",
   "protocols": {
-    "hysteria2": 26,
-    "ss": 39,
-    "trojan": 14,
-    "vless": 202,
-    "vmess": 11
+    "hysteria2": 2
   },
-  "publication_updated_at": "2026-09-05T06:32:33Z",
+  "publication_updated_at": "2026-09-05T14:01:40Z",
   "published": true,
   "sources": {
-    "0xRadikal": 134,
-    "aetris": 2,
-    "airlink": 1,
-    "akres": 11,
-    "igareck": 45,
-    "kizyak": 5,
-    "matryoshka": 5,
-    "pyps": 1,
-    "rjsxrd": 104,
-    "rkp": 37,
-    "vovaplusexp": 34,
-    "zieng2": 1
+    "igareck": 1,
+    "rkp": 1
   },
   "stage": "published",
   "tagline": "Filter the garbage. Keep what works.",
-  "tested": 7164,
-  "unique": 7164,
-  "updated_at": "2026-09-05T06:32:33Z",
-  "white": 146
+  "tested": 6206,
+  "unique": 6206,
+  "updated_at": "2026-09-05T14:01:40Z",
+  "white": 0,
+  "white_evidence": {
+    "upstream-only": 1
+  }
 }
