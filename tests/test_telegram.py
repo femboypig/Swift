@@ -253,7 +253,7 @@ class TelegramScoringTests(unittest.TestCase):
         self.assertIsNone(reason)
         self.assertEqual(streak, 0)
 
-    def test_nonzero_probe_verified_set_replaces_stale_larger_set(self) -> None:
+    def test_nonzero_collapse_requires_confirmation(self) -> None:
         healthy, reason, streak = assess_run(
             {"production": {"working": 100}, "suspicious_streak": 0},
             successful_sources=4,
@@ -264,9 +264,18 @@ class TelegramScoringTests(unittest.TestCase):
             collapse_ratio=0.2,
             hold_runs=2,
         )
-        self.assertTrue(healthy)
-        self.assertIsNone(reason)
-        self.assertEqual(streak, 0)
+        self.assertFalse(healthy)
+        self.assertEqual(reason, "MASS_FAILURE")
+        self.assertEqual(streak, 1)
+
+    def test_failed_control_holds_even_without_population_collapse(self) -> None:
+        healthy, reason, _ = assess_run(
+            {"production": {"working": 10}}, successful_sources=1,
+            expected=10, completed=10, working=10, control_ok=False,
+            collapse_ratio=0.1, hold_runs=2,
+        )
+        self.assertFalse(healthy)
+        self.assertEqual(reason, "TELEGRAM_CONTROL_FAILED")
 
 
 class TelegramPipelineTests(unittest.IsolatedAsyncioTestCase):
