@@ -40,8 +40,15 @@ def _fetch_one(source: SourceSpec, timeout: float) -> SourceResult:
         with urllib.request.urlopen(request, timeout=timeout) as response:
             status = response.status
             content_length = response.headers.get("Content-Length")
-            if content_length and int(content_length) > MAX_SOURCE_BYTES:
-                return SourceResult(source, error="SOURCE_TOO_LARGE", status=status)
+            if content_length:
+                try:
+                    size = int(content_length)
+                except ValueError:
+                    return SourceResult(source, error="INVALID_CONTENT_LENGTH", status=status)
+                if size < 0:
+                    return SourceResult(source, error="INVALID_CONTENT_LENGTH", status=status)
+                if size > MAX_SOURCE_BYTES:
+                    return SourceResult(source, error="SOURCE_TOO_LARGE", status=status)
             body = response.read(MAX_SOURCE_BYTES + 1)
             if len(body) > MAX_SOURCE_BYTES:
                 return SourceResult(source, error="SOURCE_TOO_LARGE", status=status)
