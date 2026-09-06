@@ -1340,6 +1340,7 @@ async def run_generation(root: Path, core: str) -> int:
     for result in ranked:
         raw_uri = candidate_map[result["fingerprint"]]["uri"]
         config = parse_uri(raw_uri)
+        config.resolved_ip = result["resolution"]["selected_ip"]
         fragment = unquote(raw_uri.split("#")[-1]) if "#" in raw_uri else ""
         geo_country = result.get("services", {}).get("geo", {}).get("country")
         country = (
