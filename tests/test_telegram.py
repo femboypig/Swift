@@ -303,8 +303,30 @@ class TelegramPipelineTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(results[first.fingerprint].successes, 3)
         self.assertEqual(results[first.fingerprint].median_rtt, 120)
         self.assertFalse(results[second.fingerprint].working)
-        self.assertEqual(results[second.fingerprint].attempts, 1)
+        self.assertEqual(results[second.fingerprint].attempts, 3)
         self.assertEqual(results[second.fingerprint].reason, "TIMEOUT")
+
+    async def test_missing_repeats_cannot_become_a_one_attempt_pass(self) -> None:
+        proxy = parse_proxy_url(proxy_url(secret=RAW_SECRET))
+        success = {proxy.fingerprint: {"ok": True, "latency_ms": 100}}
+        with patch("swiftproxy.telegram_main.probe_ru_targets", side_effect=[success, {}, {}]):
+            results, complete = await _test_with_ru_probe(
+                [proxy], {"probe_chunk_size": 1, "probe_concurrency": 1, "probe_attempts": 3}
+            )
+        self.assertFalse(complete)
+        self.assertNotIn(proxy.fingerprint, results)
+
+    async def test_first_failure_still_allows_two_of_three_successes(self) -> None:
+        proxy = parse_proxy_url(proxy_url(secret=RAW_SECRET))
+        failure = {proxy.fingerprint: {"ok": False, "error": "TIMEOUT"}}
+        success = {proxy.fingerprint: {"ok": True, "latency_ms": 100}}
+        with patch("swiftproxy.telegram_main.probe_ru_targets", side_effect=[failure, success, success]):
+            results, complete = await _test_with_ru_probe(
+                [proxy], {"probe_chunk_size": 1, "probe_concurrency": 1, "probe_attempts": 3}
+            )
+        self.assertTrue(complete)
+        self.assertTrue(results[proxy.fingerprint].working)
+        self.assertEqual(results[proxy.fingerprint].attempts, 3)
 
     async def test_suspicious_zero_run_preserves_previous_files(self) -> None:
         source = SourceSpec("source", "source", "https://example.com/feed", {"telegram"})
