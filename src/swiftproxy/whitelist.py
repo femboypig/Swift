@@ -6,8 +6,7 @@ import re
 from dataclasses import dataclass
 from typing import Any
 
-from .models import ProxyConfig, SourceResult, SourceSpec
-
+from swiftproxy.models import ProxyConfig, SourceResult, SourceSpec
 
 DOMAIN_RE = re.compile(
     r"^(?=.{1,253}$)(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+"
@@ -171,3 +170,25 @@ def _domain(value: str) -> str | None:
     except UnicodeError:
         return None
     return value if DOMAIN_RE.fullmatch(value) else None
+
+
+def _white_signal(config: ProxyConfig, selected_ip: str, evidence: dict[str, Any]) -> str | None:
+    networks = [ipaddress.ip_network(value) for value in evidence.get("networks", [])]
+    cidr = any(ipaddress.ip_address(selected_ip) in network for network in networks)
+    domains = set(evidence.get("domains", []))
+    security = str(config.options.get("security", "none"))
+    visible = config.protocol in {"trojan", "hysteria2", "tuic"} or security in {"tls", "reality"}
+    name = str(config.options.get("sni") or config.host).lower().rstrip(".") if visible else ""
+    labels = name.split(".") if name else []
+    sni = any(".".join(labels[index:]) in domains for index in range(max(0, len(labels) - 1)))
+    if cidr and sni:
+        return "cidr+sni"
+    if cidr:
+        return "cidr"
+    if sni:
+        return "sni"
+    return None
+
+
+def _white_publishable(result: dict[str, Any]) -> bool:
+    return result.get("evidence") in {"cidr", "cidr+sni"}
