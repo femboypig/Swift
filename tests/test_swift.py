@@ -230,9 +230,9 @@ class TestingConfigTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "incompatible"):
             sing_box_config(config, 23001)
 
-    @patch.dict("os.environ", {"SWIFT_DIRECT_SOCKS": "192.168.2.1:1080"})
-    def test_direct_socks_must_be_loopback(self) -> None:
-        with self.assertRaisesRegex(ValueError, "loopback"):
+    @patch.dict("os.environ", {"SWIFT_DIRECT_SOCKS": "127.0.0.1:1080"})
+    def test_direct_socks_are_rejected(self) -> None:
+        with self.assertRaisesRegex(ValueError, "incompatible"):
             sing_box_config(parse_uri(vless_uri()), 23001)
 
     def test_sing_box_reality_config_uses_resolved_ip_and_keeps_sni(self) -> None:
