@@ -23,7 +23,7 @@ from swiftproxy.scoring import ru_quality_score
 from swiftproxy.verification.constants import HELD_EXIT_CODE
 from swiftproxy.verification.health import PathHealth, _bounded_preflight, _wait_for_healthy_path
 from swiftproxy.verification.limits import DownloadGovernor, _run_admitted
-from swiftproxy.verification.preflight import MacPreflightResult
+from swiftproxy.verification.preflight import PathPreflightResult
 from swiftproxy.verification.probes import _http_probe
 from swiftproxy.verification.resolution import endpoint_sanity, resolve_ru
 from swiftproxy.verification.results import (
@@ -78,7 +78,7 @@ class ResolutionTests(unittest.TestCase):
 class GoldenHttpsTests(unittest.TestCase):
     @staticmethod
     def path_health(healthy: bool, category: str | None = None) -> PathHealth:
-        preflight = MacPreflightResult(
+        preflight = PathPreflightResult(
             healthy,
             "wlan0",
             healthy,
@@ -189,7 +189,7 @@ class GoldenHttpsTests(unittest.TestCase):
         async def slow_preflight(_interface: str) -> None:
             await asyncio.sleep(1)
 
-        with patch("swiftproxy.verification.health._mac_preflight", side_effect=slow_preflight):
+        with patch("swiftproxy.verification.health._physical_preflight", side_effect=slow_preflight):
             result = asyncio.run(_bounded_preflight("wlan0", 0.001))
 
         self.assertIsNone(result)
