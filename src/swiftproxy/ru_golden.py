@@ -39,7 +39,6 @@ from .ru_verify import (
 from .scoring import diverse_selection
 from .telemetry import write_jsonl
 from .testing import (
-    _direct_socks_address,
     _free_port,
     _stop_process,
     _wait_for_core,
@@ -321,19 +320,27 @@ async def _start_core(
 
 async def _core_control(core: str, interface: str) -> dict[str, Any]:
     port = _free_port()
-    direct_socks = _direct_socks_address()
-    if direct_socks:
-        outbound: dict[str, Any] = {
-            "type": "socks",
-            "tag": "control",
-            "server": direct_socks[0],
-            "server_port": direct_socks[1],
-            "version": "5",
-        }
-    else:
-        outbound = {"type": "direct", "tag": "control", "bind_interface": interface}
+    outbound = {
+        "type": "direct",
+        "tag": "control",
+        "bind_interface": interface,
+        "domain_resolver": {"server": "direct-dns", "strategy": "prefer_ipv4"},
+    }
     value = {
         "log": {"level": "warn", "timestamp": False},
+        "dns": {
+            "servers": [
+                {
+                    "type": "https",
+                    "tag": "direct-dns",
+                    "server": "1.1.1.1",
+                    "server_port": 443,
+                    "path": "/dns-query",
+                    "bind_interface": interface,
+                    "tls": {"enabled": True, "server_name": "cloudflare-dns.com"},
+                }
+            ]
+        },
         "inbounds": [
             {"type": "socks", "tag": "socks-in", "listen": "127.0.0.1", "listen_port": port}
         ],
