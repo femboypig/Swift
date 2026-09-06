@@ -3,11 +3,6 @@ name = "Swift"
 tagline = "Filter the garbage. Keep what works."
 repository = "https://github.com/femboypig/swift"
 
-[paths]
-history = "data/history.json"
-order = "data/order.json"
-stats = "stats.json"
-
 [collection]
 fetch_timeout = 25
 
@@ -43,52 +38,18 @@ url = "https://raw.githubusercontent.com/artembsk/russia-mobile-internet-whiteli
 main = 80
 white = 200
 
-[selection]
-# Exhaustive validation: all unique eligible candidates are evaluated through Cloud and Mac stages.
-# Pre-validation truncation caps are removed.
-main_candidates = 0
-mac_candidates = 0
-white_candidates = 0
-
 [testing]
-concurrency = 50
-probes = 5
-rounds = 2
-connect_timeout = 5
-request_timeout = 10
-download_bytes = 262144
-download_timeout = 15
-download_url = "https://speed.cloudflare.com/__down?bytes={bytes}"
 geo_url = "https://www.cloudflare.com/cdn-cgi/trace"
-throughput_probe_ratio = 0.8
-main_min_throughput_bps = 131072
-white_min_throughput_bps = 49152
-per_config_timeout = 160
-global_timeout = 3000
-probe_urls = [
-  "https://www.gstatic.com/generate_204",
-  "https://cp.cloudflare.com/generate_204",
-  "https://connectivitycheck.platform.hicloud.com/generate_204",
-]
-white_probe_urls = [
-  "https://captive.apple.com/hotspot-detect.html",
-  "https://www.msftconnecttest.com/connecttest.txt",
-  "https://www.gstatic.com/generate_204",
-  "https://cp.cloudflare.com/generate_204",
-]
 
 [ru]
 # Conservative defaults for a shared household connection. These are stage
 # limits, not candidate caps: every candidate is still accounted for.
 preflight_timeout = 60
-# Karing's loopback direct path can briefly reject new SOCKS sessions after an
-# exhaustive run. Retry the infrastructure check instead of throwing away an
-# otherwise complete generation after one transient control failure.
+# Retry an unstable physical path before holding an otherwise complete generation.
 path_recovery_attempts = 8
 path_recovery_delay_seconds = 60
 path_recovery_confirmations = 2
-# Stop admitting new candidates periodically and verify that Karing's direct
-# path has not collapsed under cumulative connection churn.
+# Periodically verify that the physical path has not collapsed under connection churn.
 path_check_interval = 250
 resolution_concurrency = 40
 resolution_timeout = 8
