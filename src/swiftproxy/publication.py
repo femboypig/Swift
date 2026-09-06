@@ -1,7 +1,9 @@
 from __future__ import annotations
 
 import argparse
+import ipaddress
 import json
+import math
 import os
 import tomllib
 from pathlib import Path
@@ -9,11 +11,66 @@ from typing import Any
 
 from .generation import read_jsonl
 from .output import HAPP_PROTOCOLS, atomic_write, validated_proxy_lines, write_json
-from .parsing import parse_uri
+from .parsing import parse_uri, validate_security
 
 
 class PublicationError(RuntimeError):
     pass
+
+
+def _validate_result(result: dict[str, Any]) -> None:
+    try:
+        final = result["final"]
+        passed = final["passed"]
+        if type(passed) is not bool or final.get("accounted_for") is not True:
+            raise ValueError("invalid terminal flags")
+        if final["terminal_state"] != ("PASS" if passed else "FAIL"):
+            raise ValueError("inconsistent terminal state")
+        if not passed:
+            if not final.get("reason") or final["reason"] in {"PASS", "DEFER_LOCAL_CONGESTION"}:
+                raise ValueError("invalid failure reason")
+            return
+        if final["reason"] != "PASS" or result.get("schema_version") != 1:
+            raise ValueError("invalid PASS schema")
+        resolution = result["resolution"]
+        if (
+            resolution["success"] is not True
+            or not ipaddress.ip_address(resolution["selected_ip"]).is_global
+        ):
+            raise ValueError("unsafe PASS endpoint")
+        for stage in ("initial", "stability", "download"):
+            if result["core"][stage]["success"] is not True:
+                raise ValueError("missing successful core session")
+        freshness = result["freshness"]
+        if freshness["passed"] is not True or freshness["core"]["success"] is not True:
+            raise ValueError("missing freshness check")
+        for attempts in (
+            result["https"]["initial"],
+            result["https"]["stability"],
+            freshness["attempts"],
+        ):
+            targets = {
+                item["target"]
+                for item in attempts
+                if item.get("success") is True
+                and 200 <= item.get("status", 0) < 400
+                and item.get("total_ms", 0) > 0
+            }
+            if len(targets & {"gstatic", "cloudflare", "hicloud"}) < 2:
+                raise ValueError("missing distinct HTTPS successes")
+        for stage in ("r1", "r2"):
+            attempt = result[stage]
+            speed = float(attempt["speed_kbps"])
+            if (
+                attempt["success"] is not True
+                or attempt["status"] not in {200, 204, 206}
+                or attempt["bytes"] < 262144
+                or not math.isfinite(speed)
+                or speed < 64
+            ):
+                raise ValueError("invalid sustained download")
+    except (KeyError, TypeError, ValueError) as exc:
+        raise PublicationError(f"invalid RU result: {exc}") from exc
 
 
 def _fingerprints(path: Path) -> set[str]:
@@ -60,6 +117,11 @@ def validate_publication(root: Path, expected_head: str | None = None) -> dict[s
         raise PublicationError("non-terminal RU result")
     if result_manifest.get("accounted_terminal") != len(expected):
         raise PublicationError("manifest terminal count mismatch")
+    for result in results:
+        _validate_result(result)
+    for candidate in candidates:
+        if parse_uri(candidate["uri"]).fingerprint != candidate["fingerprint"]:
+            raise PublicationError("candidate URI fingerprint mismatch")
 
     output = publication_dir / "output"
     sets = {
@@ -73,6 +135,11 @@ def validate_publication(root: Path, expected_head: str | None = None) -> dict[s
     result_by_fp = {item["fingerprint"]: item for item in results}
     candidate_by_fp = {item["fingerprint"]: item for item in candidates}
     passed = {fp for fp, item in result_by_fp.items() if item["final"]["passed"]}
+    for fp in passed:
+        try:
+            validate_security(parse_uri(candidate_by_fp[fp]["uri"]))
+        except ValueError as exc:
+            raise PublicationError("unsafe config in RU PASS population") from exc
     if sets["all"] != passed:
         raise PublicationError("All does not exactly match authoritative RU PASS")
     if not sets["main"].issubset(passed) or not sets["white"].issubset(passed):
