@@ -9,14 +9,15 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
-from .main import load_json, load_settings, previous_subscription_configs
-from .output import atomic_write, write_json
-from .parsing import deduplicate, parse_sources, parse_uri, serialize_uri, validate_security
-from .sources import fetch_sources, source_specs
-from .scoring import empty_history
-from .testing import sing_box_config
-from .whitelist import build_evidence, evidence_specs
-
+from swiftproxy.collection.parsing import deduplicate, parse_sources
+from swiftproxy.collection.retention import previous_subscription_configs
+from swiftproxy.protocols.parser import parse_uri
+from swiftproxy.protocols.security import validate_security
+from swiftproxy.protocols.serialization import serialize_uri
+from swiftproxy.protocols.singbox import sing_box_config
+from swiftproxy.sources import fetch_sources, source_specs
+from swiftproxy.storage import atomic_write, load_json, load_settings, write_json
+from swiftproxy.whitelist import build_evidence, evidence_specs
 
 SCHEMA_VERSION = 1
 
@@ -37,10 +38,6 @@ def _head(root: Path) -> str:
         check=True,
     )
     return process.stdout.strip()
-
-
-def read_jsonl(path: Path) -> list[dict[str, Any]]:
-    return [json.loads(line) for line in path.read_text().splitlines() if line.strip()]
 
 
 def history_tier(history: dict[str, Any], fingerprint: str) -> int:
@@ -76,7 +73,7 @@ async def collect_generation(root: Path, config_path: Path) -> dict[str, Any]:
         current_sources.setdefault(config.fingerprint, set()).update(config.sources)
         current_lanes.setdefault(config.fingerprint, set()).update(config.lanes)
 
-    history = load_json(root / settings["paths"]["history"], empty_history())
+    history = load_json(root / "data/ru-history.json", {"vantage": "ru", "configs": {}})
     allowed_sources = {
         lane: {spec.name for spec in specs if lane in spec.lanes} for lane in ("main", "white")
     }
