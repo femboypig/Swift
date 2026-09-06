@@ -222,7 +222,10 @@ def parse_vmess(uri: str) -> ProxyConfig:
     security = str(raw.get("tls", "none")).lower() or "none"
     options = _transport_options(query, transport) | _tls_options(query, security)
     cipher = _clean_text(str(raw.get("scy", raw.get("security", "auto"))))
-    alter_id = int(raw.get("aid", 0) or 0)
+    try:
+        alter_id = int(raw.get("aid", 0) or 0)
+    except (TypeError, ValueError, OverflowError) as exc:
+        raise ValueError("invalid VMess alter ID") from exc
     if alter_id < 0 or alter_id > 65535:
         raise ValueError("invalid VMess alter ID")
     options["cipher"] = cipher
