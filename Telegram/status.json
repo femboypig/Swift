@@ -2,7 +2,7 @@
   "control_ok": false,
   "failure_reason": "GLOBAL_TIMEOUT",
   "failure_reasons": {
-    "DUPLICATE": 718,
+    "DUPLICATE": 692,
     "MALFORMED_SECRET": 2,
     "UNSUPPORTED_SECRET": 3
   },
@@ -36,9 +36,9 @@
       "working": 0
     },
     "solispirit": {
-      "fetched": 264,
+      "fetched": 255,
       "status": "OK",
-      "unique": 259,
+      "unique": 248,
       "working": 0
     }
   },
@@ -46,6 +46,6 @@
   "suspicious_streak": 0,
   "tagline": "Filter the garbage. Keep what works.",
   "tested": 0,
-  "updated_at": "2026-09-06T20:19:41Z",
+  "updated_at": "2026-09-06T21:45:59Z",
   "working": 0
 }
