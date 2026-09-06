@@ -247,25 +247,10 @@ class TestingConfigTests(unittest.TestCase):
         "os.environ",
         {"SWIFT_BIND_INTERFACE": "wlan0", "SWIFT_DIRECT_SOCKS": "127.0.0.1:3065"},
     )
-    def test_local_direct_socks_is_used_as_proxy_dial_detour(self) -> None:
+    def test_interface_binding_cannot_be_overridden_by_direct_socks(self) -> None:
         config = parse_uri(vless_uri())
-
-        generated = sing_box_config(config, 23001)
-
-        proxy, direct = generated["outbounds"]
-        self.assertEqual(proxy["detour"], "direct-socks")
-        self.assertNotIn("bind_interface", proxy)
-        self.assertEqual(
-            direct,
-            {
-                "type": "socks",
-                "tag": "direct-socks",
-                "server": "127.0.0.1",
-                "server_port": 3065,
-                "version": "5",
-            },
-        )
-        self.assertFalse(generated["route"]["auto_detect_interface"])
+        with self.assertRaisesRegex(ValueError, "incompatible"):
+            sing_box_config(config, 23001)
 
     @patch.dict("os.environ", {"SWIFT_DIRECT_SOCKS": "192.168.2.1:1080"})
     def test_direct_socks_must_be_loopback(self) -> None:
