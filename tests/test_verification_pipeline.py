@@ -14,7 +14,7 @@ from swiftproxy.storage import load_settings, read_jsonl, write_json, write_json
 from swiftproxy.verification.candidate import CandidateVerifier
 from swiftproxy.verification.health import PathHealth
 from swiftproxy.verification.pipeline import run_generation
-from swiftproxy.verification.preflight import MacPreflightResult
+from swiftproxy.verification.preflight import PathPreflightResult
 
 
 ROOT = Path(__file__).parents[1]
@@ -36,7 +36,7 @@ def candidate(index: int = 1) -> dict:
 
 def healthy() -> tuple[PathHealth, list[dict]]:
     return PathHealth(
-        MacPreflightResult(True, "wlan0", True, 3, 3, True),
+        PathPreflightResult(True, "wlan0", True, 3, 3, True),
         {"success": True, "latency_ms": 100, "path_mode": "bound-interface"},
         {"success": True},
     ), [{"healthy": True}]
