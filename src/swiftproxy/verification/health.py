@@ -6,14 +6,14 @@ from dataclasses import dataclass
 from typing import Any
 
 from swiftproxy.verification.control import _core_control, _direct_control
-from swiftproxy.verification.preflight import _mac_preflight
+from swiftproxy.verification.preflight import _physical_preflight
 
 LOGGER = logging.getLogger(__name__)
 
 
 async def _bounded_preflight(interface: str, timeout: float) -> Any | None:
     try:
-        return await asyncio.wait_for(_mac_preflight(interface), timeout)
+        return await asyncio.wait_for(_physical_preflight(interface), timeout)
     except TimeoutError:
         return None
 
