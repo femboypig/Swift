@@ -40,8 +40,8 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          if [[ -z "$SWIFT_RU_PROBE_URL" ]]; then
-            echo "Yandex RU probe is not configured" >&2
+          if [[ -z "$SWIFT_RU_PROBE_URL" || -z "$SWIFT_RU_PROBE_KEY" ]]; then
+            echo "Yandex RU probe URL or key is not configured" >&2
             exit 1
           fi
           set +e
