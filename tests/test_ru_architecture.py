@@ -3,8 +3,8 @@ from __future__ import annotations
 import asyncio
 import inspect
 import json
-import socket
 import shutil
+import socket
 import tempfile
 import unittest
 from pathlib import Path
@@ -13,33 +13,26 @@ from unittest.mock import AsyncMock, patch
 from swiftproxy.generation import SCHEMA_VERSION, history_tier
 from swiftproxy.models import ProxyConfig
 from swiftproxy.output import check_outputs, happ_subscription, plain_subscription
-from swiftproxy.parsing import parse_uri, serialize_uri
+from swiftproxy.protocols.parser import parse_uri
+from swiftproxy.protocols.serialization import serialize_uri
 from swiftproxy.publication import PublicationError, publish, validate_publication
-from swiftproxy.ru_golden import (
+from swiftproxy.verification.constants import DOWNLOAD_BYTES, MIN_THROUGHPUT_KBPS
+from swiftproxy.verification.pipeline import run_generation
+from swiftproxy.verification.candidate import CandidateVerifier
+from swiftproxy.scoring import ru_quality_score
+from swiftproxy.verification.constants import HELD_EXIT_CODE
+from swiftproxy.verification.health import PathHealth, _bounded_preflight, _wait_for_healthy_path
+from swiftproxy.verification.limits import DownloadGovernor, _run_admitted
+from swiftproxy.verification.preflight import MacPreflightResult
+from swiftproxy.verification.probes import _http_probe
+from swiftproxy.verification.resolution import endpoint_sanity, resolve_ru
+from swiftproxy.verification.results import (
     _apply_freshness,
-    _freshness_check,
     _hold_population_collapse,
-    _http_probe,
-    _https_session,
-    _white_publishable,
-    endpoint_sanity,
-    resolve_ru,
-    ru_quality_score,
-)
-from swiftproxy.ru_golden import DOWNLOAD_BYTES, MIN_THROUGHPUT_KBPS
-from swiftproxy.ru_golden import (
-    DownloadGovernor,
-    HELD_EXIT_CODE,
-    PathHealth,
-    _bounded_preflight,
-    _run_admitted,
-    _wait_for_healthy_path,
-    _white_signal,
     download_failure_reason,
 )
-from swiftproxy.ru_verify import MacPreflightResult
-from swiftproxy.ru_golden import run_generation
-
+from swiftproxy.verification.sessions import _freshness_check, _https_session
+from swiftproxy.whitelist import _white_publishable, _white_signal
 
 UUID_A = "11111111-1111-4111-8111-111111111111"
 
@@ -104,7 +97,7 @@ class GoldenHttpsTests(unittest.TestCase):
             {"success": healthy, "category": None if healthy else category or "CURL_97"},
         )
 
-    @patch("swiftproxy.ru_golden._path_health_once", new_callable=AsyncMock)
+    @patch("swiftproxy.verification.health._path_health_once", new_callable=AsyncMock)
     def test_transient_path_failure_requires_two_recovery_confirmations(self, check) -> None:
         check.side_effect = [
             self.path_health(False),
@@ -116,7 +109,7 @@ class GoldenHttpsTests(unittest.TestCase):
         self.assertEqual(len(records), 3)
         self.assertEqual(check.await_count, 3)
 
-    @patch("swiftproxy.ru_golden._path_health_once", new_callable=AsyncMock)
+    @patch("swiftproxy.verification.health._path_health_once", new_callable=AsyncMock)
     def test_path_recovery_remains_held_when_control_never_recovers(self, check) -> None:
         check.return_value = self.path_health(False, "CURL_28")
         health, records = asyncio.run(_wait_for_healthy_path("wlan0", "core", 1, 3, 0, 2, "test"))
@@ -124,7 +117,7 @@ class GoldenHttpsTests(unittest.TestCase):
         self.assertEqual(len(records), 3)
         self.assertEqual(records[-1]["core_control"], {"success": False, "category": "CURL_28"})
 
-    @patch("swiftproxy.ru_golden._wait_for_healthy_path", new_callable=AsyncMock)
+    @patch("swiftproxy.verification.pipeline._wait_for_healthy_path", new_callable=AsyncMock)
     def test_unhealthy_preflight_is_a_held_generation(self, health_check) -> None:
         health_check.return_value = (self.path_health(False, "CURL_28"), [{"healthy": False}])
         with tempfile.TemporaryDirectory() as raw:
@@ -145,7 +138,7 @@ class GoldenHttpsTests(unittest.TestCase):
             self.assertEqual(result["state"], "HELD")
             self.assertFalse(result["complete"])
 
-    @patch("swiftproxy.ru_golden._wait_for_healthy_path", new_callable=AsyncMock)
+    @patch("swiftproxy.verification.pipeline._wait_for_healthy_path", new_callable=AsyncMock)
     def test_complete_generation_reaches_finalization(self, health_check) -> None:
         health_check.return_value = (self.path_health(True), [{"healthy": True}])
         with tempfile.TemporaryDirectory() as raw:
@@ -196,7 +189,7 @@ class GoldenHttpsTests(unittest.TestCase):
         async def slow_preflight(_interface: str) -> None:
             await asyncio.sleep(1)
 
-        with patch("swiftproxy.ru_golden._mac_preflight", side_effect=slow_preflight):
+        with patch("swiftproxy.verification.health._mac_preflight", side_effect=slow_preflight):
             result = asyncio.run(_bounded_preflight("wlan0", 0.001))
 
         self.assertIsNone(result)
@@ -221,9 +214,9 @@ class GoldenHttpsTests(unittest.TestCase):
         self.assertFalse(result["success"])
         self.assertEqual(result["failure"], "HTTP_503")
 
-    @patch("swiftproxy.ru_golden._stop_process", new_callable=AsyncMock)
-    @patch("swiftproxy.ru_golden._http_probe", new_callable=AsyncMock)
-    @patch("swiftproxy.ru_golden._start_core", new_callable=AsyncMock)
+    @patch("swiftproxy.verification.sessions._stop_process", new_callable=AsyncMock)
+    @patch("swiftproxy.verification.sessions._http_probe", new_callable=AsyncMock)
+    @patch("swiftproxy.verification.sessions._start_core", new_callable=AsyncMock)
     def test_distinct_target_success_and_early_stop(self, start, probe, _stop) -> None:
         start.return_value = (AsyncMock(), 1080, {"success": True})
         probe.side_effect = [
@@ -251,7 +244,7 @@ class GoldenHttpsTests(unittest.TestCase):
             download_failure_reason({"success": True, "category": None, "speed_kbps": 64.0}, "R2")
         )
 
-    @patch("swiftproxy.ru_golden._https_session", new_callable=AsyncMock)
+    @patch("swiftproxy.verification.sessions._https_session", new_callable=AsyncMock)
     def test_freshness_requires_two_distinct_targets(self, session) -> None:
         session.return_value = (
             [
@@ -313,7 +306,7 @@ class GoldenHttpsTests(unittest.TestCase):
         self.assertFalse(_white_publishable({"upstream_label": True, "evidence": "sni"}))
         self.assertTrue(_white_publishable({"upstream_label": False, "evidence": "cidr"}))
 
-    @patch("swiftproxy.ru_golden._direct_control", new_callable=AsyncMock)
+    @patch("swiftproxy.verification.limits._direct_control", new_callable=AsyncMock)
     def test_local_congestion_is_an_infrastructure_signal(self, control) -> None:
         control.return_value = {"success": True, "latency_ms": 3000, "path_mode": "test"}
         governor = DownloadGovernor(1, 131072, "wlan0", 100)
@@ -321,14 +314,14 @@ class GoldenHttpsTests(unittest.TestCase):
         self.assertTrue(result["congested"])
 
     def test_download_slot_is_acquired_before_core_process_starts(self) -> None:
-        source = inspect.getsource(run_generation)
-        admission = source.index("async with governor.slot()")
+        source = inspect.getsource(CandidateVerifier.verify)
+        admission = source.index("async with self.governor.slot()")
         core_directory = source.index('TemporaryDirectory(prefix="swift-ru-download-")', admission)
         self.assertLess(admission, core_directory)
 
-    @patch("swiftproxy.ru_golden._stop_process", new_callable=AsyncMock)
-    @patch("swiftproxy.ru_golden._http_probe", new_callable=AsyncMock)
-    @patch("swiftproxy.ru_golden._start_core", new_callable=AsyncMock)
+    @patch("swiftproxy.verification.sessions._stop_process", new_callable=AsyncMock)
+    @patch("swiftproxy.verification.sessions._http_probe", new_callable=AsyncMock)
+    @patch("swiftproxy.verification.sessions._start_core", new_callable=AsyncMock)
     def test_two_failures_end_initial_stage(self, start, probe, _stop) -> None:
         start.return_value = (AsyncMock(), 1080, {"success": True})
         probe.side_effect = [
