@@ -349,7 +349,7 @@ class PublicationContractTests(unittest.TestCase):
         generation.mkdir(parents=True)
         configs = [
             parse_uri(
-                f"vless://{index:08d}-1111-4111-8111-111111111111@93.184.216.{index + 1}:443?encryption=none"
+                f"vless://{index:08d}-1111-4111-8111-111111111111@93.184.216.{index + 1}:443?encryption=none&security=tls"
             )
             for index in range(1, count + 1)
         ]
@@ -367,8 +367,30 @@ class PublicationContractTests(unittest.TestCase):
         ]
         results = [
             {
+                "schema_version": 1,
                 "generation_id": "generation",
                 "fingerprint": item["fingerprint"],
+                "resolution": {"success": True, "selected_ip": "93.184.216.1"},
+                "core": {
+                    stage: {"success": True} for stage in ("initial", "stability", "download")
+                },
+                "https": {
+                    stage: [
+                        {"target": target, "success": True, "status": 204, "total_ms": 100}
+                        for target in ("gstatic", "cloudflare")
+                    ]
+                    for stage in ("initial", "stability")
+                },
+                "freshness": {
+                    "passed": True,
+                    "core": {"success": True},
+                    "attempts": [
+                        {"target": target, "success": True, "status": 204, "total_ms": 100}
+                        for target in ("gstatic", "cloudflare")
+                    ],
+                },
+                "r1": {"success": True, "status": 200, "bytes": 262144, "speed_kbps": 128},
+                "r2": {"success": True, "status": 200, "bytes": 262144, "speed_kbps": 128},
                 "white": {"evidence": "cidr"} if index == 0 else {},
                 "final": {
                     "terminal_state": "PASS",
@@ -426,6 +448,27 @@ class PublicationContractTests(unittest.TestCase):
             root = Path(raw)
             self._tree(root)
             validate_publication(root, "head")
+
+    def test_pass_requires_consistent_complete_evidence(self) -> None:
+        mutations = {
+            "state": lambda result: result["final"].update(terminal_state="FAIL"),
+            "freshness": lambda result: result.pop("freshness"),
+            "short_download": lambda result: result["r2"].update(bytes=1024),
+            "nonfinite_speed": lambda result: result["r1"].update(speed_kbps=float("nan")),
+            "private_endpoint": lambda result: result["resolution"].update(selected_ip="127.0.0.1"),
+            "duplicate_targets": lambda result: result["https"].update(
+                initial=[{"target": "gstatic", "success": True, "status": 204, "total_ms": 100}] * 2
+            ),
+        }
+        for name, mutate in mutations.items():
+            with self.subTest(name=name), tempfile.TemporaryDirectory() as raw:
+                root = Path(raw)
+                _, results = self._tree(root)
+                mutate(results[0])
+                path = root / "data/ru-publication/ru-results.jsonl"
+                path.write_text("".join(json.dumps(item) + "\n" for item in results))
+                with self.assertRaises(PublicationError):
+                    validate_publication(root, "head")
 
     def test_white_requires_selected_endpoint_cidr_evidence(self) -> None:
         for evidence in (None, "sni"):
