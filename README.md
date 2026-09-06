@@ -16,7 +16,7 @@ The normal list. It contains at most 80 configs.
 
 `https://sub.femboypig.ru/main.txt`
 
-80 is strictly a maximum output cap, not a fixed target. Final Main is formed ONLY from configs that successfully pass the Russian sustained actual-traffic verification on the Mac runner. If 12 pass, the file contains 12. If 130 pass, the best 80 are selected with diverse ASN/subnet limits. A Mac verification failure has a 0% chance of publication regardless of historical score.
+80 is strictly a maximum output cap, not a fixed target. Final Main is formed ONLY from configs that successfully pass the Russian sustained actual-traffic verification on the self-hosted RU runner. If 12 pass, the file contains 12. If 130 pass, the best 80 are selected with diverse ASN/subnet limits. A runner verification failure has a 0% chance of publication regardless of historical score.
 
 ### White
 
@@ -235,8 +235,7 @@ PYTHONPATH=src python -m swiftproxy.telegram_main
 PYTHONPATH=src python -m swiftproxy.telegram_main --check-output
 ```
 
-`swiftproxy.main` without `--check-output` is the retired Cloud verifier and now requires the
-explicit `--legacy-cloud` flag. It is not part of production. The normal workflow collects on
+`swiftproxy.main --check-output` validates the published files. The normal workflow collects on
 GitHub, verifies through the pinned sing-box build on the RU runner, validates the completed
 artifact back on GitHub, commits only complete changed data, and deploys it to Pages.
 
@@ -249,8 +248,8 @@ configuration knobs.
 These are free public proxies run by unknown people. Treat them as untrusted. Use end-to-end
 encryption for anything important.
 
-Proxy latency, stability, and throughput are measured only from a dedicated self-hosted Mac mini
-runner on a Russian network. Local mobile ISP filters, regional DPI throttles, and dynamic carrier
+Proxy latency, stability, and throughput are measured only from a dedicated self-hosted runner on
+a Russian network. Local mobile ISP filters, regional DPI throttles, and dynamic carrier
 whitelists can still differ across operators. Swift selects what can be verified from that RU path;
 it does not promise bypass under every carrier restriction.
 The same applies to MTProto RTT in `Telegram/fastest.txt`.
