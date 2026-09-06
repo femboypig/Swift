@@ -7,7 +7,7 @@ import logging
 import math
 import os
 import shutil
-import socket
+import subprocess
 import sys
 import tempfile
 import time
@@ -20,6 +20,7 @@ from typing import Any
 from urllib.parse import urlsplit
 
 from .models import ProxyConfig, RankedConfig, TestResult
+from .network import communicate, curl_command, direct_curl, resolve_direct, validate_interface
 from .output import validated_proxy_lines, write_final_subscriptions, write_json
 from .parsing import parse_uri
 from .scoring import diverse_selection
@@ -111,7 +112,7 @@ async def _curl_probe(
     timeout: float = 4.0,
 ) -> HttpsAttempt:
     cmd = [
-        "curl",
+        *curl_command(),
         "--silent",
         "--show-error",
         "--location",
@@ -131,7 +132,7 @@ async def _curl_probe(
             stdout=asyncio.subprocess.DEVNULL,
             stderr=asyncio.subprocess.DEVNULL,
         )
-        await proc.wait()
+        await communicate(proc)
         if proc.returncode == 0:
             return HttpsAttempt(True, "OK")
         return HttpsAttempt(False, f"CURL_{proc.returncode}")
@@ -147,8 +148,14 @@ async def _direct_preflight_probe(
     minimum_bytes: int = 0,
     direct_socks: tuple[str, int] | None = None,
 ) -> HttpsAttempt:
+    if direct_socks:
+        return HttpsAttempt(False, "DIRECT_SOCKS_FORBIDDEN")
+    try:
+        prefix = await direct_curl(url, interface, timeout)
+    except (OSError, ValueError):
+        return HttpsAttempt(False, "DIRECT_DNS_FAILED")
     cmd = [
-        "curl",
+        *prefix,
         "--silent",
         "--show-error",
         "--location",
@@ -162,18 +169,13 @@ async def _direct_preflight_probe(
         os.devnull,
         url,
     ]
-    if direct_socks:
-        host, port = direct_socks
-        cmd[4:4] = ["--proxy", f"socks5h://{host}:{port}"]
-    else:
-        cmd[4:4] = ["--interface", interface]
     try:
         proc = await asyncio.create_subprocess_exec(
             *cmd,
             stdout=asyncio.subprocess.PIPE,
             stderr=asyncio.subprocess.DEVNULL,
         )
-        stdout, _ = await proc.communicate()
+        stdout, _ = await communicate(proc)
     except Exception:
         return HttpsAttempt(False, "CURL_EXEC_ERROR")
     if proc.returncode != 0:
@@ -194,31 +196,28 @@ async def _direct_preflight_probe(
 async def _mac_preflight(interface: str) -> MacPreflightResult:
     diagnostics: Counter[str] = Counter()
     try:
-        socket.if_nametoindex(interface)
-    except OSError:
+        validate_interface(interface)
+    except (OSError, ValueError, subprocess.SubprocessError):
         return MacPreflightResult(
-            False, interface, False, 0, len(PROBE_URLS), False, {"INTERFACE_MISSING": 1}
+            False, interface, False, 0, len(PROBE_URLS), False, {"UNSAFE_DIRECT_PATH": 1}
         )
 
     hosts = {urlsplit(url).hostname for url in [*PROBE_URLS, DOWNLOAD_URL_R1]}
     hosts.discard(None)
-    loop = asyncio.get_running_loop()
     dns_ok = True
     for host in sorted(hosts):
         try:
-            await loop.getaddrinfo(host, 443, type=socket.SOCK_STREAM)
+            await resolve_direct(host, interface)
         except OSError:
             diagnostics["DNS_FAILED"] += 1
             dns_ok = False
 
-    direct_socks = _direct_socks_address()
     https_results = await asyncio.gather(
         *(
             _direct_preflight_probe(
                 interface,
                 url,
                 timeout=8.0,
-                direct_socks=direct_socks,
             )
             for url in PROBE_URLS
         )
@@ -232,7 +231,6 @@ async def _mac_preflight(interface: str) -> MacPreflightResult:
         DOWNLOAD_URL_R1,
         timeout=12.0,
         minimum_bytes=int(DOWNLOAD_BYTES * 0.9),
-        direct_socks=direct_socks,
     )
     if not download.ok:
         diagnostics[download.diagnostic] += 1
@@ -267,7 +265,7 @@ async def _curl_download(
     speed_time: int = SPEED_TIME_SECS,
 ) -> DownloadAttempt:
     cmd = [
-        "curl",
+        *curl_command(),
         "--silent",
         "--show-error",
         "--location",
@@ -294,7 +292,7 @@ async def _curl_download(
             stdout=asyncio.subprocess.PIPE,
             stderr=asyncio.subprocess.PIPE,
         )
-        stdout_bytes, stderr_bytes = await proc.communicate()
+        stdout_bytes, stderr_bytes = await communicate(proc)
         elapsed = time.monotonic() - t0
         stderr = stderr_bytes.decode().strip()
         is_stall = proc.returncode == 28 and (
@@ -342,7 +340,7 @@ async def _probe_service_reachability(
     timeout: float = 4.0,
 ) -> str:
     cmd = [
-        "curl",
+        *curl_command(),
         "--silent",
         "--show-error",
         "--location",
@@ -364,7 +362,7 @@ async def _probe_service_reachability(
             stdout=asyncio.subprocess.PIPE,
             stderr=asyncio.subprocess.DEVNULL,
         )
-        stdout_bytes, _ = await proc.communicate()
+        stdout_bytes, _ = await communicate(proc)
         if proc.returncode == 0:
             code_str = stdout_bytes.decode().strip()
             if code_str and code_str.isdigit():
