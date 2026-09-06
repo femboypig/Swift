@@ -9,7 +9,7 @@ from pathlib import Path
 from typing import Any
 
 from swiftproxy.mtproto.history import add_observation, empty_history, prune_history
-from swiftproxy.mtproto.files import line_count, previous_order, validate_outputs, write_proxy_file
+from swiftproxy.mtproto.files import line_count, previous_order, write_proxy_file
 from swiftproxy.mtproto.models import TelegramResult, utc_now
 from swiftproxy.mtproto.parsing import (
     deduplicate,
