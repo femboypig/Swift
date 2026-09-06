@@ -1,8 +1,8 @@
 import io
 import json
 import unittest
-from unittest.mock import MagicMock, patch
 import urllib.error
+from unittest.mock import MagicMock, patch
 
 from swiftproxy.ru_probe import probe_ru_targets
 
