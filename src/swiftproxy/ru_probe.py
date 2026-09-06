@@ -28,8 +28,7 @@ def _send_probe_chunk(
         "Content-Type": "application/json",
         "User-Agent": "Swift-Proxy-Filter/1.0",
     }
-    if key:
-        headers["X-Swift-Key"] = key
+    headers["X-Swift-Key"] = key
 
     request = urllib.request.Request(url, data=payload, headers=headers, method="POST")
     try:
@@ -90,7 +89,9 @@ def probe_ru_targets(
     url = os.environ.get("SWIFT_RU_PROBE_URL", "") if probe_url is None else probe_url
     key = os.environ.get("SWIFT_RU_PROBE_KEY", "") if probe_key is None else probe_key
 
-    if not url or not targets:
+    if not url or not key or not targets:
+        if url and not key:
+            LOGGER.warning("RU_PROBE_KEY_MISSING")
         return {}
     identifiers = [item.get("id") for item in targets if isinstance(item, dict)]
     if len(identifiers) != len(targets) or any(
