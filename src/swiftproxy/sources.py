@@ -7,8 +7,7 @@ import urllib.error
 import urllib.request
 from typing import Any
 
-from .models import SourceResult, SourceSpec
-
+from swiftproxy.models import SourceResult, SourceSpec
 
 LOGGER = logging.getLogger(__name__)
 MAX_SOURCE_BYTES = 16 * 1024 * 1024
