@@ -18,7 +18,7 @@ class HttpsAttempt:
 
 
 @dataclass(slots=True)
-class MacPreflightResult:
+class PathPreflightResult:
     ok: bool
     interface: str
     dns_ok: bool
@@ -81,12 +81,12 @@ async def _direct_preflight_probe(
     return HttpsAttempt(True, "OK")
 
 
-async def _mac_preflight(interface: str) -> MacPreflightResult:
+async def _physical_preflight(interface: str) -> PathPreflightResult:
     diagnostics: Counter[str] = Counter()
     try:
         validate_interface(interface)
     except (OSError, ValueError, subprocess.SubprocessError):
-        return MacPreflightResult(
+        return PathPreflightResult(
             False, interface, False, 0, len(PROBE_URLS), False, {"UNSAFE_DIRECT_PATH": 1}
         )
 
@@ -122,7 +122,7 @@ async def _mac_preflight(interface: str) -> MacPreflightResult:
     )
     if not download.ok:
         diagnostics[download.diagnostic] += 1
-    return MacPreflightResult(
+    return PathPreflightResult(
         dns_ok and https_passed >= 2 and download.ok,
         interface,
         dns_ok,
