@@ -31,8 +31,9 @@ class TestRuVerify(unittest.TestCase):
 
         self.assertEqual(result, HttpsAttempt(False, "CURL_28"))
 
+    @patch("swiftproxy.network.resolve_direct", new_callable=AsyncMock, return_value=["1.1.1.1"])
     @patch("asyncio.create_subprocess_exec")
-    def test_preflight_probe_is_bound_to_requested_interface(self, mock_exec):
+    def test_preflight_probe_is_bound_to_requested_interface(self, mock_exec, resolve):
         process = AsyncMock()
         process.returncode = 0
         process.communicate.return_value = (b"204:0", b"")
@@ -43,10 +44,12 @@ class TestRuVerify(unittest.TestCase):
         self.assertTrue(result.ok)
         command = mock_exec.await_args.args
         interface_index = command.index("--interface")
-        self.assertEqual(command[interface_index + 1], "wlan0")
+        self.assertEqual(command[interface_index + 1], "if!wlan0")
+        self.assertIn("example.com:443:1.1.1.1", command)
+        resolve.assert_awaited_once_with("example.com", "wlan0", 4.0)
 
     @patch("asyncio.create_subprocess_exec")
-    def test_preflight_probe_can_use_loopback_direct_socks(self, mock_exec):
+    def test_preflight_probe_rejects_loopback_direct_socks(self, mock_exec):
         process = AsyncMock()
         process.returncode = 0
         process.communicate.return_value = (b"204:0", b"")
@@ -61,11 +64,9 @@ class TestRuVerify(unittest.TestCase):
             )
         )
 
-        self.assertTrue(result.ok)
-        command = mock_exec.await_args.args
-        proxy_index = command.index("--proxy")
-        self.assertEqual(command[proxy_index + 1], "socks5h://127.0.0.1:3065")
-        self.assertNotIn("--interface", command)
+        self.assertFalse(result.ok)
+        self.assertEqual(result.diagnostic, "DIRECT_SOCKS_FORBIDDEN")
+        mock_exec.assert_not_called()
 
     def test_ru_verify_empty(self):
         with tempfile.TemporaryDirectory() as temp_dir:
