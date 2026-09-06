@@ -90,7 +90,7 @@ jobs:
           mkdir -p .cache/sing-box "$RUNNER_TEMP/swift-core"
           archive="sing-box-${SING_BOX_VERSION}-linux-amd64.tar.gz"
           release="https://github.com/SagerNet/sing-box/releases/download/v${SING_BOX_VERSION}"
-          curl --fail --location --retry 3 --silent --show-error --output "$RUNNER_TEMP/swift-core/$archive" "$release/$archive"
+          curl --fail --location --retry 5 --retry-all-errors --retry-delay 3 --connect-timeout 20 --silent --show-error --output "$RUNNER_TEMP/swift-core/$archive" "$release/$archive"
           echo "$SING_BOX_SHA256  $RUNNER_TEMP/swift-core/$archive" | sha256sum --check --status
           tar -xzf "$RUNNER_TEMP/swift-core/$archive" -C "$RUNNER_TEMP/swift-core" "sing-box-${SING_BOX_VERSION}-linux-amd64/sing-box"
           install -m 0755 "$RUNNER_TEMP/swift-core/sing-box-${SING_BOX_VERSION}-linux-amd64/sing-box" "$SWIFT_SING_BOX"
