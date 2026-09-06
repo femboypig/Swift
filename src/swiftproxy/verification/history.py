@@ -1,10 +1,15 @@
 from __future__ import annotations
 
+from typing import Any
 
-def update_history(history, results, now):
+
+def update_history(
+    history: dict[str, Any], results: list[dict[str, Any]], now: str
+) -> dict[str, Any]:
     configs_history = history.setdefault("configs", {})
     for result in results:
         rec = configs_history.setdefault(result["fingerprint"], {"observations": []})
+        rec["sources"] = sorted(set(result.get("candidate_sources", [])) - {"previous-output"})
         passed = bool(result["final"]["passed"])
         observation = {
             "timestamp": now,
