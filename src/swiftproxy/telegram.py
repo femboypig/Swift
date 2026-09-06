@@ -523,17 +523,15 @@ def assess_run(
     previous_streak = int((previous or {}).get("suspicious_streak", 0))
     if successful_sources == 0:
         return False, "ALL_SOURCES_FAILED", previous_streak
-    if expected and completed < expected * 0.8:
+    if completed != expected:
         return False, "GLOBAL_TIMEOUT", previous_streak
+    if not control_ok:
+        return False, "TELEGRAM_CONTROL_FAILED", previous_streak
     production = (previous or {}).get("production", {})
     previous_working = int(production.get("working", (previous or {}).get("working", 0)))
     threshold = max(1, math.floor(previous_working * collapse_ratio))
     collapsed = working < threshold
     if not collapsed:
-        return True, None, 0
-    if not control_ok:
-        return False, "TELEGRAM_CONTROL_FAILED", previous_streak
-    if working > 0:
         return True, None, 0
     streak = previous_streak + 1
     if streak <= hold_runs:
