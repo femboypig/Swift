@@ -19,6 +19,7 @@ from typing import Any
 from urllib.parse import urlsplit
 
 from .models import ProxyConfig, TestResult
+from .network import communicate, curl_command, open_connection, resolve_direct
 from .parsing import parse_uri, serialize_uri
 
 
@@ -47,15 +48,18 @@ async def resolve_public_host(
     except ValueError:
         loop = asyncio.get_running_loop()
         try:
-            answers = await loop.getaddrinfo(
-                host,
-                port,
-                type=socket.SOCK_STREAM,
-                proto=socket.IPPROTO_TCP,
-            )
-        except socket.gaierror as exc:
+            if interface := os.environ.get("SWIFT_BIND_INTERFACE"):
+                addresses = await resolve_direct(host, interface)
+            else:
+                answers = await loop.getaddrinfo(
+                    host,
+                    port,
+                    type=socket.SOCK_STREAM,
+                    proto=socket.IPPROTO_TCP,
+                )
+                addresses = sorted({answer[4][0].split("%", 1)[0] for answer in answers})
+        except OSError as exc:
             raise ValueError("DNS_FAILED") from exc
-        addresses = sorted({answer[4][0].split("%", 1)[0] for answer in answers})
         if not addresses:
             raise ValueError("DNS_FAILED")
         parsed = [ipaddress.ip_address(value) for value in addresses]
@@ -106,7 +110,7 @@ async def cheap_connectivity(config: ProxyConfig, timeout: float) -> bool:
         return True
     try:
         _, writer = await asyncio.wait_for(
-            asyncio.open_connection(config.resolved_ip or config.host, config.port), timeout
+            open_connection(config.resolved_ip or config.host, config.port), timeout
         )
     except (TimeoutError, OSError):
         return False
@@ -254,6 +258,8 @@ def _direct_socks_address() -> tuple[str, int] | None:
     value = os.environ.get("SWIFT_DIRECT_SOCKS", "").strip()
     if not value:
         return None
+    if os.environ.get("SWIFT_BIND_INTERFACE"):
+        raise ValueError("SWIFT_DIRECT_SOCKS is incompatible with interface-bound verification")
     host, separator, port_text = value.rpartition(":")
     if not separator or not host or not port_text.isdigit():
         raise ValueError("SWIFT_DIRECT_SOCKS must use HOST:PORT")
@@ -345,7 +351,7 @@ async def _curl(
     failure: list[str] | None = None,
 ) -> dict[str, Any] | None:
     command = [
-        "curl",
+        *curl_command(),
         "--silent",
         "--show-error",
         "--location",
@@ -373,7 +379,7 @@ async def _curl(
         if failure is not None:
             failure.append("CURL_EXEC_ERROR")
         return None
-    stdout, _ = await process.communicate()
+    stdout, _ = await communicate(process)
     if process.returncode != 0:
         if failure is not None:
             failure.append(f"CURL_{process.returncode}")
@@ -743,7 +749,7 @@ async def preflight_targets(settings: dict[str, Any]) -> bool:
 
     async def check(url: str) -> bool:
         process = await asyncio.create_subprocess_exec(
-            "curl",
+            *curl_command(),
             "--silent",
             "--show-error",
             "--location",
@@ -759,7 +765,7 @@ async def preflight_targets(settings: dict[str, Any]) -> bool:
             stdout=asyncio.subprocess.PIPE,
             stderr=asyncio.subprocess.DEVNULL,
         )
-        stdout, _ = await process.communicate()
+        stdout, _ = await communicate(process)
         return process.returncode == 0 and stdout[:1] in {b"2", b"3"}
 
     reachable = sum(await asyncio.gather(*(check(url) for url in targets)))
