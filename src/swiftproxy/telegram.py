@@ -465,7 +465,8 @@ def select_message_targets(
             and item.result.successes == item.result.attempts
             and (item.result.median_rtt or math.inf) <= 1500
             and (item.result.p95_rtt or math.inf) <= 2500
-            and (item.result.jitter or math.inf) <= 700
+            and item.result.jitter is not None
+            and item.result.jitter <= 700
         ]
         preferred = [
             item
