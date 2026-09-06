@@ -26,6 +26,7 @@ class TestRuProbe(unittest.TestCase):
         mock_response = MagicMock()
         mock_response.status = 200
         mock_data = {
+            "control": {"telegram_ok": True},
             "results": [
                 {
                     "target": {"id": "proxy-a", "host": "1.2.3.4", "port": 443},
@@ -34,7 +35,7 @@ class TestRuProbe(unittest.TestCase):
                     "error": None,
                 },
                 {
-                    "target": {"host": "5.6.7.8", "port": 8443},
+                    "target": {"id": "proxy-b", "host": "5.6.7.8", "port": 8443},
                     "ok": False,
                     "latency_ms": None,
                     "error": "ConnectionRefusedError",
@@ -46,8 +47,8 @@ class TestRuProbe(unittest.TestCase):
         mock_urlopen.return_value = mock_response
 
         targets = [
-            {"host": "1.2.3.4", "port": 443, "sni": "test.com"},
-            {"host": "5.6.7.8", "port": 8443, "sni": "test2.com"},
+            {"id": "proxy-a", "host": "1.2.3.4", "port": 443},
+            {"id": "proxy-b", "host": "5.6.7.8", "port": 8443},
         ]
         res = probe_ru_targets(
             targets, probe_url="https://example.com/probe", probe_key="secret123"
@@ -55,7 +56,7 @@ class TestRuProbe(unittest.TestCase):
         self.assertEqual(len(res), 2)
         self.assertTrue(res["proxy-a"]["ok"])
         self.assertEqual(res["proxy-a"]["latency_ms"], 42)
-        self.assertFalse(res["5.6.7.8:8443"]["ok"])
+        self.assertFalse(res["proxy-b"]["ok"])
 
     @patch("urllib.request.urlopen")
     def test_probe_http_error(self, mock_urlopen):
@@ -63,7 +64,8 @@ class TestRuProbe(unittest.TestCase):
             url="https://example.com", code=500, msg="Server Error", hdrs={}, fp=io.BytesIO()
         )
         res = probe_ru_targets(
-            [{"host": "1.2.3.4", "port": 443}], probe_url="https://example.com/probe"
+            [{"id": "proxy-a", "host": "1.2.3.4", "port": 443}],
+            probe_url="https://example.com/probe",
         )
         self.assertEqual(res, {})
 
@@ -72,19 +74,32 @@ class TestRuProbe(unittest.TestCase):
         mock_response = MagicMock()
         mock_response.status = 200
         mock_response.read.return_value = json.dumps(
-            {"results": [{"target": {"host": "1.2.3.4", "port": 443}, "ok": True}]}
+            {
+                "control": {"telegram_ok": True},
+                "results": [
+                    {
+                        "target": {"id": "proxy-a", "host": "1.2.3.4", "port": 443},
+                        "ok": True,
+                        "latency_ms": 42,
+                    }
+                ],
+            }
         ).encode("utf-8")
         mock_response.__enter__.return_value = mock_response
         mock_urlopen.return_value = mock_response
 
-        targets = [
-            {"host": "1.2.3.4", "port": 443},
-            {"host": "1.2.3.4", "port": 443},
-            {"host": "1.2.3.4", "port": 443},
-        ]
+        targets = [{"id": f"proxy-{index}", "host": "1.2.3.4", "port": 443} for index in range(3)]
         res = probe_ru_targets(targets, probe_url="https://example.com/probe", chunk_size=1)
         self.assertEqual(mock_urlopen.call_count, 3)
-        self.assertTrue(res["1.2.3.4:443"]["ok"])
+        self.assertEqual(res, {})
+
+    def test_probe_rejects_missing_or_duplicate_identifiers(self):
+        for targets in (
+            [{"host": "1.2.3.4", "port": 443}],
+            [{"id": "same", "host": "1.2.3.4", "port": 443}] * 2,
+        ):
+            with self.subTest(targets=targets):
+                self.assertEqual(probe_ru_targets(targets, probe_url="https://example.com/probe"), {})
 
 
 if __name__ == "__main__":
