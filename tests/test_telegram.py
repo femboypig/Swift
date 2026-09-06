@@ -10,22 +10,19 @@ from typing import Self
 from unittest.mock import Mock, patch
 
 from swiftproxy.models import SourceResult, SourceSpec
-from swiftproxy.telegram import (
-    RankedTelegram,
-    TelegramProxy,
-    TelegramResult,
-    add_observation,
+from swiftproxy.mtproto.history import add_observation, empty_history
+from swiftproxy.mtproto.message import message_payload, publish_status
+from swiftproxy.mtproto.models import RankedTelegram, TelegramProxy, TelegramResult
+from swiftproxy.mtproto.parsing import deduplicate, parse_proxy_url
+from swiftproxy.mtproto.pipeline import run
+from swiftproxy.mtproto.probe import _test_with_ru_probe
+from swiftproxy.mtproto.selection import (
     assess_run,
-    deduplicate,
-    empty_history,
     fastest_proxies,
-    parse_proxy_url,
     score_proxy,
     select_message_targets,
 )
-from swiftproxy.telegram_main import _test_with_ru_probe, run
-from swiftproxy.telegram_publish import message_payload, publish_status
-from swiftproxy.telegram_testing import _connect, _direct_socks
+from swiftproxy.mtproto.transport import _connect, _direct_socks
 
 PUBLIC_V4 = "93.184.216.34"
 PUBLIC_V6 = "2606:4700:4700::1111"
@@ -127,7 +124,7 @@ class TelegramDirectPathTests(unittest.TestCase):
             self.closed = True
 
     @patch.dict("os.environ", {"SWIFT_DIRECT_SOCKS": "127.0.0.1:3065"})
-    @patch("swiftproxy.telegram_testing.socket.create_connection")
+    @patch("swiftproxy.mtproto.transport.socket.create_connection")
     def test_mtproto_socket_uses_ru_direct_socks(self, create_connection: Mock) -> None:
         fake = self.FakeSocket()
         create_connection.return_value = fake
@@ -270,9 +267,14 @@ class TelegramScoringTests(unittest.TestCase):
 
     def test_failed_control_holds_even_without_population_collapse(self) -> None:
         healthy, reason, _ = assess_run(
-            {"production": {"working": 10}}, successful_sources=1,
-            expected=10, completed=10, working=10, control_ok=False,
-            collapse_ratio=0.1, hold_runs=2,
+            {"production": {"working": 10}},
+            successful_sources=1,
+            expected=10,
+            completed=10,
+            working=10,
+            control_ok=False,
+            collapse_ratio=0.1,
+            hold_runs=2,
         )
         self.assertFalse(healthy)
         self.assertEqual(reason, "TELEGRAM_CONTROL_FAILED")
@@ -286,7 +288,7 @@ class TelegramPipelineTests(unittest.IsolatedAsyncioTestCase):
             first.fingerprint: {"ok": True, "latency_ms": 120, "error": None},
             second.fingerprint: {"ok": False, "latency_ms": None, "error": "TIMEOUT"},
         }
-        with patch("swiftproxy.telegram_main.probe_ru_targets", return_value=response) as probe:
+        with patch("swiftproxy.mtproto.probe.probe_ru_targets", return_value=response) as probe:
             results, control_ok = await _test_with_ru_probe(
                 [first, second],
                 {"probe_chunk_size": 1, "probe_concurrency": 6, "probe_attempts": 3},
@@ -309,7 +311,7 @@ class TelegramPipelineTests(unittest.IsolatedAsyncioTestCase):
     async def test_missing_repeats_cannot_become_a_one_attempt_pass(self) -> None:
         proxy = parse_proxy_url(proxy_url(secret=RAW_SECRET))
         success = {proxy.fingerprint: {"ok": True, "latency_ms": 100}}
-        with patch("swiftproxy.telegram_main.probe_ru_targets", side_effect=[success, {}, {}]):
+        with patch("swiftproxy.mtproto.probe.probe_ru_targets", side_effect=[success, {}, {}]):
             results, complete = await _test_with_ru_probe(
                 [proxy], {"probe_chunk_size": 1, "probe_concurrency": 1, "probe_attempts": 3}
             )
@@ -320,7 +322,9 @@ class TelegramPipelineTests(unittest.IsolatedAsyncioTestCase):
         proxy = parse_proxy_url(proxy_url(secret=RAW_SECRET))
         failure = {proxy.fingerprint: {"ok": False, "error": "TIMEOUT"}}
         success = {proxy.fingerprint: {"ok": True, "latency_ms": 100}}
-        with patch("swiftproxy.telegram_main.probe_ru_targets", side_effect=[failure, success, success]):
+        with patch(
+            "swiftproxy.mtproto.probe.probe_ru_targets", side_effect=[failure, success, success]
+        ):
             results, complete = await _test_with_ru_probe(
                 [proxy], {"probe_chunk_size": 1, "probe_concurrency": 1, "probe_attempts": 3}
             )
@@ -381,10 +385,10 @@ class TelegramPipelineTests(unittest.IsolatedAsyncioTestCase):
                 )
             )
             with (
-                patch("swiftproxy.telegram_main.fetch_sources", fake_fetch),
-                patch("swiftproxy.telegram_main.resolve_proxies", fake_resolve),
-                patch("swiftproxy.telegram_main.test_proxies", fake_test),
-                patch("swiftproxy.telegram_main.telegram_control", fake_control),
+                patch("swiftproxy.mtproto.pipeline.fetch_sources", fake_fetch),
+                patch("swiftproxy.mtproto.pipeline.resolve_proxies", fake_resolve),
+                patch("swiftproxy.mtproto.pipeline.test_proxies", fake_test),
+                patch("swiftproxy.mtproto.pipeline.telegram_control", fake_control),
             ):
                 exit_code = await run(root, settings)
             self.assertEqual(exit_code, 2)
