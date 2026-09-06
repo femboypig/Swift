@@ -32,7 +32,10 @@ def previous_subscription_configs(
                 continue
             record = records.get(config.fingerprint, {})
             sources = set(record.get("sources", ["previous-output"]))
-            if allowed_sources is not None and sources.isdisjoint(allowed_sources[lane]):
+            if (
+                allowed_sources is not None and "previous-output" not in sources
+                and sources.isdisjoint(allowed_sources[lane])
+            ):
                 continue
             config.sources.update(sources)
             config.lanes.add(lane)
