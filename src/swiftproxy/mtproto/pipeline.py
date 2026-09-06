@@ -27,6 +27,7 @@ from swiftproxy.mtproto.selection import (
 )
 from swiftproxy.mtproto.testing import resolve_proxies, telegram_control, test_proxies
 from swiftproxy.sources import fetch_sources
+from swiftproxy.network import validate_interface
 from swiftproxy.storage import atomic_write, write_json
 
 LOGGER = logging.getLogger(__name__)
@@ -66,6 +67,8 @@ def _write_proxy_file(path: Path, items: list[RankedTelegram]) -> None:
 
 
 async def run(root: Path, settings: dict[str, Any]) -> int:
+    if not os.environ.get("SWIFT_RU_PROBE_URL"):
+        validate_interface(os.environ.get("SWIFT_BIND_INTERFACE", ""))
     telegram = settings["telegram"]
     paths = telegram["paths"]
     history_path = root / paths["history"]
