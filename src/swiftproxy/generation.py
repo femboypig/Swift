@@ -11,7 +11,7 @@ from typing import Any
 
 from .main import load_json, load_settings, previous_subscription_configs
 from .output import atomic_write, write_json
-from .parsing import deduplicate, parse_sources, parse_uri, serialize_uri
+from .parsing import deduplicate, parse_sources, parse_uri, serialize_uri, validate_security
 from .sources import fetch_sources, source_specs
 from .scoring import empty_history
 from .testing import sing_box_config
@@ -95,6 +95,12 @@ async def collect_generation(root: Path, config_path: Path) -> dict[str, Any]:
     records: list[dict[str, Any]] = []
     static_rejected = 0
     for config in sorted(unique, key=lambda item: item.fingerprint):
+        try:
+            validate_security(config)
+        except ValueError:
+            failures["UNSAFE_CONFIG"] += 1
+            static_rejected += 1
+            continue
         try:
             sing_box_config(config, 20000)
             uri = serialize_uri(config)
