@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import ipaddress
 import os
 from typing import Any
 
@@ -141,40 +140,9 @@ def sing_box_outbound(config: ProxyConfig) -> dict[str, Any]:
     return base
 
 
-def _direct_socks_address() -> tuple[str, int] | None:
-    value = os.environ.get("SWIFT_DIRECT_SOCKS", "").strip()
-    if not value:
-        return None
-    if os.environ.get("SWIFT_BIND_INTERFACE"):
-        raise ValueError("SWIFT_DIRECT_SOCKS is incompatible with interface-bound verification")
-    host, separator, port_text = value.rpartition(":")
-    if not separator or not host or not port_text.isdigit():
-        raise ValueError("SWIFT_DIRECT_SOCKS must use HOST:PORT")
-    address = ipaddress.ip_address(host)
-    port = int(port_text)
-    if not address.is_loopback or not 1 <= port <= 65535:
-        raise ValueError("SWIFT_DIRECT_SOCKS must point to a loopback port")
-    return str(address), port
-
-
 def sing_box_config(config: ProxyConfig, socks_port: int) -> dict[str, Any]:
-    proxy_outbound = sing_box_outbound(config)
-    outbounds = [proxy_outbound]
-    direct_socks = _direct_socks_address()
-    if direct_socks:
-        host, port = direct_socks
-        proxy_outbound.pop("bind_interface", None)
-        proxy_outbound["detour"] = "direct-socks"
-        outbounds.append(
-            {
-                "type": "socks",
-                "tag": "direct-socks",
-                "server": host,
-                "server_port": port,
-                "version": "5",
-            }
-        )
-    auto_detect = not bool(os.environ.get("SWIFT_BIND_INTERFACE") or direct_socks)
+    if os.environ.get("SWIFT_DIRECT_SOCKS"):
+        raise ValueError("SWIFT_DIRECT_SOCKS is incompatible with direct verification")
     return {
         "log": {"level": "warn", "timestamp": False},
         "inbounds": [
@@ -185,6 +153,6 @@ def sing_box_config(config: ProxyConfig, socks_port: int) -> dict[str, Any]:
                 "listen_port": socks_port,
             }
         ],
-        "outbounds": outbounds,
-        "route": {"final": "proxy", "auto_detect_interface": auto_detect},
+        "outbounds": [sing_box_outbound(config)],
+        "route": {"final": "proxy", "auto_detect_interface": False},
     }
