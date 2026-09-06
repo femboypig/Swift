@@ -292,7 +292,7 @@ def diverse_selection(
     subnets: Counter[str] = Counter()
     asns: Counter[int] = Counter()
     for item in ranked:
-        endpoint = item.config.endpoint
+        endpoint = f"{item.config.resolved_ip or item.config.host}:{item.config.port}"
         subnet = _subnet(item.config)
         asn = item.result.asn
         crowded = endpoints[endpoint] >= endpoint_limit or subnets[subnet] >= subnet_limit
