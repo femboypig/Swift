@@ -66,6 +66,7 @@ class TestRuProbe(unittest.TestCase):
         res = probe_ru_targets(
             [{"id": "proxy-a", "host": "1.2.3.4", "port": 443}],
             probe_url="https://example.com/probe",
+            probe_key="secret123",
         )
         self.assertEqual(res, {})
 
@@ -89,7 +90,9 @@ class TestRuProbe(unittest.TestCase):
         mock_urlopen.return_value = mock_response
 
         targets = [{"id": f"proxy-{index}", "host": "1.2.3.4", "port": 443} for index in range(3)]
-        res = probe_ru_targets(targets, probe_url="https://example.com/probe", chunk_size=1)
+        res = probe_ru_targets(
+            targets, probe_url="https://example.com/probe", probe_key="secret123", chunk_size=1
+        )
         self.assertEqual(mock_urlopen.call_count, 3)
         self.assertEqual(res, {})
 
@@ -100,6 +103,15 @@ class TestRuProbe(unittest.TestCase):
         ):
             with self.subTest(targets=targets):
                 self.assertEqual(probe_ru_targets(targets, probe_url="https://example.com/probe"), {})
+
+    def test_probe_requires_key(self):
+        self.assertEqual(
+            probe_ru_targets(
+                [{"id": "proxy-a", "host": "1.2.3.4", "port": 443}],
+                probe_url="https://example.com/probe",
+            ),
+            {},
+        )
 
 
 if __name__ == "__main__":
