@@ -109,20 +109,27 @@ async def _probe_round(
             rtts_ms=[float(latency)] if ok and latency is not None else [],
             reason=None if ok else str(item.get("error") or "PROTOCOL_ERROR")[:64],
         )
-    return results, bool(probe_results)
+    return results, len(results) == len(candidates)
 
 
 async def _test_with_ru_probe(
     candidates: list[TelegramProxy], testing: dict[str, Any]
 ) -> tuple[dict[str, TelegramResult], bool]:
-    results, control_ok = await _probe_round(candidates, testing)
-    qualifiers = [proxy for proxy in candidates if results.get(proxy.fingerprint, None)]
-    qualifiers = [proxy for proxy in qualifiers if results[proxy.fingerprint].working]
-    for _ in range(max(0, int(testing["probe_attempts"]) - 1)):
-        repeated, _ = await _probe_round(qualifiers, testing)
-        for proxy in qualifiers:
+    attempts = int(testing["probe_attempts"])
+    if attempts < 3:
+        raise ValueError("Telegram verification requires at least three attempts")
+    results = {
+        proxy.fingerprint: TelegramResult(proxy.fingerprint, utc_now()) for proxy in candidates
+    }
+    missing: set[str] = set()
+    complete = True
+    for _ in range(attempts):
+        repeated, round_complete = await _probe_round(candidates, testing)
+        complete = complete and round_complete
+        for proxy in candidates:
             extra = repeated.get(proxy.fingerprint)
             if extra is None:
+                missing.add(proxy.fingerprint)
                 continue
             result = results[proxy.fingerprint]
             result.attempts += extra.attempts
@@ -130,13 +137,14 @@ async def _test_with_ru_probe(
             result.rtts_ms.extend(extra.rtts_ms)
             if extra.reason:
                 result.reason = extra.reason
-    for proxy in qualifiers:
-        result = results[proxy.fingerprint]
+    for fingerprint in missing:
+        del results[fingerprint]
+    for result in results.values():
         if result.successes == result.attempts:
             result.reason = None
         elif result.working:
             result.reason = "UNSTABLE"
-    return results, control_ok
+    return results, complete
 
 
 async def run(root: Path, settings: dict[str, Any]) -> int:
@@ -180,7 +188,7 @@ async def run(root: Path, settings: dict[str, Any]) -> int:
                     proxy.fingerprint, timestamp, reason=reason
                 )
         control_ok = await telegram_control(telegram["testing"])
-    validation_complete = len(results) >= len(candidates) * 0.8
+    validation_complete = len(results) == len(candidates)
 
     temp_history = copy.deepcopy(history)
     if control_ok and validation_complete:
