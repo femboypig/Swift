@@ -31,9 +31,6 @@ async def _probe_round(
     for proxy in candidates:
         item = probe_results.get(proxy.fingerprint)
         if item is None:
-            # Older deployed probe versions may not echo the opaque id yet.
-            item = probe_results.get(f"{proxy.host}:{proxy.port}")
-        if item is None:
             continue
         latency = item.get("latency_ms")
         ok = bool(item.get("ok"))
