@@ -24,6 +24,7 @@ from urllib.parse import unquote, urlsplit
 
 from .generation import read_jsonl
 from .models import ProxyConfig, RankedConfig, TestResult
+from .network import communicate, curl_command, direct_curl, open_connection, resolve_direct
 from .output import subscription_lines, write_final_subscriptions, write_json
 from .parsing import parse_uri
 from .ru_verify import (
@@ -87,15 +88,21 @@ async def resolve_ru(config: ProxyConfig, timeout: float) -> dict[str, Any]:
     except ValueError:
         try:
             loop = asyncio.get_running_loop()
-            answers = await asyncio.wait_for(
-                loop.getaddrinfo(
-                    config.host,
-                    config.port,
-                    type=socket.SOCK_STREAM,
-                    proto=socket.IPPROTO_TCP,
-                ),
-                timeout,
-            )
+            if interface := os.environ.get("SWIFT_BIND_INTERFACE"):
+                values = await asyncio.wait_for(
+                    resolve_direct(config.host, interface, timeout), timeout
+                )
+            else:
+                answers = await asyncio.wait_for(
+                    loop.getaddrinfo(
+                        config.host,
+                        config.port,
+                        type=socket.SOCK_STREAM,
+                        proto=socket.IPPROTO_TCP,
+                    ),
+                    timeout,
+                )
+                values = sorted({answer[4][0].split("%", 1)[0] for answer in answers})
         except TimeoutError:
             return {
                 "success": False,
@@ -112,7 +119,6 @@ async def resolve_ru(config: ProxyConfig, timeout: float) -> dict[str, Any]:
                 "safe_addresses": [],
                 "rejected_answers": [],
             }
-        values = sorted({answer[4][0].split("%", 1)[0] for answer in answers})
     else:
         values = [str(literal)]
     safe = [value for value in values if _safe_address(value)]
@@ -154,7 +160,7 @@ async def endpoint_sanity(config: ProxyConfig, timeout: float) -> dict[str, Any]
     started = time.monotonic()
     try:
         _, writer = await asyncio.wait_for(
-            asyncio.open_connection(config.resolved_ip or config.host, config.port), timeout
+            open_connection(config.resolved_ip or config.host, config.port), timeout
         )
     except (TimeoutError, OSError):
         return {
@@ -179,7 +185,7 @@ async def endpoint_sanity(config: ProxyConfig, timeout: float) -> dict[str, Any]
 async def _http_probe(port: int, url: str, timeout: float) -> dict[str, Any]:
     started = time.monotonic()
     command = [
-        "curl",
+        *curl_command(),
         "--silent",
         "--show-error",
         "--location",
@@ -201,7 +207,7 @@ async def _http_probe(port: int, url: str, timeout: float) -> dict[str, Any]:
         process = await asyncio.create_subprocess_exec(
             *command, stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.DEVNULL
         )
-        stdout, _ = await process.communicate()
+        stdout, _ = await communicate(process)
     except OSError:
         return {
             "target": _target_id(url),
@@ -390,7 +396,7 @@ async def _https_session(
 
 async def _download(port: int, url: str, limit_bps: int) -> dict[str, Any]:
     command = [
-        "curl",
+        *curl_command(),
         "--silent",
         "--show-error",
         "--location",
@@ -417,7 +423,7 @@ async def _download(port: int, url: str, limit_bps: int) -> dict[str, Any]:
         process = await asyncio.create_subprocess_exec(
             *command, stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.DEVNULL
         )
-        stdout, _ = await process.communicate()
+        stdout, _ = await communicate(process)
     except OSError:
         return {
             "success": False,
@@ -458,8 +464,13 @@ async def _download(port: int, url: str, limit_bps: int) -> dict[str, Any]:
 
 
 async def _direct_control(interface: str) -> dict[str, Any]:
+    mode = "bound-interface"
+    try:
+        prefix = await direct_curl(PROBE_URLS[0], interface, 5)
+    except (OSError, ValueError):
+        return {"success": False, "latency_ms": None, "path_mode": mode}
     command = [
-        "curl",
+        *prefix,
         "--silent",
         "--show-error",
         "--location",
@@ -473,18 +484,11 @@ async def _direct_control(interface: str) -> dict[str, Any]:
         "%{http_code}:%{time_total}",
         PROBE_URLS[0],
     ]
-    direct = _direct_socks_address()
-    if direct:
-        command[4:4] = ["--proxy", f"socks5h://{direct[0]}:{direct[1]}"]
-        mode = "direct-socks"
-    else:
-        command[4:4] = ["--interface", interface]
-        mode = "bound-interface"
     try:
         process = await asyncio.create_subprocess_exec(
             *command, stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.DEVNULL
         )
-        stdout, _ = await process.communicate()
+        stdout, _ = await communicate(process)
         status_text, total_text = stdout.decode().split(":", 1)
         success = process.returncode == 0 and 200 <= int(status_text) < 400
         return {
@@ -567,7 +571,7 @@ async def _service_session(
 
 async def _geo_probe_once(port: int, url: str) -> dict[str, Any]:
     command = [
-        "curl",
+        *curl_command(),
         "--silent",
         "--show-error",
         "--fail",
@@ -586,7 +590,7 @@ async def _geo_probe_once(port: int, url: str) -> dict[str, Any]:
         process = await asyncio.create_subprocess_exec(
             *command, stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.DEVNULL
         )
-        stdout, _ = await process.communicate()
+        stdout, _ = await communicate(process)
     except OSError:
         return {}
     if process.returncode != 0 or len(stdout) > 64 * 1024:
