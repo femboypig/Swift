@@ -17,6 +17,6 @@ Resolution, endpoint telemetry, initial HTTPS, stability, downloads, and diagnos
 
 `data/ru-history.json` contains only observations tagged with the RU vantage point. History determines deterministic scheduling and ranking, never whether a current candidate receives a test. A new candidate can be published after one complete strong RU PASS.
 
-`sub/all.txt` is the complete current RU PASS population before Main/White ranking caps. White additionally requires White lane membership and CIDR, SNI, or upstream-label evidence. That evidence is not proof that a proxy works during an actual whitelist-only shutdown.
+`sub/all.txt` is the complete current RU PASS population before Main/White ranking caps. White additionally requires White lane membership and CIDR evidence for the RU-selected endpoint. That evidence is not proof that a proxy works during an actual whitelist-only shutdown.
 
 The self-hosted job creates a proposed publication artifact. A GitHub-hosted job verifies the generation identity, exhaustive accounting, output populations, caps, and subscription syntax before committing it. The repository's existing files are the last-known-good generation until that commit succeeds.
