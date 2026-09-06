@@ -26,7 +26,7 @@ from .generation import read_jsonl
 from .models import ProxyConfig, RankedConfig, TestResult
 from .network import communicate, curl_command, direct_curl, open_connection, resolve_direct
 from .output import subscription_lines, write_final_subscriptions, write_json
-from .parsing import parse_uri
+from .parsing import parse_uri, validate_security
 from .ru_verify import (
     DOWNLOAD_BYTES,
     DOWNLOAD_URL_R1,
@@ -936,6 +936,7 @@ async def run_generation(root: Path, core: str) -> int:
 
     async def verify(item: dict[str, Any], retry: bool = False) -> dict[str, Any]:
         config = parse_uri(item["uri"])
+        validate_security(config)
         if config.fingerprint != item["fingerprint"]:
             raise ValueError("candidate fingerprint does not match its serialized config")
         record: dict[str, Any] = {
