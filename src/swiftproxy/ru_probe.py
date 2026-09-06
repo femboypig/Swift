@@ -92,6 +92,12 @@ def probe_ru_targets(
 
     if not url or not targets:
         return {}
+    identifiers = [item.get("id") for item in targets if isinstance(item, dict)]
+    if len(identifiers) != len(targets) or any(
+        not isinstance(identifier, str) or not identifier for identifier in identifiers
+    ) or len(set(identifiers)) != len(identifiers):
+        LOGGER.warning("RU_PROBE_INVALID_TARGET_IDENTIFIERS")
+        return {}
 
     chunks = [
         targets[start : start + max(1, chunk_size)]
