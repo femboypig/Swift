@@ -330,6 +330,7 @@ class TelegramPipelineTests(unittest.IsolatedAsyncioTestCase):
                 patch("swiftproxy.mtproto.pipeline.resolve_proxies", fake_resolve),
                 patch("swiftproxy.mtproto.pipeline.test_proxies", fake_test),
                 patch("swiftproxy.mtproto.pipeline.telegram_control", fake_control),
+                patch("swiftproxy.mtproto.pipeline.validate_interface"),
             ):
                 exit_code = await run(root, settings)
             self.assertEqual(exit_code, 2)
