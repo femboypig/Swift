@@ -9,10 +9,10 @@ from pathlib import Path
 from typing import Any
 
 from swiftproxy.mtproto.history import add_observation, empty_history, prune_history
-from swiftproxy.mtproto.models import RankedTelegram, TelegramResult, utc_now
+from swiftproxy.mtproto.files import line_count, previous_order, validate_outputs, write_proxy_file
+from swiftproxy.mtproto.models import TelegramResult, utc_now
 from swiftproxy.mtproto.parsing import (
     deduplicate,
-    parse_proxy_url,
     parse_source_results,
     previous_output_proxies,
     telegram_source_specs,
@@ -40,30 +40,6 @@ def _load_json(path: Path, default: Any) -> Any:
         return json.loads(path.read_text())
     except (OSError, json.JSONDecodeError) as exc:
         raise RuntimeError(f"invalid local data file: {path}") from exc
-
-
-def _previous_order(root: Path, name: str) -> list[str]:
-    path = root / "Telegram" / name
-    if not path.exists():
-        return []
-    order = []
-    for line in path.read_text().splitlines():
-        try:
-            order.append(parse_proxy_url(line).fingerprint)
-        except ValueError:
-            continue
-    return order
-
-
-def _count_lines(path: Path) -> int:
-    if not path.exists():
-        return 0
-    return sum(bool(line.strip()) for line in path.read_text().splitlines())
-
-
-def _write_proxy_file(path: Path, items: list[RankedTelegram]) -> None:
-    content = "\n".join(item.proxy.url for item in items)
-    atomic_write(path, content + ("\n" if content else ""))
 
 
 async def run(root: Path, settings: dict[str, Any]) -> int:
@@ -118,8 +94,8 @@ async def run(root: Path, settings: dict[str, Any]) -> int:
             if result is not None:
                 add_observation(temp_history, proxy, result, telegram["history"])
 
-    previous_order = _previous_order(root, "all.txt")
-    working, stable_candidates = rank_proxies(candidates, results, temp_history, previous_order)
+    order = previous_order(root, "all.txt")
+    working, stable_candidates = rank_proxies(candidates, results, temp_history, order)
     stable = [
         item
         for item in stable_candidates
@@ -146,9 +122,9 @@ async def run(root: Path, settings: dict[str, Any]) -> int:
     )
     output_dir = root / "Telegram"
     if healthy:
-        _write_proxy_file(output_dir / "all.txt", working)
-        _write_proxy_file(output_dir / "stable.txt", stable)
-        _write_proxy_file(output_dir / "fastest.txt", fastest)
+        write_proxy_file(output_dir / "all.txt", working)
+        write_proxy_file(output_dir / "stable.txt", stable)
+        write_proxy_file(output_dir / "fastest.txt", fastest)
     else:
         for name in ("all.txt", "stable.txt", "fastest.txt"):
             path = output_dir / name
@@ -156,9 +132,9 @@ async def run(root: Path, settings: dict[str, Any]) -> int:
                 atomic_write(path, "")
 
     production = {
-        "working": _count_lines(output_dir / "all.txt"),
-        "stable": _count_lines(output_dir / "stable.txt"),
-        "fastest": _count_lines(output_dir / "fastest.txt"),
+        "working": line_count(output_dir / "all.txt"),
+        "stable": line_count(output_dir / "stable.txt"),
+        "fastest": line_count(output_dir / "fastest.txt"),
     }
     last_successful_set = (previous_status or {}).get("last_successful_set")
     if healthy and working:
@@ -203,22 +179,3 @@ async def run(root: Path, settings: dict[str, Any]) -> int:
         reason or "OK",
     )
     return 0 if healthy else 2
-
-
-def check_outputs(root: Path, settings: dict[str, Any]) -> None:
-    limits = settings["telegram"]["limits"]
-    for name, limit in (
-        ("all.txt", None),
-        ("stable.txt", int(limits["stable"])),
-        ("fastest.txt", int(limits["fastest"])),
-    ):
-        path = root / "Telegram" / name
-        lines = [line for line in path.read_text().splitlines() if line.strip()]
-        if limit is not None and len(lines) > limit:
-            raise RuntimeError(f"Telegram/{name} exceeds its limit")
-        fingerprints = [parse_proxy_url(line).fingerprint for line in lines]
-        if len(fingerprints) != len(set(fingerprints)):
-            raise RuntimeError(f"Telegram/{name} contains duplicates")
-    status = json.loads((root / "Telegram/status.json").read_text())
-    if status.get("project") != "Swift":
-        raise RuntimeError("Telegram/status.json branding is invalid")
