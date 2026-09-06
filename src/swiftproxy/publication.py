@@ -9,9 +9,10 @@ import tomllib
 from pathlib import Path
 from typing import Any
 
-from .generation import read_jsonl
-from .output import HAPP_PROTOCOLS, atomic_write, validated_proxy_lines, write_json
-from .parsing import parse_uri, validate_security
+from swiftproxy.output import HAPP_PROTOCOLS, validated_proxy_lines
+from swiftproxy.protocols.parser import parse_uri
+from swiftproxy.protocols.security import validate_security
+from swiftproxy.storage import atomic_write, read_jsonl, write_json
 
 
 class PublicationError(RuntimeError):
