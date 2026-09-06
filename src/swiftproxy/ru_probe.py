@@ -2,11 +2,13 @@ from __future__ import annotations
 
 import json
 import logging
+import math
 import os
 import urllib.error
 import urllib.request
 from concurrent.futures import ThreadPoolExecutor
 from typing import Any
+from urllib.parse import urlsplit
 
 LOGGER = logging.getLogger("swift")
 
@@ -18,6 +20,9 @@ def _send_probe_chunk(
     key: str,
     timeout: float,
 ) -> dict[str, dict[str, Any]]:
+    if urlsplit(url).scheme != "https":
+        LOGGER.warning("RU_PROBE_REQUIRES_HTTPS")
+        return {}
     payload = json.dumps({"type": check_type, "targets": targets}).encode("utf-8")
     headers = {
         "Content-Type": "application/json",
@@ -32,29 +37,50 @@ def _send_probe_chunk(
             if response.status != 200:
                 LOGGER.warning("RU_PROBE_HTTP_ERROR status=%d", response.status)
                 return {}
-            data = json.loads(response.read().decode("utf-8"))
-    except (urllib.error.URLError, TimeoutError, json.JSONDecodeError, OSError) as exc:
+            body = response.read(1024 * 1024 + 1)
+            if len(body) > 1024 * 1024:
+                return {}
+            data = json.loads(body)
+    except (urllib.error.URLError, TimeoutError, ValueError, OSError) as exc:
         LOGGER.warning("RU_PROBE_FAILED error=%s", exc)
         return {}
 
+    if not isinstance(data, dict) or data.get("control") != {"telegram_ok": True}:
+        LOGGER.warning("RU_PROBE_CONTROL_UNPROVEN")
+        return {}
+    expected = {target["id"]: target for target in targets}
     chunk_map: dict[str, dict[str, Any]] = {}
-    for item in data.get("results", []):
-        target_info = item.get("target", {})
-        host = target_info.get("host")
-        port = target_info.get("port")
-        if host and port is not None:
-            key_id = str(target_info.get("id") or f"{host}:{port}")
+    try:
+        for item in data["results"]:
+            target_info = item["target"]
+            key_id = target_info["id"]
+            target = expected[key_id]
+            if key_id in chunk_map or (target_info["host"], target_info["port"]) != (
+                target["host"],
+                target["port"],
+            ):
+                raise ValueError("invalid probe accounting")
+            if type(item["ok"]) is not bool:
+                raise ValueError("invalid probe status")
+            latency = item.get("latency_ms")
+            if item["ok"] and (
+                not isinstance(latency, (int, float)) or not math.isfinite(latency) or latency <= 0
+            ):
+                raise ValueError("invalid probe latency")
             chunk_map[key_id] = {
-                "ok": bool(item.get("ok")),
-                "latency_ms": item.get("latency_ms"),
+                "ok": item["ok"],
+                "latency_ms": latency,
                 "error": item.get("error"),
             }
+    except (KeyError, TypeError, ValueError):
+        LOGGER.warning("RU_PROBE_INVALID_RESPONSE")
+        return {}
     return chunk_map
 
 
 def probe_ru_targets(
     targets: list[dict[str, Any]],
-    check_type: str = "tcp_tls",
+    check_type: str = "mtproto",
     probe_url: str | None = None,
     probe_key: str | None = None,
     timeout: float = 25.0,
