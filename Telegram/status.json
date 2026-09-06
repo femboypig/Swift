@@ -1,62 +1,62 @@
 {
   "control_ok": true,
   "failure_reasons": {
-    "DUPLICATE": 728,
+    "DUPLICATE": 696,
     "MALFORMED_SECRET": 2,
-    "NetworkCheckError: [Errno -2] Name or service not known": 25,
+    "NetworkCheckError: [Errno -2] Name or service not known": 26,
     "NetworkCheckError: [Errno -5] No address associated with hostnam": 3,
     "NetworkCheckError: [Errno 104] Connection reset by peer": 9,
     "NetworkCheckError: [Errno 111] Connection refused": 1,
-    "NetworkCheckError: timed out": 313,
-    "ProtocolError: FakeTLS server random HMAC mismatch": 5,
-    "ProtocolError: expected FakeTLS ServerHello, got record 0x15": 2,
-    "UNSTABLE": 3,
+    "NetworkCheckError: timed out": 312,
+    "ProtocolError: FakeTLS server random HMAC mismatch": 2,
+    "ProtocolError: expected FakeTLS ServerHello, got record 0x15": 1,
+    "UNSTABLE": 4,
     "UNSUPPORTED_SECRET": 4
   },
   "fastest": 20,
   "healthy_run": true,
-  "last_successful_set": "2026-09-05T23:23:50Z",
+  "last_successful_set": "2026-09-06T01:21:10Z",
   "production": {
     "fastest": 20,
-    "stable": 32,
-    "working": 31
+    "stable": 33,
+    "working": 37
   },
   "project": "Swift",
   "selected": {
     "backup": {
-      "median_rtt_ms": 232.6,
-      "score": 98.58,
-      "url": "https://t.me/proxy?server=72.56.25.212&port=443&secret=ee7d026761b388c46302df84b4b812aef0706574726f766963682e7275"
+      "median_rtt_ms": 215.6,
+      "score": 96.34,
+      "url": "https://t.me/proxy?server=s8.assetflux.org&port=443&secret=eeaf794bcc20f70b1436b6b92b01b207e26d61676e69742e7275"
     },
     "fastest": {
-      "median_rtt_ms": 223.9,
-      "score": 84.97,
-      "url": "https://t.me/proxy?server=cdn3.cdnwave.org&port=443&secret=ee8fc9c7632b344b1b76639c501ae7cfb5766b2e7275"
+      "median_rtt_ms": 211.3,
+      "score": 91.9,
+      "url": "https://t.me/proxy?server=cdn10.cdnwave.org&port=443&secret=eeecd508d816f611bb329487809f8dac88706574726f766963682e7275"
     },
     "stable": {
-      "median_rtt_ms": 231.1,
-      "score": 95.6,
-      "url": "https://t.me/proxy?server=s8.assetflux.org&port=443&secret=eeaf794bcc20f70b1436b6b92b01b207e26d61676e69742e7275"
+      "median_rtt_ms": 237.5,
+      "score": 98.57,
+      "url": "https://t.me/proxy?server=72.56.25.212&port=443&secret=ee7d026761b388c46302df84b4b812aef0706574726f766963682e7275"
     }
   },
   "sources": {
     "argh94": {
-      "fetched": 226,
+      "fetched": 236,
       "status": "OK",
-      "unique": 216,
-      "working": 7
+      "unique": 226,
+      "working": 13
     },
     "klondike": {
       "fetched": 243,
       "status": "OK",
       "unique": 236,
-      "working": 5
+      "working": 6
     },
     "shablin": {
-      "fetched": 287,
+      "fetched": 302,
       "status": "OK",
-      "unique": 280,
-      "working": 7
+      "unique": 298,
+      "working": 15
     },
     "solispirit": {
       "fetched": 264,
@@ -65,10 +65,10 @@
       "working": 11
     }
   },
-  "stable": 32,
+  "stable": 33,
   "suspicious_streak": 0,
   "tagline": "Filter the garbage. Keep what works.",
-  "tested": 389,
-  "updated_at": "2026-09-05T23:23:50Z",
-  "working": 31
+  "tested": 391,
+  "updated_at": "2026-09-06T01:21:10Z",
+  "working": 37
 }
