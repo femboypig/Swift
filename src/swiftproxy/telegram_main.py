@@ -7,6 +7,7 @@ import os
 import tomllib
 from pathlib import Path
 
+from swiftproxy.mtproto.files import validate_outputs
 from swiftproxy.mtproto import pipeline
 
 LOGGER = logging.getLogger(__name__)
@@ -32,7 +33,7 @@ def cli(argv: list[str] | None = None) -> int:
     with config_path.open("rb") as handle:
         settings = tomllib.load(handle)
     if args.check_output:
-        pipeline.check_outputs(root, settings)
+        validate_outputs(root, settings)
         LOGGER.info("Telegram output sanity checks passed")
         return 0
     try:
