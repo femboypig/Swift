@@ -144,7 +144,7 @@ success/failure counts, RU latency, throughput, last success, and confidence.
 History changes deterministic test order and final ranking. It never decides whether a current
 candidate receives the RU test. Previous RU passes run first, then unseen configs, recent failures,
 and repeated failures. Every tier still runs. A new config can enter the output after one strong
-current RU PASS; it does not need old Cloud history.
+current RU PASS; it does not need observations from another vantage point.
 
 Selection first applies soft caps per exact endpoint, /24 IPv4 or /48 IPv6 subnet, and ASN. If
 those caps would leave space unused, the best deferred configs fill it. Scores are sorted in
