@@ -28,7 +28,7 @@ def _validate_result(result: dict[str, Any]) -> None:
         if final["terminal_state"] != ("PASS" if passed else "FAIL"):
             raise ValueError("inconsistent terminal state")
         if not passed:
-            if not final.get("reason") or final["reason"] in {"PASS", "DEFER_LOCAL_CONGESTION"}:
+            if not final.get("reason") or final["reason"] == "PASS":
                 raise ValueError("invalid failure reason")
             return
         if final["reason"] != "PASS" or result.get("schema_version") != 1:
