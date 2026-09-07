@@ -15,6 +15,8 @@ def curl_command() -> list[str]:
     return [
         "curl",
         "-q",
+        "--ip-tos",
+        "184",
         "--noproxy",
         "",
         "--proxy",
@@ -141,6 +143,11 @@ async def open_connection(
     address = ipaddress.ip_address(host)
     sock = socket.socket(socket.AF_INET6 if address.version == 6 else socket.AF_INET)
     try:
+        try:
+            sock.setsockopt(socket.IPPROTO_IP, socket.IP_TOS, 184)
+            sock.setsockopt(socket.SOL_SOCKET, socket.SO_PRIORITY, 6)
+        except OSError:
+            pass
         sock.setsockopt(socket.SOL_SOCKET, socket.SO_BINDTODEVICE, interface.encode() + b"\0")
         sock.setblocking(False)
         await asyncio.get_running_loop().sock_connect(sock, (str(address), port))

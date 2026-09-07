@@ -29,19 +29,39 @@ async def _https_session(
             targets = [
                 PROBE_URLS[(offset + index) % len(PROBE_URLS)] for index in range(len(PROBE_URLS))
             ]
-            successes: set[str] = set()
-            for index, target in enumerate(targets[:attempts]):
+            candidates_to_run = targets[:attempts]
+            batch_size = min(required, len(candidates_to_run))
+            first_batch = candidates_to_run[:batch_size]
+            batch_records = await asyncio.gather(
+                *(
+                    _http_probe(port, target, timeout=timeout, connect_timeout=connect_timeout)
+                    for target in first_batch
+                )
+            )
+            records.extend(batch_records)
+            successes: set[str] = {r["target"] for r in records if r["success"]}
+
+            fatal_failures = {"CURL_7", "CURL_97", "CURL_EXEC_ERROR"}
+            has_fatal = any(r.get("failure") in fatal_failures for r in records)
+
+            remaining_targets = candidates_to_run[batch_size:]
+            for index, target in enumerate(remaining_targets):
+                if len(successes) >= required:
+                    break
+                remaining = len(remaining_targets) - index
+                if len(successes) + remaining < required:
+                    break
+                if has_fatal:
+                    break
                 record = await _http_probe(
                     port, target, timeout=timeout, connect_timeout=connect_timeout
                 )
                 records.append(record)
                 if record["success"]:
                     successes.add(record["target"])
-                remaining = attempts - index - 1
-                if len(successes) >= required:
-                    break
-                if len(successes) + remaining < required:
-                    break
+                if record.get("failure") in fatal_failures:
+                    has_fatal = True
+
             return records, core_result
         finally:
             await _stop_process(process)
@@ -61,19 +81,22 @@ async def _service_session(
             if process is None:
                 return {"core": core_result, "results": {}}
             try:
+                probe_keys = list(SERVICE_PROBES.keys())
+                coros = [
+                    _http_probe(
+                        port, SERVICE_PROBES[key], timeout=timeout, connect_timeout=connect_timeout
+                    )
+                    for key in probe_keys
+                ]
+                if geo_url:
+                    coros.append(
+                        _geo_probe(port, geo_url, timeout=timeout, connect_timeout=connect_timeout)
+                    )
+                probe_results = await asyncio.gather(*coros)
                 results = {
-                    name: await _http_probe(
-                        port, url, timeout=timeout, connect_timeout=connect_timeout
-                    )
-                    for name, url in SERVICE_PROBES.items()
+                    key: res for key, res in zip(probe_keys, probe_results[: len(probe_keys)])
                 }
-                geo = (
-                    await _geo_probe(
-                        port, geo_url, timeout=timeout, connect_timeout=connect_timeout
-                    )
-                    if geo_url
-                    else {}
-                )
+                geo = probe_results[len(probe_keys)] if geo_url else {}
                 return {"core": core_result, "results": results, "geo": geo}
             finally:
                 await _stop_process(process)
