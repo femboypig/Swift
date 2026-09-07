@@ -51,7 +51,12 @@ def https_success() -> list[dict]:
 
 class VerificationPipelineTests(unittest.IsolatedAsyncioTestCase):
     async def execute(
-        self, count: int, *, fail_index: int | None = None, freshness_ok: bool = True
+        self,
+        count: int,
+        *,
+        fail_index: int | None = None,
+        freshness_ok: bool = True,
+        congested: bool = False,
     ):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
@@ -119,7 +124,7 @@ class VerificationPipelineTests(unittest.IsolatedAsyncioTestCase):
                 ),
                 patch(
                     "swiftproxy.verification.limits.DownloadGovernor.control",
-                    AsyncMock(return_value={"congested": False}),
+                    AsyncMock(return_value={"congested": congested}),
                 ),
                 patch(
                     "swiftproxy.verification.scheduler._freshness_check",
@@ -159,6 +164,11 @@ class VerificationPipelineTests(unittest.IsolatedAsyncioTestCase):
         stats, results, _ = await self.execute(1, freshness_ok=False)
         self.assertEqual(stats["alive"], 0)
         self.assertEqual(results[0]["final"]["reason"], "FRESHNESS_FAILED")
+
+    async def test_one_local_congestion_deferral_does_not_hold_otherwise_complete_run(self):
+        stats, results, _ = await self.execute(1, congested=True)
+        self.assertEqual(stats["alive"], 0)
+        self.assertEqual(results[0]["final"]["reason"], "DEFER_LOCAL_CONGESTION")
 
     async def test_unsafe_candidate_never_reaches_network(self):
         item = candidate()
