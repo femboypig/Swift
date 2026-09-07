@@ -2,9 +2,9 @@
   "control_ok": false,
   "failure_reason": "GLOBAL_TIMEOUT",
   "failure_reasons": {
-    "DUPLICATE": 692,
-    "MALFORMED_SECRET": 2,
-    "UNSUPPORTED_SECRET": 3
+    "DUPLICATE": 650,
+    "MALFORMED_SECRET": 3,
+    "UNSUPPORTED_SECRET": 4
   },
   "fastest": 20,
   "healthy_run": false,
@@ -18,27 +18,27 @@
   "selected": {},
   "sources": {
     "argh94": {
-      "fetched": 232,
+      "fetched": 220,
       "status": "OK",
-      "unique": 224,
+      "unique": 212,
       "working": 0
     },
     "klondike": {
-      "fetched": 259,
+      "fetched": 250,
       "status": "OK",
-      "unique": 255,
+      "unique": 244,
       "working": 0
     },
     "shablin": {
-      "fetched": 281,
+      "fetched": 263,
       "status": "OK",
-      "unique": 277,
+      "unique": 257,
       "working": 0
     },
     "solispirit": {
-      "fetched": 255,
+      "fetched": 243,
       "status": "OK",
-      "unique": 248,
+      "unique": 237,
       "working": 0
     }
   },
@@ -46,6 +46,6 @@
   "suspicious_streak": 0,
   "tagline": "Filter the garbage. Keep what works.",
   "tested": 0,
-  "updated_at": "2026-09-06T21:45:59Z",
+  "updated_at": "2026-09-07T13:03:59Z",
   "working": 0
 }
