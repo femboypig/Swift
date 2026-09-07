@@ -1,64 +1,61 @@
 {
-  "alive": 5,
-  "collected": 8111,
-  "collection_updated_at": "2026-09-06T22:09:10Z",
+  "alive": 4,
+  "collected": 7901,
+  "collection_updated_at": "2026-09-07T14:18:16Z",
   "countries": {
-    "AT": 1,
-    "DE": 1,
-    "NL": 1,
-    "PL": 1,
-    "UA": 1
+    "HU": 1,
+    "US": 3
   },
   "failure_reasons": {
-    "CORE_EXITED": 163,
-    "DNS_FAILED": 118,
-    "DNS_TIMEOUT": 154,
-    "DOWNLOAD_R2_FAILED": 2,
-    "FRESHNESS_FAILED": 5,
-    "HTTPS_FAILED": 4122,
-    "PASS": 5,
-    "STALLED": 5,
-    "TOO_SLOW": 3,
-    "UNSTABLE": 3
+    "CORE_EXITED": 164,
+    "DNS_FAILED": 115,
+    "DNS_TIMEOUT": 129,
+    "FRESHNESS_FAILED": 3,
+    "HTTPS_FAILED": 4272,
+    "PASS": 4,
+    "STALLED": 15,
+    "TOO_SLOW": 4,
+    "UNSTABLE": 5
   },
   "freshness": {
-    "expected": 10,
-    "failed": 5,
-    "passed": 5
+    "expected": 7,
+    "failed": 3,
+    "passed": 4
   },
   "funnel": {
-    "main_published": 5,
-    "ru_accounted": 4580,
-    "ru_expected": 4580,
-    "ru_pass": 5,
+    "main_published": 4,
+    "ru_accounted": 4711,
+    "ru_expected": 4711,
+    "ru_pass": 4,
     "white_published": 0
   },
-  "generation_id": "dbc3a68e507a0e51a3231227871b60881c062d7dfde12780c5cde17ef38e7bf5",
-  "main": 5,
-  "median_latency_ms": 610.62,
-  "parsed": 7270,
+  "generation_id": "27eddc5d8e02a0cf1fe6004e4c7cfa56f6083566b129148c8b1af0c33bcea0b1",
+  "main": 4,
+  "median_latency_ms": 998.36,
+  "parsed": 7191,
   "production": {
-    "all": 5,
-    "main": 5,
+    "all": 4,
+    "main": 4,
     "white": 0
   },
   "project": "Swift",
   "protocols": {
-    "vless": 5
+    "vless": 4
   },
-  "publication_updated_at": "2026-09-07T12:51:26Z",
+  "publication_updated_at": "2026-09-07T15:39:23Z",
   "published": true,
   "sources": {
-    "0xRadikal": 4,
-    "rjsxrd": 3
+    "0xRadikal": 1,
+    "akres": 1,
+    "rjsxrd": 2
   },
   "stage": "published",
   "tagline": "Filter the garbage. Keep what works.",
-  "tested": 4580,
-  "unique": 4580,
-  "updated_at": "2026-09-07T12:51:26Z",
+  "tested": 4711,
+  "unique": 4711,
+  "updated_at": "2026-09-07T15:39:23Z",
   "white": 0,
   "white_evidence": {
-    "upstream-only": 3
+    "upstream-only": 2
   }
 }
