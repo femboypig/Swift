@@ -2,8 +2,8 @@
   "control_ok": false,
   "failure_reason": "GLOBAL_TIMEOUT",
   "failure_reasons": {
-    "DUPLICATE": 650,
-    "MALFORMED_SECRET": 3,
+    "DUPLICATE": 649,
+    "MALFORMED_SECRET": 2,
     "UNSUPPORTED_SECRET": 4
   },
   "fastest": 20,
@@ -24,15 +24,15 @@
       "working": 0
     },
     "klondike": {
-      "fetched": 250,
+      "fetched": 238,
       "status": "OK",
-      "unique": 244,
+      "unique": 233,
       "working": 0
     },
     "shablin": {
-      "fetched": 263,
+      "fetched": 261,
       "status": "OK",
-      "unique": 257,
+      "unique": 256,
       "working": 0
     },
     "solispirit": {
@@ -46,6 +46,6 @@
   "suspicious_streak": 0,
   "tagline": "Filter the garbage. Keep what works.",
   "tested": 0,
-  "updated_at": "2026-09-07T13:50:03Z",
+  "updated_at": "2026-09-07T18:25:29Z",
   "working": 0
 }
