@@ -45,7 +45,8 @@ def _send_probe_chunk(
         return {}
 
     control = data.get("control") if isinstance(data, dict) else None
-    if not isinstance(control, dict) or control.get("telegram_ok") is not True:
+    has_ok_result = any(item.get("ok") for item in data.get("results", [])) if isinstance(data.get("results"), list) else False
+    if not isinstance(control, dict) or (control.get("telegram_ok") is not True and not has_ok_result):
         LOGGER.warning("RU_PROBE_CONTROL_UNPROVEN")
         return {}
     expected = {target["id"]: target for target in targets}

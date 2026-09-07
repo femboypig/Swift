@@ -134,6 +134,35 @@ class TestRuProbe(unittest.TestCase):
             with self.subTest(targets=targets):
                 self.assertEqual(probe_ru_targets(targets, probe_url="https://example.com/probe"), {})
 
+    @patch("urllib.request.urlopen")
+    def test_probe_accepts_proven_targets_even_if_direct_control_unproven(self, mock_urlopen):
+        mock_response = MagicMock()
+        mock_response.status = 200
+        mock_response.read.return_value = json.dumps(
+            {
+                "control": {"telegram_ok": False},
+                "results": [
+                    {
+                        "target": {"id": "proxy-a", "host": "1.2.3.4", "port": 443},
+                        "ok": True,
+                        "latency_ms": 42,
+                        "error": None,
+                    }
+                ],
+            }
+        ).encode("utf-8")
+        mock_response.__enter__.return_value = mock_response
+        mock_urlopen.return_value = mock_response
+
+        result = probe_ru_targets(
+            [{"id": "proxy-a", "host": "1.2.3.4", "port": 443}],
+            probe_url="https://example.com/probe",
+            probe_key="secret123",
+        )
+        self.assertEqual(len(result), 1)
+        self.assertTrue(result["proxy-a"]["ok"])
+        self.assertEqual(result["proxy-a"]["latency_ms"], 42)
+
     def test_probe_requires_key(self):
         self.assertEqual(
             probe_ru_targets(
