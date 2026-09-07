@@ -106,8 +106,8 @@ class CandidateVerifier:
                 self.core,
                 3,
                 2,
-                timeout=https_timeout,
-                connect_timeout=https_connect_timeout,
+                https_timeout,
+                https_connect_timeout,
             )
         record["core"] = {"initial": core_start}
         record["https"] = {"initial": initial}
@@ -124,8 +124,8 @@ class CandidateVerifier:
                 self.core,
                 3,
                 2,
-                timeout=https_timeout,
-                connect_timeout=https_connect_timeout,
+                https_timeout,
+                https_connect_timeout,
             )
         record["core"]["stability"] = stability_core
         record["https"]["stability"] = stability
@@ -161,9 +161,9 @@ class CandidateVerifier:
                         port,
                         DOWNLOAD_URL_R1,
                         self.governor.per_transfer_bps,
-                        timeout=download_timeout,
-                        connect_timeout=download_connect_timeout,
-                        speed_time=download_speed_time,
+                        download_timeout,
+                        download_connect_timeout,
+                        download_speed_time,
                     )
                     self.governor.bytes += int(r1.get("bytes", 0))
                     record["r1"] = r1
@@ -182,9 +182,9 @@ class CandidateVerifier:
                         port,
                         DOWNLOAD_URL_R2,
                         self.governor.per_transfer_bps,
-                        timeout=download_timeout,
-                        connect_timeout=download_connect_timeout,
-                        speed_time=download_speed_time,
+                        download_timeout,
+                        download_connect_timeout,
+                        download_speed_time,
                     )
                     self.governor.bytes += int(r2.get("bytes", 0))
                     record["r2"] = r2
@@ -218,8 +218,8 @@ class CandidateVerifier:
                     self.core,
                     self.diagnostic_stage,
                     str(self.settings["testing"].get("geo_url") or ""),
-                    timeout=https_timeout,
-                    connect_timeout=https_connect_timeout,
+                    https_timeout,
+                    https_connect_timeout,
                 ),
                 max(15.0, https_timeout + 5.0),
             )
