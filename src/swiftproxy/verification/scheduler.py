@@ -133,7 +133,12 @@ async def run_candidates(
                 config = parse_uri(item["uri"])
                 config.resolved_ip = result["resolution"]["selected_ip"]
                 async with verifier.stability_stage.slot():
-                    freshness = await _freshness_check(config, verifier.core)
+                    freshness = await _freshness_check(
+                        config,
+                        verifier.core,
+                        timeout=float(verifier.ru.get("https_timeout", 10.0)),
+                        connect_timeout=float(verifier.ru.get("https_connect_timeout", 7.0)),
+                    )
                 _apply_freshness(result, freshness)
 
             freshness_tasks = [

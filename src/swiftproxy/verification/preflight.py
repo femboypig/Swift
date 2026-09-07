@@ -48,7 +48,7 @@ async def _direct_preflight_probe(
         "--show-error",
         "--location",
         "--connect-timeout",
-        str(min(4.0, timeout)),
+        str(min(6.0, timeout)),
         "--max-time",
         str(timeout),
         "--write-out",

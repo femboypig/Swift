@@ -94,8 +94,21 @@ class CandidateVerifier:
         async with self.endpoint_stage.slot():
             endpoint = await endpoint_sanity(config, float(self.ru["endpoint_timeout"]))
         record["endpoint"] = endpoint
+        https_timeout = float(self.ru.get("https_timeout", 10.0))
+        https_connect_timeout = float(self.ru.get("https_connect_timeout", 7.0))
+        download_timeout = float(self.ru.get("download_timeout", 20.0))
+        download_connect_timeout = float(self.ru.get("download_connect_timeout", 7.0))
+        download_speed_time = int(self.ru.get("download_speed_time", 8))
+
         async with self.initial_stage.slot():
-            initial, core_start = await _https_session(config, self.core, 3, 2)
+            initial, core_start = await _https_session(
+                config,
+                self.core,
+                3,
+                2,
+                timeout=https_timeout,
+                connect_timeout=https_connect_timeout,
+            )
         record["core"] = {"initial": core_start}
         record["https"] = {"initial": initial}
         distinct = {attempt["target"] for attempt in initial if attempt["success"]}
@@ -106,7 +119,14 @@ class CandidateVerifier:
             reason = core_start.get("category") or "HTTPS_FAILED"
             return _terminal(record, reason)
         async with self.stability_stage.slot():
-            stability, stability_core = await _https_session(config, self.core, 3, 2)
+            stability, stability_core = await _https_session(
+                config,
+                self.core,
+                3,
+                2,
+                timeout=https_timeout,
+                connect_timeout=https_connect_timeout,
+            )
         record["core"]["stability"] = stability_core
         record["https"]["stability"] = stability
         stability_distinct = {attempt["target"] for attempt in stability if attempt["success"]}
@@ -137,7 +157,14 @@ class CandidateVerifier:
                 if process is None:
                     return _terminal(record, download_core.get("category") or "CORE_START_FAILED")
                 try:
-                    r1 = await _download(port, DOWNLOAD_URL_R1, self.governor.per_transfer_bps)
+                    r1 = await _download(
+                        port,
+                        DOWNLOAD_URL_R1,
+                        self.governor.per_transfer_bps,
+                        timeout=download_timeout,
+                        connect_timeout=download_connect_timeout,
+                        speed_time=download_speed_time,
+                    )
                     self.governor.bytes += int(r1.get("bytes", 0))
                     record["r1"] = r1
                     r1_reason = download_failure_reason(r1, "R1", check_speed=False)
@@ -151,7 +178,14 @@ class CandidateVerifier:
                             record["retry_recommended"] = True
                             return _terminal(record, "DEFER_LOCAL_CONGESTION")
                         return _terminal(record, r1_reason)
-                    r2 = await _download(port, DOWNLOAD_URL_R2, self.governor.per_transfer_bps)
+                    r2 = await _download(
+                        port,
+                        DOWNLOAD_URL_R2,
+                        self.governor.per_transfer_bps,
+                        timeout=download_timeout,
+                        connect_timeout=download_connect_timeout,
+                        speed_time=download_speed_time,
+                    )
                     self.governor.bytes += int(r2.get("bytes", 0))
                     record["r2"] = r2
                 finally:
@@ -184,8 +218,10 @@ class CandidateVerifier:
                     self.core,
                     self.diagnostic_stage,
                     str(self.settings["testing"].get("geo_url") or ""),
+                    timeout=https_timeout,
+                    connect_timeout=https_connect_timeout,
                 ),
-                12.0,
+                max(15.0, https_timeout + 5.0),
             )
         except TimeoutError:
             record["services"] = {"category": "DIAGNOSTIC_TIMEOUT", "results": {}}

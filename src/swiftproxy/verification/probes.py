@@ -20,8 +20,16 @@ def _target_id(url: str) -> str:
     }.get(host, host[:64])
 
 
-async def _http_probe(port: int, url: str, timeout: float) -> dict[str, Any]:
+async def _http_probe(
+    port: int,
+    url: str,
+    timeout: float = 10.0,
+    connect_timeout: float | None = None,
+) -> dict[str, Any]:
     started = time.monotonic()
+    effective_connect_timeout = (
+        min(connect_timeout, timeout) if connect_timeout is not None else min(7.0, timeout)
+    )
     command = [
         *curl_command(),
         "--silent",
@@ -30,7 +38,7 @@ async def _http_probe(port: int, url: str, timeout: float) -> dict[str, Any]:
         "--proxy",
         f"socks5h://127.0.0.1:{port}",
         "--connect-timeout",
-        str(min(3.0, timeout)),
+        str(effective_connect_timeout),
         "--max-time",
         str(timeout),
         "--max-filesize",
@@ -89,7 +97,15 @@ async def _http_probe(port: int, url: str, timeout: float) -> dict[str, Any]:
     }
 
 
-async def _download(port: int, url: str, limit_bps: int) -> dict[str, Any]:
+async def _download(
+    port: int,
+    url: str,
+    limit_bps: int,
+    timeout: float = 20.0,
+    connect_timeout: float = 7.0,
+    speed_time: int = 8,
+    speed_limit: int = 16384,
+) -> dict[str, Any]:
     command = [
         *curl_command(),
         "--silent",
@@ -98,13 +114,13 @@ async def _download(port: int, url: str, limit_bps: int) -> dict[str, Any]:
         "--proxy",
         f"socks5h://127.0.0.1:{port}",
         "--connect-timeout",
-        "4",
+        str(min(connect_timeout, timeout)),
         "--max-time",
-        "12",
+        str(timeout),
         "--speed-limit",
-        "16384",
+        str(speed_limit),
         "--speed-time",
-        "3",
+        str(speed_time),
         "--limit-rate",
         str(limit_bps),
         "--output",
@@ -158,7 +174,12 @@ async def _download(port: int, url: str, limit_bps: int) -> dict[str, Any]:
     }
 
 
-async def _geo_probe_once(port: int, url: str) -> dict[str, Any]:
+async def _geo_probe_once(
+    port: int,
+    url: str,
+    timeout: float = 8.0,
+    connect_timeout: float = 6.0,
+) -> dict[str, Any]:
     command = [
         *curl_command(),
         "--silent",
@@ -168,9 +189,9 @@ async def _geo_probe_once(port: int, url: str) -> dict[str, Any]:
         "--proxy",
         f"socks5h://127.0.0.1:{port}",
         "--connect-timeout",
-        "3",
+        str(min(connect_timeout, timeout)),
         "--max-time",
-        "5",
+        str(timeout),
         "--max-filesize",
         str(64 * 1024),
         url,
@@ -206,11 +227,18 @@ async def _geo_probe_once(port: int, url: str) -> dict[str, Any]:
     }
 
 
-async def _geo_probe(port: int, url: str) -> dict[str, Any]:
+async def _geo_probe(
+    port: int,
+    url: str,
+    timeout: float = 8.0,
+    connect_timeout: float = 6.0,
+) -> dict[str, Any]:
     # Geo enrichment is optional. A second small endpoint avoids turning a
     # transient Cloudflare trace failure into hundreds of unknown labels.
     for candidate in dict.fromkeys((url, "https://speed.cloudflare.com/meta", "https://ipwho.is/")):
-        result = await _geo_probe_once(port, candidate)
+        result = await _geo_probe_once(
+            port, candidate, timeout=timeout, connect_timeout=connect_timeout
+        )
         if result.get("country"):
             return result
     return {}

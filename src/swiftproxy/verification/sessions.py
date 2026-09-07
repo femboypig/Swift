@@ -12,7 +12,12 @@ from swiftproxy.verification.probes import _geo_probe, _http_probe
 
 
 async def _https_session(
-    config: ProxyConfig, core: str, attempts: int, required: int
+    config: ProxyConfig,
+    core: str,
+    attempts: int,
+    required: int,
+    timeout: float = 10.0,
+    connect_timeout: float | None = None,
 ) -> tuple[list[dict[str, Any]], dict[str, Any]]:
     with tempfile.TemporaryDirectory(prefix="swift-ru-") as raw:
         process, port, core_result = await _start_core(config, core, Path(raw))
@@ -26,7 +31,9 @@ async def _https_session(
             ]
             successes: set[str] = set()
             for index, target in enumerate(targets[:attempts]):
-                record = await _http_probe(port, target, 4.0)
+                record = await _http_probe(
+                    port, target, timeout=timeout, connect_timeout=connect_timeout
+                )
                 records.append(record)
                 if record["success"]:
                     successes.add(record["target"])
@@ -41,7 +48,12 @@ async def _https_session(
 
 
 async def _service_session(
-    config: ProxyConfig, core: str, stage: StageLimiter, geo_url: str | None
+    config: ProxyConfig,
+    core: str,
+    stage: StageLimiter,
+    geo_url: str | None,
+    timeout: float = 10.0,
+    connect_timeout: float | None = None,
 ) -> dict[str, Any]:
     async with stage.slot():
         with tempfile.TemporaryDirectory(prefix="swift-ru-diagnostics-") as raw:
@@ -50,16 +62,32 @@ async def _service_session(
                 return {"core": core_result, "results": {}}
             try:
                 results = {
-                    name: await _http_probe(port, url, 4.0) for name, url in SERVICE_PROBES.items()
+                    name: await _http_probe(
+                        port, url, timeout=timeout, connect_timeout=connect_timeout
+                    )
+                    for name, url in SERVICE_PROBES.items()
                 }
-                geo = await _geo_probe(port, geo_url) if geo_url else {}
+                geo = (
+                    await _geo_probe(
+                        port, geo_url, timeout=timeout, connect_timeout=connect_timeout
+                    )
+                    if geo_url
+                    else {}
+                )
                 return {"core": core_result, "results": results, "geo": geo}
             finally:
                 await _stop_process(process)
 
 
-async def _freshness_check(config: ProxyConfig, core: str) -> dict[str, Any]:
-    attempts, core_start = await _https_session(config, core, 3, 2)
+async def _freshness_check(
+    config: ProxyConfig,
+    core: str,
+    timeout: float = 10.0,
+    connect_timeout: float | None = None,
+) -> dict[str, Any]:
+    attempts, core_start = await _https_session(
+        config, core, 3, 2, timeout=timeout, connect_timeout=connect_timeout
+    )
     successes = {attempt["target"] for attempt in attempts if attempt["success"]}
     return {
         "attempts": attempts,
