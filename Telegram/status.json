@@ -1,51 +1,69 @@
 {
-  "control_ok": false,
-  "failure_reason": "GLOBAL_TIMEOUT",
+  "control_ok": true,
   "failure_reasons": {
+    "DNS_FAILED": 35,
     "DUPLICATE": 649,
     "MALFORMED_SECRET": 2,
+    "PROTOCOL_ERROR": 331,
+    "UNSTABLE": 8,
     "UNSUPPORTED_SECRET": 4
   },
   "fastest": 20,
-  "healthy_run": false,
-  "last_successful_set": "2026-09-06T17:30:28Z",
+  "healthy_run": true,
+  "last_successful_set": "2026-09-07T19:37:40Z",
   "production": {
     "fastest": 20,
-    "stable": 43,
-    "working": 23
+    "stable": 38,
+    "working": 27
   },
   "project": "Swift",
-  "selected": {},
+  "selected": {
+    "backup": {
+      "median_rtt_ms": 259.6,
+      "score": 93.28,
+      "url": "https://t.me/proxy?server=cdn10.cdnwave.org&port=443&secret=eeecd508d816f611bb329487809f8dac88706574726f766963682e7275"
+    },
+    "fastest": {
+      "median_rtt_ms": 183.8,
+      "score": 90.51,
+      "url": "https://t.me/proxy?server=mkima.davay.click&port=443&secret=ee39300be14c4d54704c92416d555fa7026d6b696d612e64617661792e636c69636b"
+    },
+    "stable": {
+      "median_rtt_ms": 328.3,
+      "score": 97.58,
+      "url": "https://t.me/proxy?server=cdn6.cdnwave.org&port=443&secret=ee7391242569590e01416101927d38b565646e732d73686f702e7275"
+    }
+  },
   "sources": {
     "argh94": {
       "fetched": 220,
       "status": "OK",
       "unique": 212,
-      "working": 0
+      "working": 5
     },
     "klondike": {
       "fetched": 238,
       "status": "OK",
       "unique": 233,
-      "working": 0
+      "working": 1
     },
     "shablin": {
       "fetched": 261,
       "status": "OK",
       "unique": 256,
-      "working": 0
+      "working": 7
     },
     "solispirit": {
       "fetched": 243,
       "status": "OK",
       "unique": 237,
-      "working": 0
+      "working": 1
     }
   },
-  "stable": 43,
+  "stable": 38,
   "suspicious_streak": 0,
   "tagline": "Filter the garbage. Keep what works.",
-  "tested": 0,
-  "updated_at": "2026-09-07T19:20:49Z",
-  "working": 0
+  "tested": 393,
+  "updated_at": "2026-09-07T19:37:40Z",
+  "working": 27
 }
