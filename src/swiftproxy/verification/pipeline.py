@@ -107,7 +107,11 @@ async def run_generation(root: Path, core: str) -> int:
     expected_fps = {item["fingerprint"] for item in candidates}
     complete = (
         complete
-        and (not deferred)
+        # A single result may still be deferred after its retry because the local
+        # verifier briefly became congested. It is a terminal non-PASS result,
+        # so it cannot reach publication, but must not discard an otherwise
+        # complete generation. More than one deferral signals local instability.
+        and len(deferred) <= 1
         and (len(result_fps) == len(expected_fps))
         and (len(set(result_fps)) == len(result_fps))
         and (set(result_fps) == expected_fps)
