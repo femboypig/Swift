@@ -1,69 +1,69 @@
 {
   "control_ok": true,
   "failure_reasons": {
-    "DNS_FAILED": 35,
-    "DUPLICATE": 649,
+    "DNS_FAILED": 39,
+    "DUPLICATE": 630,
     "MALFORMED_SECRET": 2,
-    "PROTOCOL_ERROR": 331,
-    "UNSTABLE": 8,
-    "UNSUPPORTED_SECRET": 4
+    "PROTOCOL_ERROR": 346,
+    "UNSTABLE": 4,
+    "UNSUPPORTED_SECRET": 3
   },
   "fastest": 20,
   "healthy_run": true,
-  "last_successful_set": "2026-09-07T19:37:40Z",
+  "last_successful_set": "2026-09-07T22:02:13Z",
   "production": {
     "fastest": 20,
-    "stable": 38,
-    "working": 27
+    "stable": 27,
+    "working": 29
   },
   "project": "Swift",
   "selected": {
     "backup": {
-      "median_rtt_ms": 259.6,
-      "score": 93.28,
-      "url": "https://t.me/proxy?server=cdn10.cdnwave.org&port=443&secret=eeecd508d816f611bb329487809f8dac88706574726f766963682e7275"
+      "median_rtt_ms": 232.2,
+      "score": 96.81,
+      "url": "https://t.me/proxy?server=s7.assetflux.org&port=443&secret=ee6ec9f7e082baf2397b450727ce78447e6f7a6f6e2e7275"
     },
     "fastest": {
-      "median_rtt_ms": 183.8,
-      "score": 90.51,
-      "url": "https://t.me/proxy?server=mkima.davay.click&port=443&secret=ee39300be14c4d54704c92416d555fa7026d6b696d612e64617661792e636c69636b"
+      "median_rtt_ms": 173.4,
+      "score": 99.6,
+      "url": "https://t.me/proxy?server=ykima.davay.click&port=443&secret=ee06dfdbdf271bab18c6b606484c237384796b696d612e64617661792e636c69636b"
     },
     "stable": {
-      "median_rtt_ms": 328.3,
-      "score": 97.58,
-      "url": "https://t.me/proxy?server=cdn6.cdnwave.org&port=443&secret=ee7391242569590e01416101927d38b565646e732d73686f702e7275"
+      "median_rtt_ms": 250.1,
+      "score": 98.84,
+      "url": "https://t.me/proxy?server=72.56.25.212&port=443&secret=ee7d026761b388c46302df84b4b812aef0706574726f766963682e7275"
     }
   },
   "sources": {
     "argh94": {
       "fetched": 220,
       "status": "OK",
-      "unique": 212,
-      "working": 5
+      "unique": 213,
+      "working": 10
     },
     "klondike": {
       "fetched": 238,
       "status": "OK",
       "unique": 233,
-      "working": 1
+      "working": 3
     },
     "shablin": {
-      "fetched": 261,
+      "fetched": 251,
       "status": "OK",
-      "unique": 256,
-      "working": 7
+      "unique": 246,
+      "working": 9
     },
     "solispirit": {
-      "fetched": 243,
+      "fetched": 255,
       "status": "OK",
-      "unique": 237,
-      "working": 1
+      "unique": 252,
+      "working": 2
     }
   },
-  "stable": 38,
+  "stable": 27,
   "suspicious_streak": 0,
   "tagline": "Filter the garbage. Keep what works.",
-  "tested": 393,
-  "updated_at": "2026-09-07T19:37:40Z",
-  "working": 27
+  "tested": 414,
+  "updated_at": "2026-09-07T22:02:13Z",
+  "working": 29
 }
