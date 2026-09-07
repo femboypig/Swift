@@ -59,6 +59,36 @@ class TestRuProbe(unittest.TestCase):
         self.assertFalse(res["proxy-b"]["ok"])
 
     @patch("urllib.request.urlopen")
+    def test_probe_accepts_control_diagnostics(self, mock_urlopen):
+        mock_response = MagicMock()
+        mock_response.status = 200
+        mock_response.read.return_value = json.dumps(
+            {
+                "control": {
+                    "telegram_ok": True,
+                    "checks": [{"host": "149.154.175.50", "ok": True, "error": None}],
+                },
+                "results": [
+                    {
+                        "target": {"id": "proxy-a", "host": "1.2.3.4", "port": 443},
+                        "ok": True,
+                        "latency_ms": 42,
+                        "error": None,
+                    }
+                ],
+            }
+        ).encode("utf-8")
+        mock_response.__enter__.return_value = mock_response
+        mock_urlopen.return_value = mock_response
+
+        result = probe_ru_targets(
+            [{"id": "proxy-a", "host": "1.2.3.4", "port": 443}],
+            probe_url="https://example.com/probe",
+            probe_key="secret123",
+        )
+        self.assertTrue(result["proxy-a"]["ok"])
+
+    @patch("urllib.request.urlopen")
     def test_probe_http_error(self, mock_urlopen):
         mock_urlopen.side_effect = urllib.error.HTTPError(
             url="https://example.com", code=500, msg="Server Error", hdrs={}, fp=io.BytesIO()

@@ -44,7 +44,8 @@ def _send_probe_chunk(
         LOGGER.warning("RU_PROBE_FAILED error=%s", exc)
         return {}
 
-    if not isinstance(data, dict) or data.get("control") != {"telegram_ok": True}:
+    control = data.get("control") if isinstance(data, dict) else None
+    if not isinstance(control, dict) or control.get("telegram_ok") is not True:
         LOGGER.warning("RU_PROBE_CONTROL_UNPROVEN")
         return {}
     expected = {target["id"]: target for target in targets}
@@ -82,7 +83,7 @@ def probe_ru_targets(
     check_type: str = "mtproto",
     probe_url: str | None = None,
     probe_key: str | None = None,
-    timeout: float = 25.0,
+    timeout: float = 45.0,
     chunk_size: int = 25,
     request_concurrency: int = 1,
 ) -> dict[str, dict[str, Any]]:
