@@ -2,36 +2,36 @@
   "control_ok": true,
   "failure_reasons": {
     "DNS_FAILED": 30,
-    "DUPLICATE": 663,
+    "DUPLICATE": 664,
     "MALFORMED_SECRET": 1,
-    "PROTOCOL_ERROR": 338,
-    "UNSTABLE": 14,
+    "PROTOCOL_ERROR": 336,
+    "UNSTABLE": 8,
     "UNSUPPORTED_SECRET": 1
   },
   "fastest": 20,
   "healthy_run": true,
-  "last_successful_set": "2026-09-08T14:32:01Z",
+  "last_successful_set": "2026-09-08T14:47:18Z",
   "production": {
     "fastest": 20,
-    "stable": 31,
-    "working": 36
+    "stable": 35,
+    "working": 38
   },
   "project": "Swift",
   "selected": {
     "backup": {
-      "median_rtt_ms": 699.6,
-      "score": 88.53,
-      "url": "https://t.me/proxy?server=s4.assetflux.org&port=443&secret=eed9cf709eb48bb5a37471fba84864bd7e766b2e7275"
+      "median_rtt_ms": 668.8,
+      "score": 87.5,
+      "url": "https://t.me/proxy?server=s7.assetflux.org&port=443&secret=ee6ec9f7e082baf2397b450727ce78447e6f7a6f6e2e7275"
     },
     "fastest": {
-      "median_rtt_ms": 350.4,
-      "score": 70.79,
-      "url": "https://t.me/proxy?server=edge.mtjlpoto.fit&port=443&secret=eeef7017f26c9ecb71ed8d7609992943186d2e6265626f6f2e7275"
+      "median_rtt_ms": 188.7,
+      "score": 97.39,
+      "url": "https://t.me/proxy?server=mkima.davay.click&port=443&secret=ee39300be14c4d54704c92416d555fa7026d6b696d612e64617661792e636c69636b"
     },
     "stable": {
-      "median_rtt_ms": 776.6,
-      "score": 89.84,
-      "url": "https://t.me/proxy?server=mkima.davay.click&port=443&secret=ee39300be14c4d54704c92416d555fa7026d6b696d612e64617661792e636c69636b"
+      "median_rtt_ms": 269.5,
+      "score": 91.14,
+      "url": "https://t.me/proxy?server=media14.happtg.org&port=443&secret=ee4f9067589367c2ef531642d501664f43686f66662e7275"
     }
   },
   "sources": {
@@ -60,10 +60,10 @@
       "working": 6
     }
   },
-  "stable": 31,
+  "stable": 35,
   "suspicious_streak": 0,
   "tagline": "Filter the garbage. Keep what works.",
   "tested": 404,
-  "updated_at": "2026-09-08T14:32:01Z",
-  "working": 36
+  "updated_at": "2026-09-08T14:47:18Z",
+  "working": 38
 }
