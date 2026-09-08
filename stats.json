@@ -1,61 +1,60 @@
 {
-  "alive": 4,
-  "collected": 7901,
-  "collection_updated_at": "2026-09-07T14:18:16Z",
+  "alive": 5,
+  "collected": 8976,
+  "collection_updated_at": "2026-09-08T04:46:17Z",
   "countries": {
-    "HU": 1,
-    "US": 3
+    "DE": 2,
+    "FR": 1,
+    "US": 2
   },
   "failure_reasons": {
-    "CORE_EXITED": 164,
-    "DNS_FAILED": 115,
-    "DNS_TIMEOUT": 129,
+    "CONFIG_TIMEOUT": 2,
+    "CORE_EXITED": 180,
+    "DNS_FAILED": 95,
+    "DNS_TIMEOUT": 337,
+    "DOWNLOAD_R1_FAILED": 1,
     "FRESHNESS_FAILED": 3,
-    "HTTPS_FAILED": 4272,
-    "PASS": 4,
-    "STALLED": 15,
-    "TOO_SLOW": 4,
-    "UNSTABLE": 5
+    "HTTPS_FAILED": 4313,
+    "PASS": 5,
+    "STALLED": 10,
+    "TOO_SLOW": 14
   },
   "freshness": {
-    "expected": 7,
+    "expected": 8,
     "failed": 3,
-    "passed": 4
+    "passed": 5
   },
   "funnel": {
-    "main_published": 4,
-    "ru_accounted": 4711,
-    "ru_expected": 4711,
-    "ru_pass": 4,
+    "main_published": 5,
+    "ru_accounted": 4960,
+    "ru_expected": 4960,
+    "ru_pass": 5,
     "white_published": 0
   },
-  "generation_id": "27eddc5d8e02a0cf1fe6004e4c7cfa56f6083566b129148c8b1af0c33bcea0b1",
-  "main": 4,
-  "median_latency_ms": 998.36,
-  "parsed": 7191,
+  "generation_id": "6f6e63acac7994d36fa6a0de5c7e4e7774a962766e83cad97306e7c24b5d37d9",
+  "main": 5,
+  "median_latency_ms": 1315.15,
+  "parsed": 8203,
   "production": {
-    "all": 4,
-    "main": 4,
+    "all": 5,
+    "main": 5,
     "white": 0
   },
   "project": "Swift",
   "protocols": {
-    "vless": 4
+    "vless": 5
   },
-  "publication_updated_at": "2026-09-07T15:39:23Z",
+  "publication_updated_at": "2026-09-08T14:28:06Z",
   "published": true,
   "sources": {
-    "0xRadikal": 1,
-    "akres": 1,
-    "rjsxrd": 2
+    "0xRadikal": 3,
+    "akres": 2
   },
   "stage": "published",
   "tagline": "Filter the garbage. Keep what works.",
-  "tested": 4711,
-  "unique": 4711,
-  "updated_at": "2026-09-07T15:39:23Z",
+  "tested": 4960,
+  "unique": 4960,
+  "updated_at": "2026-09-08T14:28:06Z",
   "white": 0,
-  "white_evidence": {
-    "upstream-only": 2
-  }
+  "white_evidence": {}
 }
