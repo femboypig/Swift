@@ -1,8 +1,7 @@
 #profile-title: Swift Main
 #profile-update-interval: 1
 #profile-web-page-url: https://github.com/femboypig/Swift
-vless://5d16ac22-6eea-426f-b778-6f4c2961faef@91.224.86.107:9830?encryption=none&type=grpc&security=reality&sni=dl.google.com&fp=qq&pbk=bnRIb3Er1i-K6NGGByCO9UbGfOvu43ZoiK7ulPd1SzU&sid=aabbccdd&serviceName=grpc-tunnel#%F0%9F%87%A9%F0%9F%87%AA%20DE%20%C2%B7%20001
-vless://5d16ac22-6eea-426f-b778-6f4c2961faef@91.224.86.107:9830?encryption=none&type=grpc&security=reality&sni=dl.google.com&fp=firefox&pbk=bnRIb3Er1i-K6NGGByCO9UbGfOvu43ZoiK7ulPd1SzU&sid=aabbccdd&serviceName=grpc-tunnel#%F0%9F%87%A9%F0%9F%87%AA%20DE%20%C2%B7%20002
-vless://e0b9fb0f-1bbd-478b-9580-c2294778338b@77.110.104.125:8443?encryption=none&type=grpc&security=reality&sni=maps.apple.com&fp=chrome&pbk=OMlQAFrCMZ3DX0xlnbEZiByLBFzpUE8XJHJsrBzLdlY&sid=2da4299da566b7&serviceName=your-custom-path&mode=gun#%F0%9F%87%AB%F0%9F%87%B7%20FR%20%C2%B7%20003
-vless://5d16ac22-6eea-426f-b778-6f4c2961faef@91.224.87.22:9873?encryption=none&type=grpc&security=reality&sni=dl.google.com&fp=qq&pbk=bnRIb3Er1i-K6NGGByCO9UbGfOvu43ZoiK7ulPd1SzU&sid=aabb&serviceName=grpc-tunnel#%F0%9F%87%BA%F0%9F%87%B8%20US%20%C2%B7%20004
-vless://5d16ac22-6eea-426f-b778-6f4c2961faef@91.224.87.22:9873?encryption=none&type=grpc&security=reality&sni=dl.google.com&fp=firefox&pbk=bnRIb3Er1i-K6NGGByCO9UbGfOvu43ZoiK7ulPd1SzU&sid=aabb&serviceName=grpc-tunnel#%F0%9F%87%BA%F0%9F%87%B8%20US%20%C2%B7%20005
+vless://9a829166-3da9-4445-babe-1612ee5fa9ae@2.26.129.75:443?encryption=none&type=tcp&security=reality&flow=xtls-rprx-vision&sni=stream.indigo.ru&fp=firefox&pbk=gPTBA-gVUWAK9yziB_v_sGSncm0LwBQvEAsTQZK4jEE&sid=5a8e1a04f3d92b67#%F0%9F%87%AB%F0%9F%87%B7%20FR%20%C2%B7%20001
+vless://e0b9fb0f-1bbd-478b-9580-c2294778338b@77.110.104.125:8443?encryption=none&type=grpc&security=reality&sni=maps.apple.com&fp=firefox&pbk=OMlQAFrCMZ3DX0xlnbEZiByLBFzpUE8XJHJsrBzLdlY&sid=2da4299da566b7&serviceName=your-custom-path#%F0%9F%87%AB%F0%9F%87%B7%20FR%20%C2%B7%20002
+vless://9a829166-3da9-4445-babe-1612ee5fa9ae@2.26.139.201:443?encryption=none&type=tcp&security=reality&flow=xtls-rprx-vision&sni=kukuruza.mycdn-me.ru&fp=edge&pbk=-qRasoN1QIcSdRL937b6s-Y2qOb-9OFmlaHBi7UcOSM&sid=e17b4d9a8c1f3526#%F0%9F%87%AD%F0%9F%87%BA%20HU%20%C2%B7%20003
+vless://5d16ac22-6eea-426f-b778-6f4c2961faef@91.224.86.107:9830?encryption=none&type=grpc&security=reality&sni=dl.google.com&fp=qq&pbk=bnRIb3Er1i-K6NGGByCO9UbGfOvu43ZoiK7ulPd1SzU&sid=aabbccdd&serviceName=grpc-tunnel#%F0%9F%87%BA%F0%9F%87%A6%20UA%20%C2%B7%20004
