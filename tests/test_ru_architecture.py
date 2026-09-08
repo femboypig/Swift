@@ -303,8 +303,9 @@ class GoldenHttpsTests(unittest.TestCase):
 
     def test_upstream_label_alone_is_not_white_evidence(self) -> None:
         self.assertFalse(_white_publishable({"upstream_label": True, "evidence": None}))
-        self.assertFalse(_white_publishable({"upstream_label": True, "evidence": "sni"}))
+        self.assertTrue(_white_publishable({"upstream_label": True, "evidence": "sni"}))
         self.assertTrue(_white_publishable({"upstream_label": False, "evidence": "cidr"}))
+        self.assertTrue(_white_publishable({"upstream_label": False, "evidence": "cidr+sni"}))
 
     @patch("swiftproxy.verification.limits._direct_control", new_callable=AsyncMock)
     def test_local_congestion_is_an_infrastructure_signal(self, control) -> None:

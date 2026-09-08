@@ -14,6 +14,33 @@ DOMAIN_RE = re.compile(
 )
 
 
+CORE_WHITE_DOMAINS: frozenset[str] = frozenset(
+    {
+        "vk.com",
+        "vk.ru",
+        "m.vk.com",
+        "mail.ru",
+        "dzen.ru",
+        "gosuslugi.ru",
+        "esia.gosuslugi.ru",
+        "yandex.ru",
+        "ya.ru",
+        "sberbank.ru",
+        "sber.ru",
+        "tinkoff.ru",
+        "t-bank.ru",
+        "ozon.ru",
+        "wildberries.ru",
+        "avito.ru",
+        "rutube.ru",
+        "kinopoisk.ru",
+        "mos.ru",
+        "nalog.ru",
+        "nalog.gov.ru",
+    }
+)
+
+
 @dataclass(frozen=True, slots=True)
 class WhiteEvidence:
     networks: tuple[ipaddress.IPv4Network, ...]
@@ -39,7 +66,10 @@ class WhiteEvidence:
         if domain is None:
             return False
         labels = domain.split(".")
-        return any(".".join(labels[index:]) in self.domains for index in range(len(labels) - 1))
+        return any(
+            ".".join(labels[index:]) in self.domains or ".".join(labels[index:]) in CORE_WHITE_DOMAINS
+            for index in range(len(labels) - 1)
+        )
 
 
 def evidence_specs(config: dict[str, Any]) -> list[SourceSpec]:
@@ -95,6 +125,7 @@ def build_evidence(results: list[SourceResult]) -> WhiteEvidence:
             continue
         domains_set.update(parsed)
         domain_sources.append(result.source.source_id)
+    domains_set.update(CORE_WHITE_DOMAINS)
     domains = frozenset(domains_set)
 
     return WhiteEvidence(
@@ -175,7 +206,7 @@ def _domain(value: str) -> str | None:
 def _white_signal(config: ProxyConfig, selected_ip: str, evidence: dict[str, Any]) -> str | None:
     networks = [ipaddress.ip_network(value) for value in evidence.get("networks", [])]
     cidr = any(ipaddress.ip_address(selected_ip) in network for network in networks)
-    domains = set(evidence.get("domains", []))
+    domains = set(evidence.get("domains", [])).union(CORE_WHITE_DOMAINS)
     security = str(config.options.get("security", "none"))
     visible = config.protocol in {"trojan", "hysteria2", "tuic"} or security in {"tls", "reality"}
     name = str(config.options.get("sni") or config.host).lower().rstrip(".") if visible else ""
@@ -191,4 +222,4 @@ def _white_signal(config: ProxyConfig, selected_ip: str, evidence: dict[str, Any
 
 
 def _white_publishable(result: dict[str, Any]) -> bool:
-    return result.get("evidence") in {"cidr", "cidr+sni"}
+    return result.get("evidence") in {"cidr", "cidr+sni", "sni"}

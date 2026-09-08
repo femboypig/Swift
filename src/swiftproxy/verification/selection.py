@@ -56,10 +56,10 @@ def select_outputs(candidates, results, configs_history, settings, now):
     white_pool = [
         item
         for item in ranked_items
-        if "white" in candidate_map[item.config.fingerprint]["lanes"]
-        and (
+        if (
             white := next(
-                result for result in results if result["fingerprint"] == item.config.fingerprint
+                (result for result in results if result["fingerprint"] == item.config.fingerprint),
+                {},
             ).get("white", {})
         )
         and _white_publishable(white)

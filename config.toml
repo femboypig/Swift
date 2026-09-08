@@ -303,3 +303,21 @@ id = "matryoshka-white"
 name = "matryoshka"
 url = "https://raw.githubusercontent.com/FLEXIY0/matryoshka-vpn/main/configs/russia_whitelist.txt"
 lanes = ["main", "white"]
+
+[[sources]]
+id = "epodonios-vless"
+name = "epodonios"
+url = "https://raw.githubusercontent.com/Epodonios/v2ray-configs/main/Splitted-By-Protocol/vless.txt"
+lanes = ["main", "white"]
+
+[[sources]]
+id = "lalatina-nodes"
+name = "lalatina"
+url = "https://raw.githubusercontent.com/LalatinaHub/Mineral/master/result/nodes"
+lanes = ["main", "white"]
+
+[[sources]]
+id = "pawdroid-sub"
+name = "pawdroid"
+url = "https://raw.githubusercontent.com/Pawdroid/Free-servers/main/sub"
+lanes = ["main", "white"]

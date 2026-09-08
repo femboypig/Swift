@@ -97,7 +97,12 @@ async def _start_core(
                 "duration_ms": round((time.monotonic() - started) * 1000, 2),
             },
         )
-    if not await _wait_for_core(process, port):
+    try:
+        ready = await _wait_for_core(process, port)
+    except BaseException:
+        await _stop_process(process)
+        raise
+    if not ready:
         category = "CORE_EXITED" if process.returncode is not None else "LISTEN_TIMEOUT"
         await _stop_process(process)
         return (

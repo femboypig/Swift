@@ -2,8 +2,8 @@ from __future__ import annotations
 
 PROBE_URLS = [
     "https://www.gstatic.com/generate_204",
-    "https://cp.cloudflare.com/generate_204",
-    "https://connectivitycheck.platform.hicloud.com/generate_204",
+    "https://captive.apple.com/hotspot-detect.html",
+    "https://detectportal.firefox.com/canonical.html",
 ]
 
 

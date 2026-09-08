@@ -15,6 +15,8 @@ def _target_id(url: str) -> str:
     host = urlsplit(url).hostname or "unknown"
     return {
         "www.gstatic.com": "gstatic",
+        "captive.apple.com": "apple",
+        "detectportal.firefox.com": "firefox",
         "cp.cloudflare.com": "cloudflare",
         "connectivitycheck.platform.hicloud.com": "hicloud",
     }.get(host, host[:64])
