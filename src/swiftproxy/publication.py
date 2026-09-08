@@ -57,7 +57,7 @@ def _validate_result(result: dict[str, Any]) -> None:
                 and 200 <= item.get("status", 0) < 400
                 and item.get("total_ms", 0) > 0
             }
-            if len(targets & {"gstatic", "cloudflare", "hicloud"}) < 2:
+            if len(targets & {"gstatic", "apple", "firefox", "cloudflare", "hicloud"}) < 2:
                 raise ValueError("missing distinct HTTPS successes")
         for stage in ("r1", "r2"):
             attempt = result[stage]
