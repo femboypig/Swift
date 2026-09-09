@@ -2,34 +2,34 @@
   "control_ok": true,
   "failure_reasons": {
     "DNS_FAILED": 24,
-    "DUPLICATE": 690,
-    "PROTOCOL_ERROR": 342,
-    "UNSTABLE": 23
+    "DUPLICATE": 694,
+    "PROTOCOL_ERROR": 345,
+    "UNSTABLE": 15
   },
   "fastest": 20,
   "healthy_run": true,
-  "last_successful_set": "2026-09-09T14:24:56Z",
+  "last_successful_set": "2026-09-09T14:49:00Z",
   "production": {
     "fastest": 20,
-    "stable": 31,
-    "working": 42
+    "stable": 36,
+    "working": 38
   },
   "project": "Swift",
   "selected": {
     "backup": {
-      "median_rtt_ms": 326.2,
-      "score": 92.59,
+      "median_rtt_ms": 247.8,
+      "score": 93.47,
       "url": "https://t.me/proxy?server=media14.happtg.org&port=443&secret=ee4f9067589367c2ef531642d501664f43686f66662e7275"
     },
     "fastest": {
-      "median_rtt_ms": 248.8,
-      "score": 75.26,
+      "median_rtt_ms": 244.1,
+      "score": 81.78,
       "url": "https://t.me/proxy?server=t.meow-network.com&port=443&secret=ee5622e11fff3e49bcc85280197a6106b5742e6d656f772d6e6574776f726b2e636f6d"
     },
     "stable": {
-      "median_rtt_ms": 200.7,
-      "score": 90.18,
-      "url": "https://t.me/proxy?server=ykima.davay.click&port=443&secret=ee06dfdbdf271bab18c6b606484c237384796b696d612e64617661792e636c69636b"
+      "median_rtt_ms": 300.6,
+      "score": 91.5,
+      "url": "https://t.me/proxy?server=cdn3.cdnwave.org&port=443&secret=ee8fc9c7632b344b1b76639c501ae7cfb5766b2e7275"
     }
   },
   "sources": {
@@ -37,7 +37,7 @@
       "fetched": 233,
       "status": "OK",
       "unique": 217,
-      "working": 6
+      "working": 8
     },
     "klondike": {
       "fetched": 243,
@@ -49,19 +49,19 @@
       "fetched": 285,
       "status": "OK",
       "unique": 280,
-      "working": 6
+      "working": 7
     },
     "solispirit": {
       "fetched": 247,
       "status": "OK",
       "unique": 243,
-      "working": 1
+      "working": 2
     }
   },
-  "stable": 31,
+  "stable": 36,
   "suspicious_streak": 0,
   "tagline": "Filter the garbage. Keep what works.",
-  "tested": 408,
-  "updated_at": "2026-09-09T14:24:56Z",
-  "working": 42
+  "tested": 407,
+  "updated_at": "2026-09-09T14:49:00Z",
+  "working": 38
 }
