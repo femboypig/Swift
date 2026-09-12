@@ -1,34 +1,34 @@
 {
   "control_ok": true,
   "failure_reasons": {
-    "DNS_FAILED": 24,
-    "DUPLICATE": 552,
+    "DNS_FAILED": 25,
+    "DUPLICATE": 565,
     "MALFORMED_SECRET": 1,
     "PROTOCOL_ERROR": 320,
-    "UNSTABLE": 8
+    "UNSTABLE": 5
   },
-  "fastest": 20,
+  "fastest": 19,
   "healthy_run": true,
-  "last_successful_set": "2026-09-12T21:41:49Z",
+  "last_successful_set": "2026-09-12T23:26:21Z",
   "production": {
-    "fastest": 20,
-    "stable": 23,
-    "working": 22
+    "fastest": 19,
+    "stable": 21,
+    "working": 19
   },
   "project": "Swift",
   "selected": {
     "backup": {
-      "median_rtt_ms": 151.0,
-      "score": 87.81,
-      "url": "https://t.me/proxy?server=ykima.davay.click&port=443&secret=ee06dfdbdf271bab18c6b606484c237384796b696d612e64617661792e636c69636b"
+      "median_rtt_ms": 246.0,
+      "score": 91.91,
+      "url": "https://t.me/proxy?server=chestno.servera-dlya-tg-zdes-net.abrdns.com&port=443&secret=eea65c7fc5a0d5669ba371a7ca88fc19496f7a6f6e2e7275"
     },
     "fastest": {
-      "median_rtt_ms": 205.2,
-      "score": 99.24,
-      "url": "https://t.me/proxy?server=s15.assetflux.org&port=443&secret=eeea54d6ad3d5483e95301bc5eb02d3ae5706574726f766963682e7275"
+      "median_rtt_ms": 197.2,
+      "score": 78.39,
+      "url": "https://t.me/proxy?server=kima.rabotaet.online&port=443&secret=ee12e7e5f961f258b04af168a1cba6318a6b696d612e7261626f746165742e6f6e6c696e65"
     },
     "stable": {
-      "median_rtt_ms": 110.6,
+      "median_rtt_ms": 94.0,
       "score": 100.0,
       "url": "https://t.me/proxy?server=1b2aca9d-6852-45a7-bd7b-771a70fde2b7.fast-cdn.cc&port=443&secret=ee5a9252c2c44ec88a5ad64b048d4585f7666173742d63646e2e6363"
     }
@@ -50,19 +50,19 @@
       "fetched": 264,
       "status": "OK",
       "unique": 262,
-      "working": 8
+      "working": 6
     },
     "solispirit": {
       "fetched": 164,
       "status": "OK",
       "unique": 164,
-      "working": 5
+      "working": 4
     }
   },
-  "stable": 23,
+  "stable": 21,
   "suspicious_streak": 0,
   "tagline": "Filter the garbage. Keep what works.",
-  "tested": 366,
-  "updated_at": "2026-09-12T21:41:49Z",
-  "working": 22
+  "tested": 364,
+  "updated_at": "2026-09-12T23:26:21Z",
+  "working": 19
 }
