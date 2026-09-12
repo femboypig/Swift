@@ -1,71 +1,73 @@
 {
-  "alive": 17,
-  "collected": 15607,
-  "collection_updated_at": "2026-09-11T19:11:23Z",
+  "alive": 23,
+  "collected": 15979,
+  "collection_updated_at": "2026-09-11T22:38:51Z",
   "countries": {
-    "AT": 1,
-    "DE": 1,
-    "KZ": 3,
-    "NL": 5,
-    "SE": 1,
-    "SG": 2,
+    "DE": 4,
+    "ES": 1,
+    "KZ": 2,
+    "NL": 11,
+    "TR": 1,
     "US": 4
   },
   "failure_reasons": {
-    "CONFIG_TIMEOUT": 44,
-    "CORE_EXITED": 170,
-    "DNS_FAILED": 212,
-    "DNS_TIMEOUT": 557,
-    "DOWNLOAD_R1_FAILED": 3,
-    "FRESHNESS_FAILED": 2,
-    "HTTPS_FAILED": 6476,
-    "PASS": 17,
-    "STALLED": 6,
-    "TOO_SLOW": 22,
-    "UNSTABLE": 1
+    "CONFIG_TIMEOUT": 27,
+    "CORE_EXITED": 174,
+    "DNS_FAILED": 211,
+    "DNS_TIMEOUT": 561,
+    "DOWNLOAD_R1_FAILED": 18,
+    "FRESHNESS_FAILED": 4,
+    "HTTPS_FAILED": 6590,
+    "PASS": 23,
+    "STALLED": 14,
+    "TOO_SLOW": 26,
+    "UNSTABLE": 9
   },
   "freshness": {
-    "expected": 19,
-    "failed": 2,
-    "passed": 17
+    "expected": 27,
+    "failed": 4,
+    "passed": 23
   },
   "funnel": {
-    "main_published": 17,
-    "ru_accounted": 7510,
-    "ru_expected": 7510,
-    "ru_pass": 17,
-    "white_published": 2
+    "main_published": 23,
+    "ru_accounted": 7657,
+    "ru_expected": 7657,
+    "ru_pass": 23,
+    "white_published": 0
   },
-  "generation_id": "74166a33a3748bfd66cfecb26cc437df6df7bf451d7129cfdd2b42414405bd0b",
-  "main": 17,
-  "median_latency_ms": 1014.25,
-  "parsed": 13586,
+  "generation_id": "4d74c6cff4cec2bebef9a29e550efb23396d4987a544e3c7dca76167a3c03ae6",
+  "main": 23,
+  "median_latency_ms": 940.43,
+  "parsed": 13962,
   "production": {
-    "all": 17,
-    "main": 17,
-    "white": 2
+    "all": 23,
+    "main": 23,
+    "white": 0
   },
   "project": "Swift",
   "protocols": {
-    "vless": 17
+    "vless": 23
   },
-  "publication_updated_at": "2026-09-11T20:24:23Z",
+  "publication_updated_at": "2026-09-12T06:49:04Z",
   "published": true,
   "sources": {
-    "0xRadikal": 4,
-    "akres": 4,
-    "epodonios": 1,
-    "igareck": 8,
-    "rjsxrd": 8
+    "0xRadikal": 5,
+    "airlink": 1,
+    "akres": 3,
+    "epodonios": 3,
+    "igareck": 3,
+    "kizyak": 1,
+    "rjsxrd": 13,
+    "rkp": 1,
+    "zieng2": 1
   },
   "stage": "published",
   "tagline": "Filter the garbage. Keep what works.",
-  "tested": 7510,
-  "unique": 7510,
-  "updated_at": "2026-09-11T20:24:23Z",
-  "white": 2,
+  "tested": 7657,
+  "unique": 7657,
+  "updated_at": "2026-09-12T06:49:04Z",
+  "white": 0,
   "white_evidence": {
-    "cidr": 2,
-    "upstream-only": 9
+    "upstream-only": 15
   }
 }
