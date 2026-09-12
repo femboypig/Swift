@@ -2,35 +2,35 @@
   "control_ok": true,
   "failure_reasons": {
     "DNS_FAILED": 24,
-    "DUPLICATE": 630,
+    "DUPLICATE": 638,
     "MALFORMED_SECRET": 1,
-    "PROTOCOL_ERROR": 323,
-    "UNSTABLE": 10
+    "PROTOCOL_ERROR": 318,
+    "UNSTABLE": 9
   },
   "fastest": 20,
   "healthy_run": true,
-  "last_successful_set": "2026-09-12T09:37:16Z",
+  "last_successful_set": "2026-09-12T13:34:20Z",
   "production": {
     "fastest": 20,
-    "stable": 22,
+    "stable": 21,
     "working": 23
   },
   "project": "Swift",
   "selected": {
     "backup": {
-      "median_rtt_ms": 344.3,
-      "score": 70.09,
-      "url": "https://t.me/proxy?server=sync.lovely.lat&port=443&secret=eeaadd88aa9facd454936d0c42dc128e776d2e6265626f6f2e7275"
-    },
-    "fastest": {
-      "median_rtt_ms": 114.6,
+      "median_rtt_ms": 104.8,
       "score": 100.0,
       "url": "https://t.me/proxy?server=1b2aca9d-6852-45a7-bd7b-771a70fde2b7.fast-cdn.cc&port=443&secret=ee5a9252c2c44ec88a5ad64b048d4585f7666173742d63646e2e6363"
     },
-    "stable": {
-      "median_rtt_ms": 201.8,
-      "score": 99.33,
+    "fastest": {
+      "median_rtt_ms": 222.9,
+      "score": 99.07,
       "url": "https://t.me/proxy?server=s15.assetflux.org&port=443&secret=eeea54d6ad3d5483e95301bc5eb02d3ae5706574726f766963682e7275"
+    },
+    "stable": {
+      "median_rtt_ms": 331.5,
+      "score": 86.43,
+      "url": "https://t.me/proxy?server=chestno.servera-dlya-tg-zdes-net.abrdns.com&port=443&secret=eea65c7fc5a0d5669ba371a7ca88fc19496f7a6f6e2e7275"
     }
   },
   "sources": {
@@ -38,31 +38,31 @@
       "fetched": 224,
       "status": "OK",
       "unique": 207,
-      "working": 4
+      "working": 2
     },
     "klondike": {
       "fetched": 226,
       "status": "OK",
       "unique": 226,
-      "working": 5
+      "working": 6
     },
     "shablin": {
-      "fetched": 273,
+      "fetched": 271,
       "status": "OK",
-      "unique": 272,
-      "working": 9
+      "unique": 269,
+      "working": 11
     },
     "solispirit": {
       "fetched": 218,
       "status": "OK",
       "unique": 216,
-      "working": 5
+      "working": 4
     }
   },
-  "stable": 22,
+  "stable": 21,
   "suspicious_streak": 0,
   "tagline": "Filter the garbage. Keep what works.",
-  "tested": 370,
-  "updated_at": "2026-09-12T09:37:16Z",
+  "tested": 365,
+  "updated_at": "2026-09-12T13:34:20Z",
   "working": 23
 }
