@@ -23,10 +23,17 @@ jobs:
           runs=$(gh api \
             "repos/${GITHUB_REPOSITORY}/actions/workflows/update.yml/runs?per_page=10")
 
-          active=$(jq '[.workflow_runs[] | select(.status == "queued" or .status == "in_progress" or .status == "waiting" or .status == "pending")] | length' <<<"$runs")
-          if (( active > 0 )); then
-            echo "A Swift update is already active; nothing to do."
-            exit 0
+          active_run=$(jq -r '[.workflow_runs[] | select(.status == "queued" or .status == "in_progress" or .status == "waiting" or .status == "pending")][0].id // empty' <<<"$runs")
+          if [[ -n "$active_run" ]]; then
+            active_created=$(jq -r --arg id "$active_run" '.workflow_runs[] | select((.id|tostring) == $id).created_at' <<<"$runs")
+            active_age=$(( $(date -u +%s) - $(date -u -d "$active_created" +%s) ))
+            if (( active_age > 9000 )); then
+              echo "Active Swift update $active_run running for ${active_age}s (> 2.5h); cancelling stale run."
+              gh api --method POST "repos/${GITHUB_REPOSITORY}/actions/runs/${active_run}/cancel" || true
+            else
+              echo "A Swift update ($active_run) is already active (${active_age}s ago); nothing to do."
+              exit 0
+            fi
           fi
 
           latest=$(jq -r '.workflow_runs[0].created_at // ""' <<<"$runs")

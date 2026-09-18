@@ -20,8 +20,9 @@ permissions:
   id-token: write
 
 concurrency:
-  group: swift-subscription-update
-  cancel-in-progress: false
+  group: swift-core-update
+  cancel-in-progress: true
+
 
 env:
   PYTHONPATH: src
@@ -61,7 +62,7 @@ jobs:
     needs: collect
     if: ${{ always() && (needs.collect.result == 'success' || (github.event_name == 'workflow_dispatch' && inputs.generation_run_id != '')) }}
     runs-on: [self-hosted, Linux]
-    timeout-minutes: 180
+    timeout-minutes: 90
     permissions:
       actions: read
       contents: read
@@ -175,6 +176,7 @@ jobs:
           git config user.name "femboyPig"
           git config user.email "harimassaa@gmail.com"
           git commit -m "Update Swift subscriptions"
+          git pull --rebase origin main || true
           git push
       - name: Prepare Pages artifact
         shell: bash

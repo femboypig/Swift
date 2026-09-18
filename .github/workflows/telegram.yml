@@ -11,8 +11,8 @@ permissions:
   id-token: write
 
 concurrency:
-  group: swift-subscription-update
-  cancel-in-progress: false
+  group: swift-telegram-update
+  cancel-in-progress: true
 
 env:
   PYTHONPATH: src
@@ -61,6 +61,7 @@ jobs:
           git config user.name "femboyPig"
           git config user.email "harimassaa@gmail.com"
           git commit -m "Update Swift Telegram proxies"
+          git pull --rebase origin main || true
           git push
       - name: Update Telegram status message
         continue-on-error: true
