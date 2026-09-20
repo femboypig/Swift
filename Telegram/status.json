@@ -2,34 +2,29 @@
   "control_ok": true,
   "failure_reasons": {
     "DNS_FAILED": 13,
-    "DUPLICATE": 474,
-    "PROTOCOL_ERROR": 237,
-    "UNSTABLE": 4,
+    "DUPLICATE": 471,
+    "PROTOCOL_ERROR": 236,
+    "UNSTABLE": 10,
     "UNSUPPORTED_SECRET": 2
   },
-  "fastest": 19,
+  "fastest": 20,
   "healthy_run": true,
-  "last_successful_set": "2026-09-20T10:07:55Z",
+  "last_successful_set": "2026-09-20T14:21:44Z",
   "production": {
-    "fastest": 19,
-    "stable": 19,
-    "working": 19
+    "fastest": 20,
+    "stable": 20,
+    "working": 20
   },
   "project": "Swift",
   "selected": {
     "backup": {
-      "median_rtt_ms": 379.5,
-      "score": 75.97,
-      "url": "https://t.me/proxy?server=route.lovely.lat&port=443&secret=eefbfe5681832d6f42bbc050839be23bf46d2e6265626f6f2e7275"
+      "median_rtt_ms": 166.5,
+      "score": 65.37,
+      "url": "https://t.me/proxy?server=s04.neo-trading.org&port=443&secret=ee364a7bd5b928139fbc6b2b458e9fef9d686f66662e7275"
     },
     "fastest": {
-      "median_rtt_ms": 232.2,
-      "score": 58.98,
-      "url": "https://t.me/proxy?server=media6.happtg.org&port=443&secret=ee7391242569590e01416101927d38b565646e732d73686f702e7275"
-    },
-    "stable": {
-      "median_rtt_ms": 116.3,
-      "score": 95.0,
+      "median_rtt_ms": 125.3,
+      "score": 94.96,
       "url": "https://t.me/proxy?server=1b2aca9d-6852-45a7-bd7b-771a70fde2b7.fast-cdn.cc&port=443&secret=ee5a9252c2c44ec88a5ad64b048d4585f7666173742d63646e2e6363"
     }
   },
@@ -38,7 +33,7 @@
       "fetched": 236,
       "status": "OK",
       "unique": 225,
-      "working": 7
+      "working": 11
     },
     "klondike": {
       "fetched": 239,
@@ -50,7 +45,7 @@
       "fetched": 210,
       "status": "OK",
       "unique": 209,
-      "working": 2
+      "working": 3
     },
     "solispirit": {
       "fetched": 0,
@@ -59,10 +54,10 @@
       "working": 0
     }
   },
-  "stable": 19,
+  "stable": 20,
   "suspicious_streak": 0,
   "tagline": "Filter the garbage. Keep what works.",
   "tested": 269,
-  "updated_at": "2026-09-20T10:07:55Z",
-  "working": 19
+  "updated_at": "2026-09-20T14:21:44Z",
+  "working": 20
 }
