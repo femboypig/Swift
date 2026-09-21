@@ -1,15 +1,15 @@
 {
   "control_ok": true,
   "failure_reasons": {
-    "DNS_FAILED": 7,
-    "DUPLICATE": 567,
-    "PROTOCOL_ERROR": 251,
-    "UNSTABLE": 3,
+    "DNS_FAILED": 5,
+    "DUPLICATE": 486,
+    "PROTOCOL_ERROR": 240,
+    "UNSTABLE": 2,
     "UNSUPPORTED_SECRET": 8
   },
   "fastest": 14,
   "healthy_run": true,
-  "last_successful_set": "2026-09-21T11:08:28Z",
+  "last_successful_set": "2026-09-21T17:12:27Z",
   "production": {
     "fastest": 14,
     "stable": 17,
@@ -18,27 +18,27 @@
   "project": "Swift",
   "selected": {
     "backup": {
-      "median_rtt_ms": 94.0,
-      "score": 99.0,
-      "url": "https://t.me/proxy?server=ssh.meow0.co.uk&port=22&secret=dd79e344818749bd7ac519130220c25d09"
+      "median_rtt_ms": 102.4,
+      "score": 95.0,
+      "url": "https://t.me/proxy?server=1b2aca9d-6852-45a7-bd7b-771a70fde2b7.fast-cdn.cc&port=443&secret=ee5a9252c2c44ec88a5ad64b048d4585f7666173742d63646e2e6363"
     },
     "fastest": {
-      "median_rtt_ms": 267.0,
-      "score": 88.44,
+      "median_rtt_ms": 247.3,
+      "score": 84.64,
       "url": "https://t.me/proxy?server=mtp.webvirt.cloud&port=443&secret=ee938dd87467bc49301de2e9765cf20f4374656c2e776562766972742e636c6f7564"
     },
     "stable": {
-      "median_rtt_ms": 97.8,
-      "score": 95.0,
-      "url": "https://t.me/proxy?server=1b2aca9d-6852-45a7-bd7b-771a70fde2b7.fast-cdn.cc&port=443&secret=ee5a9252c2c44ec88a5ad64b048d4585f7666173742d63646e2e6363"
+      "median_rtt_ms": 341.7,
+      "score": 69.25,
+      "url": "https://t.me/proxy?server=granite.mtproxy.zip&port=443&secret=ee3f8a91c2d7e04b6a9f12c5e8370bd4aa786170692e6f7a6f6e2e7275"
     }
   },
   "sources": {
     "argh94": {
-      "fetched": 236,
+      "fetched": 151,
       "status": "OK",
-      "unique": 225,
-      "working": 9
+      "unique": 145,
+      "working": 6
     },
     "klondike": {
       "fetched": 118,
@@ -50,19 +50,19 @@
       "fetched": 207,
       "status": "OK",
       "unique": 204,
-      "working": 2
+      "working": 1
     },
     "solispirit": {
       "fetched": 232,
       "status": "OK",
       "unique": 229,
-      "working": 2
+      "working": 1
     }
   },
   "stable": 17,
   "suspicious_streak": 0,
   "tagline": "Filter the garbage. Keep what works.",
-  "tested": 272,
-  "updated_at": "2026-09-21T11:08:28Z",
+  "tested": 259,
+  "updated_at": "2026-09-21T17:12:27Z",
   "working": 14
 }
