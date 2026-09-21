@@ -1,34 +1,34 @@
 {
   "control_ok": true,
   "failure_reasons": {
-    "DNS_FAILED": 3,
-    "DUPLICATE": 478,
-    "PROTOCOL_ERROR": 227,
-    "UNSTABLE": 4,
-    "UNSUPPORTED_SECRET": 6
+    "DNS_FAILED": 7,
+    "DUPLICATE": 567,
+    "PROTOCOL_ERROR": 251,
+    "UNSTABLE": 3,
+    "UNSUPPORTED_SECRET": 8
   },
-  "fastest": 18,
+  "fastest": 14,
   "healthy_run": true,
-  "last_successful_set": "2026-09-21T05:32:57Z",
+  "last_successful_set": "2026-09-21T11:08:28Z",
   "production": {
-    "fastest": 18,
-    "stable": 18,
-    "working": 18
+    "fastest": 14,
+    "stable": 17,
+    "working": 14
   },
   "project": "Swift",
   "selected": {
     "backup": {
-      "median_rtt_ms": 171.6,
-      "score": 78.56,
-      "url": "https://t.me/proxy?server=ykima.davay.click&port=443&secret=ee06dfdbdf271bab18c6b606484c237384796b696d612e64617661792e636c69636b"
+      "median_rtt_ms": 94.0,
+      "score": 99.0,
+      "url": "https://t.me/proxy?server=ssh.meow0.co.uk&port=22&secret=dd79e344818749bd7ac519130220c25d09"
     },
     "fastest": {
-      "median_rtt_ms": 242.9,
-      "score": 69.41,
-      "url": "https://t.me/proxy?server=cdn7.cdnwave.org&port=443&secret=ee6ec9f7e082baf2397b450727ce78447e6f7a6f6e2e7275"
+      "median_rtt_ms": 267.0,
+      "score": 88.44,
+      "url": "https://t.me/proxy?server=mtp.webvirt.cloud&port=443&secret=ee938dd87467bc49301de2e9765cf20f4374656c2e776562766972742e636c6f7564"
     },
     "stable": {
-      "median_rtt_ms": 120.2,
+      "median_rtt_ms": 97.8,
       "score": 95.0,
       "url": "https://t.me/proxy?server=1b2aca9d-6852-45a7-bd7b-771a70fde2b7.fast-cdn.cc&port=443&secret=ee5a9252c2c44ec88a5ad64b048d4585f7666173742d63646e2e6363"
     }
@@ -38,7 +38,7 @@
       "fetched": 236,
       "status": "OK",
       "unique": 225,
-      "working": 11
+      "working": 9
     },
     "klondike": {
       "fetched": 118,
@@ -47,22 +47,22 @@
       "working": 0
     },
     "shablin": {
-      "fetched": 210,
+      "fetched": 207,
       "status": "OK",
-      "unique": 209,
-      "working": 3
+      "unique": 204,
+      "working": 2
     },
     "solispirit": {
-      "fetched": 118,
+      "fetched": 232,
       "status": "OK",
-      "unique": 115,
-      "working": 0
+      "unique": 229,
+      "working": 2
     }
   },
-  "stable": 18,
+  "stable": 17,
   "suspicious_streak": 0,
   "tagline": "Filter the garbage. Keep what works.",
-  "tested": 248,
-  "updated_at": "2026-09-21T05:32:57Z",
-  "working": 18
+  "tested": 272,
+  "updated_at": "2026-09-21T11:08:28Z",
+  "working": 14
 }
