@@ -1,30 +1,35 @@
 {
   "control_ok": true,
   "failure_reasons": {
-    "DNS_FAILED": 8,
-    "DUPLICATE": 692,
-    "PROTOCOL_ERROR": 264,
-    "UNSTABLE": 2,
+    "DNS_FAILED": 5,
+    "DUPLICATE": 693,
+    "PROTOCOL_ERROR": 259,
+    "UNSTABLE": 5,
     "UNSUPPORTED_SECRET": 8
   },
-  "fastest": 13,
+  "fastest": 19,
   "healthy_run": true,
-  "last_successful_set": "2026-09-22T10:22:11Z",
+  "last_successful_set": "2026-09-22T15:11:31Z",
   "production": {
-    "fastest": 13,
-    "stable": 14,
-    "working": 13
+    "fastest": 19,
+    "stable": 13,
+    "working": 19
   },
   "project": "Swift",
   "selected": {
     "backup": {
-      "median_rtt_ms": 205.7,
-      "score": 50.95,
-      "url": "https://t.me/proxy?server=194.120.230.26&port=443&secret=dd79e7010200010007f0030386e24c3add"
+      "median_rtt_ms": 337.5,
+      "score": 72.57,
+      "url": "https://t.me/proxy?server=granite.mtproxy.zip&port=443&secret=ee3f8a91c2d7e04b6a9f12c5e8370bd4aa786170692e6f7a6f6e2e7275"
     },
     "fastest": {
-      "median_rtt_ms": 108.9,
-      "score": 95.0,
+      "median_rtt_ms": 365.2,
+      "score": 77.67,
+      "url": "https://t.me/proxy?server=ykima.davay.click&port=443&secret=ee06dfdbdf271bab18c6b606484c237384796b696d612e64617661792e636c69636b"
+    },
+    "stable": {
+      "median_rtt_ms": 123.6,
+      "score": 94.97,
       "url": "https://t.me/proxy?server=1b2aca9d-6852-45a7-bd7b-771a70fde2b7.fast-cdn.cc&port=443&secret=ee5a9252c2c44ec88a5ad64b048d4585f7666173742d63646e2e6363"
     }
   },
@@ -33,31 +38,31 @@
       "fetched": 231,
       "status": "OK",
       "unique": 221,
-      "working": 7
+      "working": 11
     },
     "klondike": {
       "fetched": 241,
       "status": "OK",
       "unique": 238,
-      "working": 2
+      "working": 5
     },
     "shablin": {
-      "fetched": 212,
+      "fetched": 219,
       "status": "OK",
-      "unique": 209,
-      "working": 2
+      "unique": 216,
+      "working": 6
     },
     "solispirit": {
       "fetched": 253,
       "status": "OK",
       "unique": 250,
-      "working": 2
+      "working": 5
     }
   },
-  "stable": 14,
+  "stable": 13,
   "suspicious_streak": 0,
   "tagline": "Filter the garbage. Keep what works.",
-  "tested": 285,
-  "updated_at": "2026-09-22T10:22:11Z",
-  "working": 13
+  "tested": 283,
+  "updated_at": "2026-09-22T15:11:31Z",
+  "working": 19
 }
