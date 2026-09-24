@@ -2,14 +2,14 @@
   "control_ok": true,
   "failure_reasons": {
     "DNS_FAILED": 7,
-    "DUPLICATE": 479,
+    "DUPLICATE": 477,
     "PROTOCOL_ERROR": 284,
-    "UNSTABLE": 4,
+    "UNSTABLE": 5,
     "UNSUPPORTED_SECRET": 6
   },
   "fastest": 20,
   "healthy_run": true,
-  "last_successful_set": "2026-09-23T23:13:07Z",
+  "last_successful_set": "2026-09-24T01:40:18Z",
   "production": {
     "fastest": 20,
     "stable": 21,
@@ -18,19 +18,19 @@
   "project": "Swift",
   "selected": {
     "backup": {
-      "median_rtt_ms": 223.9,
-      "score": 94.09,
-      "url": "https://t.me/proxy?server=media6.happtg.org&port=443&secret=ee7391242569590e01416101927d38b565686f66662e7275"
+      "median_rtt_ms": 283.8,
+      "score": 84.72,
+      "url": "https://t.me/proxy?server=chestno.servera-dlya-tg-zdes-net.abrdns.com&port=443&secret=eea65c7fc5a0d5669ba371a7ca88fc19496f7a6f6e2e7275"
     },
     "fastest": {
-      "median_rtt_ms": 203.5,
-      "score": 88.6,
-      "url": "https://t.me/proxy?server=cdn7.cdnwave.org&port=443&secret=ee6ec9f7e082baf2397b450727ce78447e686f66662e7275"
+      "median_rtt_ms": 203.6,
+      "score": 94.3,
+      "url": "https://t.me/proxy?server=media6.happtg.org&port=443&secret=ee7391242569590e01416101927d38b565686f66662e7275"
     },
     "stable": {
-      "median_rtt_ms": 218.7,
-      "score": 90.54,
-      "url": "https://t.me/proxy?server=media7.happtg.org&port=443&secret=ee6ec9f7e082baf2397b450727ce78447e686f66662e7275"
+      "median_rtt_ms": 103.5,
+      "score": 93.87,
+      "url": "https://t.me/proxy?server=1b2aca9d-6852-45a7-bd7b-771a70fde2b7.fast-cdn.cc&port=443&secret=ee5a9252c2c44ec88a5ad64b048d4585f7666173742d63646e2e6363"
     }
   },
   "sources": {
@@ -44,13 +44,13 @@
       "fetched": 249,
       "status": "OK",
       "unique": 246,
-      "working": 1
+      "working": 2
     },
     "shablin": {
       "fetched": 253,
       "status": "OK",
       "unique": 250,
-      "working": 1
+      "working": 4
     },
     "solispirit": {
       "fetched": 0,
@@ -63,6 +63,6 @@
   "suspicious_streak": 0,
   "tagline": "Filter the garbage. Keep what works.",
   "tested": 311,
-  "updated_at": "2026-09-23T23:13:07Z",
+  "updated_at": "2026-09-24T01:40:18Z",
   "working": 20
 }
