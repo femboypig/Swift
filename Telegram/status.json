@@ -1,36 +1,36 @@
 {
   "control_ok": true,
   "failure_reasons": {
-    "DNS_FAILED": 6,
-    "DUPLICATE": 487,
-    "PROTOCOL_ERROR": 276,
-    "UNSTABLE": 5,
-    "UNSUPPORTED_SECRET": 4
+    "DNS_FAILED": 7,
+    "DUPLICATE": 470,
+    "PROTOCOL_ERROR": 246,
+    "UNSTABLE": 15,
+    "UNSUPPORTED_SECRET": 6
   },
   "fastest": 20,
   "healthy_run": true,
-  "last_successful_set": "2026-09-24T06:47:04Z",
+  "last_successful_set": "2026-09-24T12:19:42Z",
   "production": {
     "fastest": 20,
     "stable": 18,
-    "working": 23
+    "working": 38
   },
   "project": "Swift",
   "selected": {
     "backup": {
-      "median_rtt_ms": 1304.6,
-      "score": 79.86,
-      "url": "https://t.me/proxy?server=media6.happtg.org&port=443&secret=ee7391242569590e01416101927d38b565686f66662e7275"
+      "median_rtt_ms": 237.6,
+      "score": 84.52,
+      "url": "https://t.me/proxy?server=mtp.webvirt.cloud&port=443&secret=ee938dd87467bc49301de2e9765cf20f4374656c2e776562766972742e636c6f7564"
     },
     "fastest": {
-      "median_rtt_ms": 114.1,
-      "score": 94.0,
-      "url": "https://t.me/proxy?server=1b2aca9d-6852-45a7-bd7b-771a70fde2b7.fast-cdn.cc&port=443&secret=ee5a9252c2c44ec88a5ad64b048d4585f7666173742d63646e2e6363"
+      "median_rtt_ms": 240.8,
+      "score": 66.29,
+      "url": "https://t.me/proxy?server=s05.neo-trading.org&port=443&secret=eef4f43f6c7b01f2f5f5644af6473a61d0686f66662e7275"
     },
     "stable": {
-      "median_rtt_ms": 249.7,
-      "score": 91.53,
-      "url": "https://t.me/proxy?server=cdn7.cdnwave.org&port=443&secret=ee6ec9f7e082baf2397b450727ce78447e686f66662e7275"
+      "median_rtt_ms": 151.8,
+      "score": 77.22,
+      "url": "https://t.me/proxy?server=chestno.servera-dlya-tg-zdes-net.abrdns.com&port=443&secret=eea65c7fc5a0d5669ba371a7ca88fc19496f7a6f6e2e7275"
     }
   },
   "sources": {
@@ -38,31 +38,31 @@
       "fetched": 233,
       "status": "OK",
       "unique": 226,
-      "working": 7
+      "working": 15
     },
     "klondike": {
-      "fetched": 249,
-      "status": "OK",
-      "unique": 246,
-      "working": 4
-    },
-    "shablin": {
-      "fetched": 253,
-      "status": "OK",
-      "unique": 250,
-      "working": 7
-    },
-    "solispirit": {
       "fetched": 0,
-      "status": "EMPTY",
+      "status": "HTTP_404",
       "unique": 0,
       "working": 0
+    },
+    "shablin": {
+      "fetched": 224,
+      "status": "OK",
+      "unique": 220,
+      "working": 15
+    },
+    "solispirit": {
+      "fetched": 249,
+      "status": "OK",
+      "unique": 245,
+      "working": 20
     }
   },
   "stable": 18,
   "suspicious_streak": 0,
   "tagline": "Filter the garbage. Keep what works.",
-  "tested": 305,
-  "updated_at": "2026-09-24T06:47:04Z",
-  "working": 23
+  "tested": 291,
+  "updated_at": "2026-09-24T12:19:42Z",
+  "working": 38
 }
