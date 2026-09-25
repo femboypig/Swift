@@ -1,5 +1,9 @@
 #profile-title: Swift Main
 #profile-update-interval: 1
 #profile-web-page-url: https://github.com/femboypig/Swift
-vless://581cb8c3-dadb-4e10-a18b-5e79bfe7bd93@47.80.14.8:443?encryption=none&type=tcp&security=reality&flow=xtls-rprx-vision&sni=www.samsung.com&fp=chrome&pbk=OBIHAXdhfYJ0PWsZjy3QYPRjTfMQlvjmBsTf1CT671w&sid=71110d3f7ef57760#%F0%9F%87%B0%F0%9F%87%B7%20KR%20%C2%B7%20001
-hysteria2://3f63c86c-ac4a-4900-85cf-4fedf93c2ca5@91.240.86.70:22443?sni=itsallproxy.quattro-tech.ru#%F0%9F%87%B7%F0%9F%87%BA%20RU%20%C2%B7%20002
+vless://bc5ec86c-3e65-4272-994c-59a924c72a68@217.19.122.65:443?encryption=none&type=ws&security=tls&sni=fbsv6.guardora.pro&fp=firefox&path=%2Fws&host=fbsv6.guardora.pro&alpn=http%2F1.1#%F0%9F%87%B7%F0%9F%87%BA%20RU%20%C2%B7%20001
+vless://bc5ec86c-3e65-4272-994c-59a924c72a68@217.19.122.65:443?encryption=none&type=ws&security=tls&sni=fbsv6.guardora.pro&fp=random&path=%2Fws&host=fbsv6.guardora.pro&alpn=http%2F1.1#%F0%9F%87%B7%F0%9F%87%BA%20RU%20%C2%B7%20002
+vless://bc5ec86c-3e65-4272-994c-59a924c72a68@217.19.122.65:443?encryption=none&type=ws&security=tls&sni=fbsv6.guardora.pro&fp=chrome&path=%2Fws&host=fbsv6.guardora.pro&alpn=http%2F1.1#%F0%9F%87%B7%F0%9F%87%BA%20RU%20%C2%B7%20003
+hysteria2://3f63c86c-ac4a-4900-85cf-4fedf93c2ca5@91.240.86.70:22443?sni=hy.quattro-tech.ru#%F0%9F%87%B7%F0%9F%87%BA%20RU%20%C2%B7%20004
+vless://cb53f904-c979-454f-bf43-621990008148@104.21.16.44:443?encryption=none&type=ws&security=tls&sni=0.aq0.ccwu.cc&fp=chrome&path=%2FLNbYtR09FXg1AmmjhdiHvR8v&host=0.aq0.ccwu.cc#%F0%9F%87%BA%F0%9F%87%B8%20US%20%C2%B7%20005
+vmess://eyJ2IjoiMiIsInBzIjoi8J+PtOKAjeKYoO+4jyA/PyDCtyAwMDYiLCJhZGQiOiIxODguMTE0Ljk2LjE5IiwicG9ydCI6ODAsImlkIjoiYWVkODhlNzktNTc2Mi00ZDJmLTg2ZmEtZjQzOGYzMmE3NjU0IiwiYWlkIjowLCJzY3kiOiJhdXRvIiwibmV0Ijoid3MiLCJ0eXBlIjoibm9uZSIsImhvc3QiOiJnb29nbGUud2hhdHNhcHAuc25hcHAudG9yb2IuYmFzYWxhbS5oZXNhbmlkOC5pci4iLCJwYXRoIjoiLyIsInRscyI6IiIsInNuaSI6IiIsImFscG4iOiIiLCJmcCI6IiIsImFsbG93SW5zZWN1cmUiOmZhbHNlLCJwYWNrZXRFbmNvZGluZyI6IiJ9

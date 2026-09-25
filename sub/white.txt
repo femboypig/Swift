@@ -1,1 +1,4 @@
-hysteria2://3f63c86c-ac4a-4900-85cf-4fedf93c2ca5@91.240.86.70:22443?sni=itsallproxy.quattro-tech.ru#%F0%9F%87%B7%F0%9F%87%BA%20RU%20%C2%B7%20W001
+vless://bc5ec86c-3e65-4272-994c-59a924c72a68@217.19.122.65:443?encryption=none&type=ws&security=tls&sni=fbsv6.guardora.pro&fp=firefox&path=%2Fws&host=fbsv6.guardora.pro&alpn=http%2F1.1#%F0%9F%87%B7%F0%9F%87%BA%20RU%20%C2%B7%20W001
+vless://bc5ec86c-3e65-4272-994c-59a924c72a68@217.19.122.65:443?encryption=none&type=ws&security=tls&sni=fbsv6.guardora.pro&fp=random&path=%2Fws&host=fbsv6.guardora.pro&alpn=http%2F1.1#%F0%9F%87%B7%F0%9F%87%BA%20RU%20%C2%B7%20W002
+vless://bc5ec86c-3e65-4272-994c-59a924c72a68@217.19.122.65:443?encryption=none&type=ws&security=tls&sni=fbsv6.guardora.pro&fp=chrome&path=%2Fws&host=fbsv6.guardora.pro&alpn=http%2F1.1#%F0%9F%87%B7%F0%9F%87%BA%20RU%20%C2%B7%20W003
+hysteria2://3f63c86c-ac4a-4900-85cf-4fedf93c2ca5@91.240.86.70:22443?sni=hy.quattro-tech.ru#%F0%9F%87%B7%F0%9F%87%BA%20RU%20%C2%B7%20W004

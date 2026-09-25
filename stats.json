@@ -1,64 +1,69 @@
 {
-  "alive": 2,
-  "collected": 14034,
-  "collection_updated_at": "2026-09-22T22:59:56Z",
+  "alive": 6,
+  "collected": 15231,
+  "collection_updated_at": "2026-09-25T05:04:11Z",
   "countries": {
-    "KR": 1,
-    "RU": 1
+    "RU": 4,
+    "US": 1
   },
   "failure_reasons": {
-    "CONFIG_TIMEOUT": 4,
-    "CORE_EXITED": 44,
-    "DNS_FAILED": 151,
-    "DNS_TIMEOUT": 436,
+    "CONFIG_TIMEOUT": 1,
+    "CORE_EXITED": 146,
+    "DNS_FAILED": 125,
+    "DNS_TIMEOUT": 539,
     "DOWNLOAD_R1_FAILED": 1,
-    "DOWNLOAD_R2_FAILED": 1,
-    "FRESHNESS_FAILED": 1,
-    "HTTPS_FAILED": 6690,
-    "PASS": 2,
-    "STALLED": 14,
-    "TOO_SLOW": 14
+    "DOWNLOAD_R2_FAILED": 2,
+    "FRESHNESS_FAILED": 3,
+    "HTTPS_FAILED": 7023,
+    "PASS": 6,
+    "STALLED": 12,
+    "TOO_SLOW": 7,
+    "UNSTABLE": 1
   },
   "freshness": {
-    "expected": 3,
-    "failed": 1,
-    "passed": 2
+    "expected": 9,
+    "failed": 3,
+    "passed": 6
   },
   "funnel": {
-    "main_published": 2,
-    "ru_accounted": 7358,
-    "ru_expected": 7358,
-    "ru_pass": 2,
-    "white_published": 1
+    "main_published": 6,
+    "ru_accounted": 7866,
+    "ru_expected": 7866,
+    "ru_pass": 6,
+    "white_published": 4
   },
-  "generation_id": "4a624400496825791272bc3afc84743e6083440f16fc22a544dcf75034f8493d",
-  "main": 2,
-  "median_latency_ms": 972.67,
-  "parsed": 12247,
+  "generation_id": "5b13d4230b102529a169dae5841499a481b3f25737adf283b3d100db16d2e323",
+  "main": 6,
+  "median_latency_ms": 1182.93,
+  "parsed": 13367,
   "production": {
-    "all": 2,
-    "main": 2,
-    "white": 1
+    "all": 6,
+    "main": 6,
+    "white": 4
   },
   "project": "Swift",
   "protocols": {
     "hysteria2": 1,
-    "vless": 1
+    "vless": 4,
+    "vmess": 1
   },
-  "publication_updated_at": "2026-09-23T13:06:34Z",
+  "publication_updated_at": "2026-09-25T11:59:40Z",
   "published": true,
   "sources": {
     "0xRadikal": 1,
+    "aetris": 1,
     "igareck": 1,
-    "kizyak": 1
+    "kizyak": 4,
+    "rkp": 1
   },
   "stage": "published",
   "tagline": "Filter the garbage. Keep what works.",
-  "tested": 7358,
-  "unique": 7358,
-  "updated_at": "2026-09-23T13:06:34Z",
-  "white": 1,
+  "tested": 7866,
+  "unique": 7866,
+  "updated_at": "2026-09-25T11:59:40Z",
+  "white": 4,
   "white_evidence": {
-    "cidr": 1
+    "cidr": 4,
+    "upstream-only": 1
   }
 }
